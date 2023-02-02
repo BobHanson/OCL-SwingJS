@@ -94,12 +94,18 @@ public class Depictor2D extends AbstractDepictor<Graphics2D> {
         mContext.setStroke(stroke);
         }
 
+	@SuppressWarnings("unused")
 	@Override
 	protected void drawString(String theString, double x, double y) {
 		double strWidth = getStringWidth(theString);
-		mContext.drawGlyphVector(mCurrentGlyphVector, (float)(x-strWidth/2.0),
-										(float)(y+(float)mpTextSize/3.0));
-		}
+    if (/** @j2sNative true ||*/false) {
+      mContext.drawString(theString, (float)(x-strWidth/2.0),
+          (float)(y+(float)mpTextSize/3.0));
+    } else {
+      mContext.drawGlyphVector(mCurrentGlyphVector, (float)(x-strWidth/2.0),
+          (float)(y+(float)mpTextSize/3.0));      
+    }	
+	}
 
 	@Override
 	protected void drawPolygon(GenericPolygon p) {
@@ -137,8 +143,11 @@ public class Depictor2D extends AbstractDepictor<Graphics2D> {
 				|| mCurrentFont != ((Graphics2D) mContext).getFont()) {
 				mCurrentString = theString;
 				mCurrentFont = ((Graphics2D) mContext).getFont();
-				mCurrentGlyphVector = ((Graphics2D) mContext).getFont().createGlyphVector(((Graphics2D) mContext).getFontRenderContext(), theString);
-				mCurrentStringWidth = mCurrentGlyphVector.getLogicalBounds().getWidth();
+				
+				double width = ((Graphics2D) mContext).getFontMetrics().stringWidth(theString);
+				return width;
+//				mCurrentGlyphVector = ((Graphics2D) mContext).getFont().createGlyphVector(((Graphics2D) mContext).getFontRenderContext(), theString);
+//				mCurrentStringWidth = mCurrentGlyphVector.getLogicalBounds().getWidth();
 			}
 		}
 		return mCurrentStringWidth;
