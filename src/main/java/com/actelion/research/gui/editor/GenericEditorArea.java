@@ -33,27 +33,54 @@
 
 package com.actelion.research.gui.editor;
 
-import com.actelion.research.chem.*;
-import com.actelion.research.chem.coords.CoordinateInventor;
-import com.actelion.research.chem.io.RDFileParser;
-import com.actelion.research.chem.io.RXNFileParser;
-import com.actelion.research.chem.name.StructureNameResolver;
-import com.actelion.research.chem.reaction.*;
-import com.actelion.research.gui.FileHelper;
-import com.actelion.research.gui.LookAndFeelHelper;
-import com.actelion.research.gui.clipboard.IClipboardHandler;
-import com.actelion.research.gui.generic.*;
-import com.actelion.research.gui.hidpi.HiDPIHelper;
-import com.actelion.research.gui.swing.SwingCursorHelper;
-import com.actelion.research.util.ColorHelper;
-
-import java.awt.*;
+import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.TreeMap;
+
+import com.actelion.research.chem.AbstractDepictor;
+import com.actelion.research.chem.AbstractDrawingObject;
+import com.actelion.research.chem.DepictorTransformation;
+import com.actelion.research.chem.DrawingObjectList;
+import com.actelion.research.chem.ExtendedDepictor;
+import com.actelion.research.chem.MarkushStructure;
+import com.actelion.research.chem.Molecule;
+import com.actelion.research.chem.NamedSubstituents;
+import com.actelion.research.chem.SSSearcher;
+import com.actelion.research.chem.StereoMolecule;
+import com.actelion.research.chem.TextDrawingObject;
+import com.actelion.research.chem.coords.CoordinateInventor;
+import com.actelion.research.chem.io.RDFileParser;
+import com.actelion.research.chem.io.RXNFileParser;
+import com.actelion.research.chem.name.StructureNameResolver;
+import com.actelion.research.chem.reaction.IReactionMapper;
+import com.actelion.research.chem.reaction.MCSReactionMapper;
+import com.actelion.research.chem.reaction.Reaction;
+import com.actelion.research.chem.reaction.ReactionArrow;
+import com.actelion.research.chem.reaction.ReactionEncoder;
+import com.actelion.research.gui.FileHelper;
+import com.actelion.research.gui.LookAndFeelHelper;
+import com.actelion.research.gui.clipboard.IClipboardHandler;
+import com.actelion.research.gui.generic.GenericActionEvent;
+import com.actelion.research.gui.generic.GenericCanvas;
+import com.actelion.research.gui.generic.GenericDepictor;
+import com.actelion.research.gui.generic.GenericDrawContext;
+import com.actelion.research.gui.generic.GenericEvent;
+import com.actelion.research.gui.generic.GenericEventListener;
+import com.actelion.research.gui.generic.GenericKeyEvent;
+import com.actelion.research.gui.generic.GenericMouseEvent;
+import com.actelion.research.gui.generic.GenericPoint;
+import com.actelion.research.gui.generic.GenericPolygon;
+import com.actelion.research.gui.generic.GenericPopupMenu;
+import com.actelion.research.gui.generic.GenericRectangle;
+import com.actelion.research.gui.generic.GenericShape;
+import com.actelion.research.gui.generic.GenericUIHelper;
+import com.actelion.research.gui.hidpi.HiDPIHelper;
+import com.actelion.research.gui.swing.SwingCursorHelper;
+import com.actelion.research.util.ColorHelper;
 
 public class GenericEditorArea implements GenericEventListener {
 	public static final int MODE_MULTIPLE_FRAGMENTS = 1;
@@ -1619,15 +1646,6 @@ public class GenericEditorArea implements GenericEventListener {
 			if (builder.showDialog())
 				updateAndFireEvent(UPDATE_REDRAW);
 			}
-		}
-
-	public void showCustomAtomDialog(int atom) {
-		storeState();
-		CustomAtomDialogBuilder builder = (atom == -1) ?
-				new CustomAtomDialogBuilder(mUIHelper, this, mCustomAtomicNo, mCustomAtomMass, mCustomAtomValence, mCustomAtomRadical, mCustomAtomLabel)
-				: new CustomAtomDialogBuilder(mUIHelper, this, mMol, atom);
-		if (builder.showDialog() && atom != -1)
-			updateAndFireEvent(UPDATE_REDRAW);
 		}
 
 	private void mousePressedButton1(GenericMouseEvent gme) {
@@ -3512,6 +3530,42 @@ public class GenericEditorArea implements GenericEventListener {
 			update(UPDATE_REDRAW);
 			}
 		}
+
+	public void showCustomAtomDialog(int atom, Runnable onOK, Runnable onCancel) {
+			storeState();
+			CustomAtomDialogBuilder builder = (atom == -1) ?
+					new CustomAtomDialogBuilder(mUIHelper, this, mCustomAtomicNo, mCustomAtomMass, mCustomAtomValence, mCustomAtomRadical, mCustomAtomLabel)
+					: new CustomAtomDialogBuilder(mUIHelper, this, mMol, atom);
+			
+		builder.getDialog().setEventConsumer(new GenericEventListener<GenericActionEvent>() {
+
+			@Override
+			public void eventHappened(GenericActionEvent e) {
+				if (e.getWhat() == GenericActionEvent.WHAT_OK) {
+					if (atom != -1)
+						updateAndFireEvent(UPDATE_REDRAW);
+					if (onOK != null)
+						onOK.run();
+				} else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL && onCancel != null) {
+					onCancel.run();
+				}
+			}
+
+		});
+		builder.showDialog();
+	}
+	
+	public void showCustomAtomDialog(int atom) {
+		storeState();
+		CustomAtomDialogBuilder builder = (atom == -1) ?
+				new CustomAtomDialogBuilder(mUIHelper, this, mCustomAtomicNo, mCustomAtomMass, mCustomAtomValence, mCustomAtomRadical, mCustomAtomLabel)
+				: new CustomAtomDialogBuilder(mUIHelper, this, mMol, atom);
+		if (builder.showDialog() && atom != -1)
+			updateAndFireEvent(UPDATE_REDRAW);
+		}
+
+
+	
 	}
 
 

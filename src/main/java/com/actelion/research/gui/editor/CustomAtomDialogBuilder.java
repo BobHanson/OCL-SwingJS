@@ -227,4 +227,8 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 			    }
 			}
 		}
+
+	public GenericDialog getDialog() {
+		return mDialog;
+	}
 	}

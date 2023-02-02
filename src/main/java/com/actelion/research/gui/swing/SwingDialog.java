@@ -26,7 +26,20 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 
 	@Override
 	public void setEventConsumer(GenericEventListener<GenericActionEvent> consumer) {
-		mConsumer = consumer;
+		if (mConsumer == null) {
+			mConsumer = consumer;
+		} else {
+			GenericEventListener<GenericActionEvent> mc = mConsumer;
+			mConsumer = new GenericEventListener<GenericActionEvent>() {
+
+				@Override
+				public void eventHappened(GenericActionEvent e) {
+					mc.eventHappened(e);
+					consumer.eventHappened(e);
+				}
+				
+			};
+		}
 	}
 
 	@Override
