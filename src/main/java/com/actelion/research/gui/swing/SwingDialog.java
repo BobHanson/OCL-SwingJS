@@ -24,6 +24,11 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 		mParent = parent;
 		}
 
+	public SwingDialog(Window parent, String title) {
+		super(parent, title, DEFAULT_MODALITY_TYPE);
+		mParent = parent;
+		}
+
 	@Override
 	public void setEventConsumer(GenericEventListener<GenericActionEvent> consumer) {
 		if (mConsumer == null) {

@@ -27,10 +27,13 @@ public class SwingUIHelper implements GenericUIHelper {
 	@Override
 	public GenericDialog createDialog(String title, GenericEventListener<GenericActionEvent> consumer) {
 		Component c = mParentComponent;
-		while (!(c instanceof Frame || c instanceof Dialog))
+		while (// BH SwingJS 2023 adds Window
+				!(c instanceof Frame || c instanceof Dialog || c instanceof Window))
 			c = c.getParent();
 
-		GenericDialog dialog = (c instanceof Frame) ? new SwingDialog((Frame)c, title) : new SwingDialog((Dialog)c, title);
+		GenericDialog dialog = (c instanceof Frame) ? new SwingDialog((Frame)c, title) 
+				: (c instanceof Dialog) ? new SwingDialog((Dialog)c, title)
+						: new SwingDialog((Window)c, title);
 		dialog.setEventConsumer(consumer);
 		return dialog;
 		}
