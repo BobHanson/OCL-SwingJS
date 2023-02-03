@@ -3,12 +3,15 @@ package com.actelion.research.gui;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
+<<<<<<< HEAD
 /**
  * common class between Views and JPanel when timed paintable messaging is desired. 
  * 
  * @author hansonr
  *
  */
+=======
+>>>>>>> branch 'master' of https://github.com/BobHanson/OCL-SwingJS.git
 @SuppressWarnings("serial")
 public abstract class SwingCanvas extends JPanel {
 
