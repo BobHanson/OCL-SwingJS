@@ -1936,14 +1936,28 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 					int atom = mMol.findAtom(mX1, mY1);
 					if (atom != -1) {
 						storeState();
-						new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom);
-						mOtherAtom = mMol.getAtomicNo(atom);
-						mOtherMass = mMol.getAtomMass(atom);
-						mOtherValence = mMol.getAtomAbnormalValence(atom);
-						mOtherRadical = mMol.getAtomRadical(atom);
-						mOtherLabel = mMol.getAtomCustomLabel(atom);
-						fireMoleculeChanged();
-						update(UPDATE_REDRAW);
+						Runnable whenDone = new Runnable() {
+
+							@Override
+							public void run() {
+								mOtherAtom = mMol.getAtomicNo(atom);
+								mOtherMass = mMol.getAtomMass(atom);
+								mOtherValence = mMol.getAtomAbnormalValence(atom);
+								mOtherRadical = mMol.getAtomRadical(atom);
+								mOtherLabel = mMol.getAtomCustomLabel(atom);
+								fireMoleculeChanged();
+								update(UPDATE_REDRAW);
+							}
+							
+						};
+						if (SwingUIHelper.isAsynchronous()) {
+							new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom, whenDone, whenDone);							
+							// continues - end of thread;
+							return;
+						} else {
+							new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom);
+							whenDone.run();
+						}
 					}
 				}
 				else {

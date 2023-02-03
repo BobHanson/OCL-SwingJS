@@ -54,6 +54,18 @@ public class JAtomLabelDialog extends JDialog implements ActionListener {
     private JTextField mTextFieldLabel,mTextFieldMass,mTextFieldValence;
     private JComboBox mComboBoxRadical;
 
+	protected Runnable onOK, onCancel;
+
+	protected JAtomLabelDialog(Window owner, ExtendedMolecule mol, int atom, Runnable onOK, Runnable onCancel) {
+		super(owner, Dialog.DEFAULT_MODALITY_TYPE);
+		mOwner = owner;
+		mMol = mol;
+		mAtom = atom;
+		this.onOK = onOK;
+		this.onCancel = onCancel;
+		init();		
+	}
+	
 	protected JAtomLabelDialog(Window owner, ExtendedMolecule mol, int atom) {
 		super(owner, Dialog.DEFAULT_MODALITY_TYPE);
 		mOwner = owner;
@@ -132,15 +144,28 @@ public class JAtomLabelDialog extends JDialog implements ActionListener {
         setVisible(true);
 		}
 
-
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() instanceof JTextField)
-			processAtomLabel();
-		else if (e.getActionCommand() == "Cancel")
-			dispose();
-		else if (e.getActionCommand() == "OK")
-			processAtomLabel();
+	@Override
+	public void setVisible(boolean b) {
+		super.setVisible(b);
+		if (!b) {
+			if (onCancel != null)
+				onCancel.run();
 		}
+	}
+	
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() instanceof JTextField) {
+			processAtomLabel();
+		} else if (e.getActionCommand() == "Cancel") {
+			dispose();
+			if (onCancel != null)
+				onCancel.run();
+		} else if (e.getActionCommand() == "OK") {
+			processAtomLabel();
+			if (onOK != null)
+				onOK.run();
+		}
+	}
 
 	private void processAtomLabel() {
 		String text = mTextFieldLabel.getText();

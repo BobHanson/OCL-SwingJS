@@ -80,6 +80,7 @@ import com.actelion.research.gui.generic.GenericShape;
 import com.actelion.research.gui.generic.GenericUIHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.swing.SwingCursorHelper;
+import com.actelion.research.gui.swing.SwingUIHelper;
 import com.actelion.research.util.ColorHelper;
 
 public class GenericEditorArea implements GenericEventListener {
@@ -1633,20 +1634,32 @@ public class GenericEditorArea implements GenericEventListener {
 		if (mAllowQueryFeatures) {
 			storeState();
 			boolean showReactionHints = ((mMode & MODE_REACTION) != 0);
-			AtomQueryFeatureDialogBuilder builder = new AtomQueryFeatureDialogBuilder(mUIHelper, mMol, atom, showReactionHints);
-			if (builder.showDialog())
-				updateAndFireEvent(UPDATE_REDRAW);
-			}
+			AtomQueryFeatureDialogBuilder builder = new AtomQueryFeatureDialogBuilder(mUIHelper, mMol, atom,
+					showReactionHints);
+			showBuilderAsync(builder, true);
 		}
+	}
 
 	private void showBondQFDialog(int bond) {
 		if (mAllowQueryFeatures) {
 			storeState();
 			BondQueryFeatureDialogBuilder builder = new BondQueryFeatureDialogBuilder(mUIHelper, mMol, bond);
-			if (builder.showDialog())
-				updateAndFireEvent(UPDATE_REDRAW);
-			}
+			showBuilderAsync(builder, true);
 		}
+	}
+
+	private void showBuilderAsync(AsynchronousQueryBuilder builder, boolean doUpdate) {
+		if (SwingUIHelper.isAsynchronous()) {
+			// cleared for asynchronous
+			builder.showDialog(() -> {
+				if (doUpdate)
+					updateAndFireEvent(UPDATE_REDRAW);
+			}, null);
+		} else if (builder.showDialog()) {
+			if (doUpdate)
+				updateAndFireEvent(UPDATE_REDRAW);
+		}
+	}
 
 	private void mousePressedButton1(GenericMouseEvent gme) {
 		mX1 = gme.getX();
@@ -1921,6 +1934,7 @@ public class GenericEditorArea implements GenericEventListener {
 				if (gme.isControlDown()) {
 					int atom = mMol.findAtom(mX1, mY1);
 					if (atom != -1) {
+						// does not have to be asynchronous
 						showCustomAtomDialog(atom);
 					}
 				} else {
@@ -3531,6 +3545,13 @@ public class GenericEditorArea implements GenericEventListener {
 			}
 		}
 
+	/**
+	 * Asynchronous version
+	 * 
+	 * @param atom
+	 * @param onOK
+	 * @param onCancel
+	 */
 	public void showCustomAtomDialog(int atom, Runnable onOK, Runnable onCancel) {
 			storeState();
 			CustomAtomDialogBuilder builder = (atom == -1) ?
@@ -3541,31 +3562,29 @@ public class GenericEditorArea implements GenericEventListener {
 
 			@Override
 			public void eventHappened(GenericActionEvent e) {
-				if (e.getWhat() == GenericActionEvent.WHAT_OK) {
-					if (atom != -1)
-						updateAndFireEvent(UPDATE_REDRAW);
-					if (onOK != null)
-						onOK.run();
-				} else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL && onCancel != null) {
-					onCancel.run();
-				}
+				if (atom != -1)
+					updateAndFireEvent(UPDATE_REDRAW);
 			}
 
 		});
-		builder.showDialog();
+		builder.showDialog(onOK, onCancel);
 	}
 	
+	/**
+	 * Synchronous version
+	 * 
+	 * @param atom
+	 */
 	public void showCustomAtomDialog(int atom) {
 		storeState();
-		CustomAtomDialogBuilder builder = (atom == -1) ?
-				new CustomAtomDialogBuilder(mUIHelper, this, mCustomAtomicNo, mCustomAtomMass, mCustomAtomValence, mCustomAtomRadical, mCustomAtomLabel)
+		CustomAtomDialogBuilder builder = (atom == -1)
+				? new CustomAtomDialogBuilder(mUIHelper, this, mCustomAtomicNo, mCustomAtomMass, mCustomAtomValence,
+						mCustomAtomRadical, mCustomAtomLabel)
 				: new CustomAtomDialogBuilder(mUIHelper, this, mMol, atom);
-		if (builder.showDialog() && atom != -1)
-			updateAndFireEvent(UPDATE_REDRAW);
-		}
-
-
-	
+		showBuilderAsync(builder, atom != -1);
 	}
+
+
+}
 
 

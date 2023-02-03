@@ -121,5 +121,9 @@ public class SwingUIHelper implements GenericUIHelper {
 	public static Window getWindow(JComponent c) {
 		return (Window) c.getTopLevelAncestor();
 	}
+
+	public static boolean isAsynchronous() {
+		return (/** @j2sNative true ||*/ false);
+	}
 	
 }

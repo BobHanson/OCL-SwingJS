@@ -15,6 +15,7 @@ public interface GenericDialog {
 	GenericTextField createTextField(int width, int height);
 	void setEventConsumer(GenericEventListener<GenericActionEvent> consumer);
 	void showDialog();  // must wait until OK or Cancel is pressed
+	void showDialog(Runnable onOK, Runnable onCancel); // allows asynchronous modal dialog in JavaScript or Java
 	void disposeDialog();
 	void showMessage(String message);
 }

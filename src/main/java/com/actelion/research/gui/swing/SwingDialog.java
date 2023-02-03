@@ -13,6 +13,8 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 	private Component mParent;
 	private JPanel  mContent;
 	private GenericEventListener<GenericActionEvent> mConsumer;
+	private Runnable onOK;
+	private Runnable onCancel;
 
 	public SwingDialog(Window parent, String title) {
 		super(parent, title, DEFAULT_MODALITY_TYPE);
@@ -31,6 +33,13 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 				public void eventHappened(GenericActionEvent e) {
 					mc.eventHappened(e);
 					consumer.eventHappened(e);
+					if (e.getWhat() == GenericActionEvent.WHAT_OK) {
+						if (onOK != null)
+							onOK.run();
+					} else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL) {
+						if (onCancel != null)
+							onCancel.run();						
+					}
 				}
 				
 			};
@@ -87,6 +96,20 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 		}
 
 	@Override
+	public void showDialog(Runnable onOK, Runnable onCancel) {
+		this.onOK = onOK;
+		this.onCancel = onCancel;
+		showDialog();
+	}
+
+	@Override
+	public void setVisible(boolean b) {
+		super.setVisible(b);
+		if (!b && onCancel != null)
+			onCancel.run();	
+	}
+	
+	@Override
 	public void disposeDialog() {
 		dispose();
 		}
@@ -123,4 +146,5 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 	public GenericComboBox createComboBox() {
 		return new SwingComboBox();
 	}
-	}
+
+}

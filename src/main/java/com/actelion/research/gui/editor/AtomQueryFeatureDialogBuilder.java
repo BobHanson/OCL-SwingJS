@@ -40,7 +40,7 @@ import com.actelion.research.gui.hidpi.HiDPIHelper;
 
 import java.util.Arrays;
 
-public class AtomQueryFeatureDialogBuilder implements GenericEventListener<GenericActionEvent> {
+public class AtomQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
 	public static final String[] RING_SIZE_SHORT_TEXT = {
 			"",
 			"r0",
@@ -117,7 +117,6 @@ public class AtomQueryFeatureDialogBuilder implements GenericEventListener<Gener
 			Molecule.cAtomQFRingSizeLarge,
 			};
 
-	private GenericDialog       mDialog;
 	private GenericLabel        mLabelAtomList;
 	private GenericTextField    mTFAtomList;
 	private GenericCheckBox     mCBAny,mCBBlocked,mCBSubstituted,mCBMatchStereo,mCBExcludeGroup;
@@ -127,21 +126,10 @@ public class AtomQueryFeatureDialogBuilder implements GenericEventListener<Gener
     private ExtendedMolecule	mMol;
 	private int					mAtom;
 	private long                mRingSizeCustomValue;
-	private boolean             mOKSelected;
 
 	public AtomQueryFeatureDialogBuilder(GenericUIHelper dialogHelper, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
 		mDialog = dialogHelper.createDialog(mol.isSelectedAtom(atom) ? "Atom Query Features (Multiple)" : "Atom Query Features", this);
 		build(mol, atom, includeReactionHints);
-		}
-
-	/**
-	 * @return true if OK was pressed and potential change was applied to molecule
-	 */
-	public boolean showDialog() {
-		mOKSelected = false;
-		mDialog.showDialog();
-
-		return mOKSelected;
 		}
 
 	private void build(ExtendedMolecule mol, int atom, boolean includeReactionHints) {
@@ -311,15 +299,10 @@ public class AtomQueryFeatureDialogBuilder implements GenericEventListener<Gener
 
 	@Override
 	public void eventHappened(GenericActionEvent e) {
-		if (e.getWhat() == GenericActionEvent.WHAT_OK) {
-			setQueryFeatures();
-			mOKSelected = true;
-			mDialog.disposeDialog();
-			}
-		else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL) {
-			mDialog.disposeDialog();
-			}
-		else if (e.getSource() == mCBAny) {
+		if (handleOkCancel(e)) {
+			return;
+		} 
+		if (e.getSource() == mCBAny) {
 			if (e.getValue() == 1) {
 				mTFAtomList.setText("");
 				mLabelAtomList.setText("Excluded atoms:");
@@ -541,7 +524,7 @@ public class AtomQueryFeatureDialogBuilder implements GenericEventListener<Gener
 		}
 
 
-	private void setQueryFeatures() {
+	protected void setQueryFeatures() {
         int[] atomList = createAtomList();
         if (mMol.isSelectedAtom(mAtom)) {
             for (int atom=0; atom<mMol.getAllAtoms(); atom++)

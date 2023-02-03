@@ -38,29 +38,18 @@ import com.actelion.research.chem.Molecule;
 import com.actelion.research.gui.generic.*;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 
-public class BondQueryFeatureDialogBuilder implements GenericEventListener<GenericActionEvent> {
-	private GenericDialog       mDialog;
+public class BondQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
     private ExtendedMolecule	mMol;
 	private int					mBond,mFirstSpanItem;
 	private GenericCheckBox     mCBSingle,mCBDouble,mCBTriple,mCBQuadruple,mCBQuintuple,mCBDelocalized,
 								mCBMetalLigand,mCBIsBridge,mCBMatchFormalOrder,mCBMatchStereo;
 	private GenericComboBox     mComboBoxRing,mComboBoxRingSize,mComboBoxMinAtoms,mComboBoxMaxAtoms;
-	private boolean             mOKSelected;
 
 	public BondQueryFeatureDialogBuilder(GenericUIHelper dialogHelper, ExtendedMolecule mol, int bond) {
 		mDialog = dialogHelper.createDialog((mol.isSelectedAtom(mol.getBondAtom(0, bond))
 				&& mol.isSelectedAtom(mol.getBondAtom(1, bond))) ?
 				"Bond Query Features (Multiple)" : "Bond Query Features", this);
 		build(mol, bond);
-		}
-
-	/**
-	 * @return true if OK was pressed and potential change was applied to molecule
-	 */
-	public boolean showDialog() {
-		mOKSelected = false;
-		mDialog.showDialog();
-		return mOKSelected;
 		}
 
 	private void build(ExtendedMolecule mol, int bond) {
@@ -151,15 +140,10 @@ public class BondQueryFeatureDialogBuilder implements GenericEventListener<Gener
 
 	@Override
 	public void eventHappened(GenericActionEvent e) {
-		if (e.getWhat() == GenericActionEvent.WHAT_CANCEL) {
-			mDialog.disposeDialog();
-			}
-		else if (e.getWhat() == GenericActionEvent.WHAT_OK) {
-			setQueryFeatures();
-			mOKSelected = true;
-			mDialog.disposeDialog();
-			}
-        else if (e.getSource() == mCBIsBridge || e.getSource() == mComboBoxRing) {
+		if (handleOkCancel(e)) {
+			return;
+		}
+		if (e.getSource() == mCBIsBridge || e.getSource() == mComboBoxRing) {
             enableItems();
             }
         else if (e.getSource() == mComboBoxMinAtoms) {
@@ -268,7 +252,7 @@ public class BondQueryFeatureDialogBuilder implements GenericEventListener<Gener
         }
 
 
-    private void setQueryFeatures() {
+    protected void setQueryFeatures() {
         if (isSelectedBond(mBond)) {
             for (int bond=0; bond<mMol.getAllBonds(); bond++)
                 if (isSelectedBond(bond))
