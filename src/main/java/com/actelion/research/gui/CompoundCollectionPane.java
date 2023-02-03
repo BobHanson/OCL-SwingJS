@@ -288,9 +288,8 @@ public class CompoundCollectionPane<T> extends JScrollPane
 		else if (e.getActionCommand().equals(REMOVE_ALL)) {
 			mModel.clear();
 			mHighlightedIndex = -1;
-			}
-		else if (e.getActionCommand().equals(OPEN)) {
-			ArrayList<StereoMolecule> compounds = new FileHelper(getParentFrame()).readStructuresFromFile(true);
+		} else if (e.getActionCommand().equals(OPEN)) {
+			new FileHelper(getParentFrame()).readStructuresFromFileAsync(true, (compounds) -> {
 			if (compounds != null) {
 				for (StereoMolecule compound:compounds)
 					compound.setFragment(mCreateFragments);
@@ -303,15 +302,16 @@ public class CompoundCollectionPane<T> extends JScrollPane
 							}
 						}
 					if (count != 0) {
-						JOptionPane.showMessageDialog(getParentFrame(),Integer.toString(count).concat(" compounds were removed, because they don't qualify."));
+							JOptionPane.showMessageDialog(getParentFrame(), Integer.toString(count)
+									.concat(" compounds were removed, because they don't qualify."));
 						}
 					}
 				mModel.addMoleculeList(compounds);
 				}
-			}
-		else if (e.getActionCommand().equals(SAVE_DWAR)) {
-			String filename = new FileHelper(getParentFrame()).selectFileToSave(
-					"Save DataWarrior File", FileHelper.cFileTypeDataWarrior, "Untitled");
+			});
+		} else if (e.getActionCommand().equals(SAVE_DWAR)) {
+			String filename = new FileHelper(getParentFrame()).selectFileToSave("Save DataWarrior File",
+					FileHelper.cFileTypeDataWarrior, "Untitled");
 			if (filename != null) {
 				try {
 					String title = mCreateFragments ? "Fragment" : "Structure";

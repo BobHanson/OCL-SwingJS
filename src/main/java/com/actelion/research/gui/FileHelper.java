@@ -36,11 +36,14 @@ package com.actelion.research.gui;
 import com.actelion.research.chem.io.CompoundFileHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 
+import javajs.async.AsyncFileChooser;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class FileHelper extends CompoundFileHelper {
 	private static final long TIME_OUT = 5000;
@@ -74,6 +77,10 @@ public class FileHelper extends CompoundFileHelper {
 		return new FileHelper(parent).selectFileToOpen(title, filetypes);
 		}
 
+	public static void getFileAsync(Component parent, String title, int filetypes, Consumer<File> onOK) {
+		new FileHelper(parent).selectFileToOpenAsync(title, filetypes, onOK);
+	}
+
 	public static ArrayList<File> getCompatibleFileList(File directory, int filetypes) {
 		ArrayList<File> list = new ArrayList<>();
 		if (fileExists(directory)) {
@@ -88,6 +95,10 @@ public class FileHelper extends CompoundFileHelper {
 	public File selectFileToOpen(String title, int filetypes) {
 		return selectFileToOpen(title, filetypes, null);
 		}
+
+	public void selectFileToOpenAsync(String title, int filetypes, Consumer<File> onOK) {
+		selectFileToOpenAsync(title, filetypes, null, onOK, null);
+	}
 
 	/**
 	 * Shows a file-open-dialog, lets the user choose and returns the selected file.
@@ -140,6 +151,60 @@ public class FileHelper extends CompoundFileHelper {
 			}
 		return selectedFile;
 		}
+
+	
+	public void selectFileToOpenAsync(String title, int filetypes, String initialFileName, Consumer<File> onOK,
+			Runnable onCancel) {
+		AsyncFileChooser fileChooser = new AsyncFileChooser();
+
+		// file chooser height does not automatically grow with UI scale factor
+		if (HiDPIHelper.getUIScaleFactor() > 1)
+			fileChooser.setPreferredSize(new Dimension(fileChooser.getPreferredSize().width,
+					HiDPIHelper.scale(fileChooser.getPreferredSize().height)));
+
+		fileChooser.setDialogTitle(title);
+		fileChooser.setCurrentDirectory(getCurrentDirectory());
+		if (filetypes == cFileTypeDirectory)
+			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		else if (filetypes != cFileTypeUnknown)
+			fileChooser.setFileFilter(createFileFilter(filetypes, false));
+		if (initialFileName != null) {
+			int index = initialFileName.lastIndexOf(File.separatorChar);
+			if (index == -1) {
+				fileChooser.setSelectedFile(new File(FileHelper.getCurrentDirectory(), initialFileName));
+			} else {
+				String directory = initialFileName.substring(0, index);
+				if (new File(directory).exists())
+					fileChooser.setSelectedFile(new File(initialFileName));
+				else
+					fileChooser.setSelectedFile(
+							new File(FileHelper.getCurrentDirectory(), initialFileName.substring(index + 1)));
+			}
+		}
+
+		fileChooser.showOpenDialog(mParent, () -> {
+			setCurrentDirectory(fileChooser.getCurrentDirectory());
+			out: while (true) {
+				File selectedFile = fileChooser.getSelectedFile();
+				if (selectedFile.exists())
+					break;
+				if (selectedFile.getName().contains(".") || filetypes == cFileTypeDirectory)
+					break;
+				ArrayList<String> list = getExtensionList(filetypes);
+				for (String extension : list) {
+					File file = new File(selectedFile.getPath() + extension);
+					if (file.exists()) {
+						selectedFile = file;
+						break out;
+					}
+				}
+				onOK.accept(selectedFile);
+				break;
+			}
+
+		}, onCancel);
+
+	}
 
 	/**
 	 * Shows a file-save-dialog, lets the user choose and return the file's path and name.

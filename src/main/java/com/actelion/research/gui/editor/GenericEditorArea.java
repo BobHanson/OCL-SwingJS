@@ -659,7 +659,7 @@ public class GenericEditorArea implements GenericEventListener {
 		} else if (command.startsWith(ITEM_PASTE_STRUCTURE)) {
 			pasteMolecule();
 		} else if (command.equals(ITEM_LOAD_REACTION)) {
-			openReaction();
+			openReactionAsync();
 		} else if (command.equals(ITEM_ADD_AUTO_MAPPING)) {
 			autoMapReaction();
 			updateAndFireEvent(Math.max(mUpdateMode, UPDATE_REDRAW));
@@ -940,8 +940,8 @@ public class GenericEditorArea implements GenericEventListener {
 		return count == mol.getAllAtoms();
 		}
 
-	private void openReaction() {
-		File rxnFile = mUIHelper.openChemistryFile(true);
+	private void openReactionAsync() {
+		mUIHelper.openChemistryFileAsync(true, (rxnFile)->{
 		if (rxnFile != null) {
 			try {
 				Reaction reaction = null;
@@ -964,6 +964,8 @@ public class GenericEditorArea implements GenericEventListener {
 			} catch (Exception ex) {
 			}
 		}
+
+		});
 	}
 
 	protected void showWarningMessage(String msg) {

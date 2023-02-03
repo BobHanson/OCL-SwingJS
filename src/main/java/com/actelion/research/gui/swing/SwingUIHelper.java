@@ -3,6 +3,7 @@ package com.actelion.research.gui.swing;
 import java.awt.Dialog;
 import java.awt.Window;
 import java.io.File;
+import java.util.function.Consumer;
 
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -23,7 +24,28 @@ import com.actelion.research.gui.generic.GenericUIHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.ScaledEditorKit;
 
+import swingjs.api.JSUtilI;
+
+
 public class SwingUIHelper implements GenericUIHelper {
+	
+	public static boolean isJS = /** @j2sNative true || */
+			false;
+
+	public static JSUtilI jsutil;
+
+	static {
+		try {
+			if (isJS) {
+				jsutil = ((JSUtilI) Class.forName("swingjs.JSUtil").newInstance());
+			}
+
+		} catch (Exception e) {
+			System.err.println("swingjs.JSUtil could not be loaded in SwingUIHelper");
+		}
+	}
+
+
 	private JComponent mParentComponent;
 	private JDialog mHelpDialog;
 
@@ -83,7 +105,28 @@ public class SwingUIHelper implements GenericUIHelper {
 		}
 
 	@Override
+	public void openChemistryFileAsync(boolean isReaction, Consumer<File> onOK) {
+		if (isReaction) {
+			FileHelper.getFileAsync(mParentComponent, "Please select a reaction file",
+					FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD, onOK);
+		} else {
+			FileHelper.getFileAsync(mParentComponent, "Please select a molecule file",
+					FileHelper.cFileTypeMOL | CompoundFileHelper.cFileTypeMOL2, onOK);
+		}
+	}
+	
+	
+
+	@Override
 	public void showHelpDialog(String url, String title) {
+		if (isJS) {
+			jsutil.displayURL(jsutil.getCodeBase() + url, "_blank");			
+		}
+		/**
+		 * @j2sNative
+		 *
+		 */
+		{
 		if (mHelpDialog == null || !mHelpDialog.isVisible()) {
 			JEditorPane helpPane = new JEditorPane();
 			helpPane.setEditorKit(HiDPIHelper.getUIScaleFactor() == 1f ? new HTMLEditorKit() : new ScaledEditorKit());
@@ -112,6 +155,8 @@ public class SwingUIHelper implements GenericUIHelper {
 					c.getX() - 8 - mHelpDialog.getWidth() : c.getX() + 8 + c.getWidth();
 			mHelpDialog.setLocation(x, c.getY());
 			}
+		
+		}
 		}
 
 	private Window getWindow() {

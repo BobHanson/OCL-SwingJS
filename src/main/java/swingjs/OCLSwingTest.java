@@ -11,8 +11,6 @@ import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.gui.editor.SwingEditorArea;
 import com.actelion.research.gui.editor.SwingEditorPanel;
-import com.actelion.research.gui.generic.GenericActionEvent;
-import com.actelion.research.gui.generic.GenericEventListener;
 import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.swing.SwingDialog;
@@ -38,16 +36,6 @@ class OCLSwingTest {
 		area.getGenericDrawArea().setDisplayMode(mode);
 
 		SwingDialog d = new SwingDialog((JFrame) null, "testing2");
-		
-		d.setEventConsumer(new GenericEventListener<GenericActionEvent>() {
-
-			@Override
-			public void eventHappened(GenericActionEvent e) {
-				// this will never be called for this type of dialog, though.
-				System.out.println("Dialog reports " + e.getWhat());
-			}
-			
-		});
 		
 // test for SVG output		
 

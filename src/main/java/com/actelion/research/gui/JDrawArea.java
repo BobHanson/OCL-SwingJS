@@ -599,7 +599,7 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 		} else if (command.startsWith(ITEM_PASTE_STRUCTURE)) {
 			pasteMolecule();
 		} else if (e.getActionCommand().equals(ITEM_LOAD_REACTION)) {
-			openReaction();
+			openReactionAsync();
 		} else if (e.getActionCommand().equals(ITEM_ADD_AUTO_MAPPING)) {
 			autoMapReaction();
 			fireMoleculeChanged();
@@ -835,9 +835,9 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 		return ret;
 	}
 
-	private void openReaction() {
-		File rxnFile = FileHelper.getFile(this, "Please select a reaction file",
-				FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD);
+	private void openReactionAsync() {
+		FileHelper.getFileAsync(this, "Please select a reaction file",
+				FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD, (rxnFile) -> {
 		if (rxnFile != null) {
 			try {
 				Reaction reaction = null;
@@ -861,6 +861,8 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 			}
 			catch (Exception ex) {}
 		}
+					
+				});
 	}
 
 	public void mousePressed(MouseEvent e)

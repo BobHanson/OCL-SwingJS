@@ -14,6 +14,7 @@ import javafx.stage.Window;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.function.Consumer;
 
 public class FXUIHelper implements GenericUIHelper {
 	private Node mParentNode;
@@ -75,6 +76,12 @@ public class FXUIHelper implements GenericUIHelper {
 				: FileHelper.getFile(mDrawArea, "Please select a molecule file",
 				FileHelper.cFileTypeMOL | CompoundFileHelper.cFileTypeMOL2);
 */	}
+	
+	@Override
+	public void openChemistryFileAsync(boolean isReaction, Consumer<File> onOK) {
+		// ok.....
+	}
+
 
 	@Override
 	public void showHelpDialog(String url, String title) {
@@ -140,4 +147,5 @@ public class FXUIHelper implements GenericUIHelper {
 		}
 		return theURL;
 	}
+
 }

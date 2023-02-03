@@ -412,8 +412,8 @@ public class JChemistryView extends SwingCanvas
 			}
 
 		if (e.getActionCommand().equals(ITEM_OPEN_RXN) && mIsEditable) {
-			File rxnFile = FileHelper.getFile(this, "Please select a reaction file",
-					FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD);
+			FileHelper.getFileAsync(this, "Please select a reaction file",
+					FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD, (rxnFile) -> {
 			if (rxnFile != null) {
 				try {
 					Reaction reaction = null;
@@ -432,6 +432,9 @@ public class JChemistryView extends SwingCanvas
 					}
 				catch (Exception ex) {}
 				}
+
+						
+					});
 			}
 
 		if (e.getActionCommand().equals(ITEM_SAVE_RXN)) {
