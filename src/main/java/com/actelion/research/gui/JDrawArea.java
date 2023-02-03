@@ -50,6 +50,7 @@ import com.actelion.research.gui.generic.*;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.ScaledEditorKit;
 import com.actelion.research.gui.swing.SwingDrawContext;
+import com.actelion.research.gui.swing.SwingUIHelper;
 import com.actelion.research.util.ColorHelper;
 import com.actelion.research.gui.swing.SwingCursorHelper;
 
@@ -1314,12 +1315,8 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			} catch (Exception ex) {
 				helpPane.setText(ex.toString());
 			}
-			Component c = this;
-			while (c.getParent() != null) {
-				c = c.getParent();
-			}
-
-			mHelpDialog = new JDialog((Window) c, "Idorsia Structure Editor Help", Dialog.ModalityType.MODELESS);
+			Window c = SwingUIHelper.getWindow(this);
+			mHelpDialog = new JDialog(c, "Idorsia Structure Editor Help", Dialog.ModalityType.MODELESS);
 
 			mHelpDialog.setSize(HiDPIHelper.scale(520), HiDPIHelper.scale(440));
 			mHelpDialog.getContentPane().add(new JScrollPane(helpPane,
@@ -1329,11 +1326,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			mHelpDialog.setLocation(x, c.getY());
 			mHelpDialog.setVisible(true);
 		} else {
-			Component c = this;
-			while (c.getParent() != null) {
-				c = c.getParent();
-			}
-
+			Window c = SwingUIHelper.getWindow(this);
 			int x = (mHelpDialog.getX() + mHelpDialog.getWidth() / 2 >= c.getX() + c.getWidth() / 2) ?
 				c.getX() - 8 - mHelpDialog.getWidth() : c.getX() + 8 + c.getWidth();
 			mHelpDialog.setLocation(x, c.getY());
@@ -1599,24 +1592,17 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 				update(UPDATE_REDRAW);
 			}
 		} else if (mCurrentTool == JDrawToolbar.cToolAtomOther) {
-			Component c = this;
-			while (c.getParent() != null) {
-				c = c.getParent();
-			}
-			JOptionPane.showMessageDialog((Frame)c, "Please hold 'Ctrl' while pressing the left mouse button\nto open the atom property dialog.");
+			JOptionPane.showMessageDialog(SwingUIHelper.getWindow(this), "Please hold 'Ctrl' while pressing the left mouse button\nto open the atom property dialog.");
 		}
 	}
 
 	private void showAtomQFDialog(int atom)
 	{
 		if (mAllowQueryFeatures) {
-			Component c = this;
-			while (c.getParent() != null) {
-				c = c.getParent();
-			}
+			Window c = SwingUIHelper.getWindow(this);
 			storeState();
 			boolean showReactionHints = ((mMode & MODE_REACTION) != 0);
-			new JAtomQueryFeatureDialog((Window) c, mMol, atom, showReactionHints);
+			new JAtomQueryFeatureDialog(c, mMol, atom, showReactionHints);
 			fireMoleculeChanged();
 			update(UPDATE_REDRAW);
 		}
@@ -1625,12 +1611,9 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	private void showBondQFDialog(int bond)
 	{
 		if (mAllowQueryFeatures) {
-			Component c = this;
-			while (c.getParent() != null) {
-				c = c.getParent();
-			}
+			Window c = SwingUIHelper.getWindow(this);
 			storeState();
-			new JBondQueryFeatureDialog((Window) c, mMol, bond);
+			new JBondQueryFeatureDialog(c, mMol, bond);
 			fireMoleculeChanged();
 			update(UPDATE_REDRAW);
 		}
@@ -1952,12 +1935,8 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 				if (mOtherAtom == -1 || e.isControlDown()) {
 					int atom = mMol.findAtom(mX1, mY1);
 					if (atom != -1) {
-						Component c = this;
-						while (c.getParent() != null) {
-							c = c.getParent();
-						}
 						storeState();
-						new JAtomLabelDialog((Frame) c, mMol, atom);
+						new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom);
 						mOtherAtom = mMol.getAtomicNo(atom);
 						mOtherMass = mMol.getAtomMass(atom);
 						mOtherValence = mMol.getAtomAbnormalValence(atom);
@@ -2777,11 +2756,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 
 	private void editTextObject(TextDrawingObject object)
 	{
-		Component c = this;
-		while (c.getParent() != null) {
-			c = c.getParent();
-		}
-		new JTextDrawingObjectDialog((Frame) c, object);
+		new JTextDrawingObjectDialog(SwingUIHelper.getWindow(this), object);
 
 		boolean nonWhiteSpaceFound = false;
 		for (int i = 0; i < object.getText().length(); i++) {

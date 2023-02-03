@@ -38,6 +38,7 @@ import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.gui.editor.GenericEditorArea;
 import com.actelion.research.gui.editor.SwingEditorDialog;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
+import com.actelion.research.gui.swing.SwingUIHelper;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -102,10 +103,7 @@ public class JEditableStructureView extends JStructureView {
         }
 
     protected SwingEditorDialog createDrawDialog() {
-		Component c = this;
-		while (c.getParent() != null)
-			c = c.getParent();
-		return new SwingEditorDialog((Window) c, getMolecule(), Dialog.ModalityType.DOCUMENT_MODAL);
+		return new SwingEditorDialog(SwingUIHelper.getWindow(this), getMolecule(), Dialog.ModalityType.DOCUMENT_MODAL);
 		}
 
 	public void setAllowedPseudoAtoms(int apa) {

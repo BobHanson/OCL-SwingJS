@@ -44,6 +44,7 @@ import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.util.ColorHelper;
 import com.actelion.research.gui.swing.SwingCursorHelper;
+import com.actelion.research.gui.swing.SwingUIHelper;
 
 import javax.swing.*;
 import java.awt.*;
@@ -407,8 +408,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 		else {
 			mol = mModel.getMolecule(mEditedIndex);
 			}
-		Component c = getParentFrame();
-		SwingEditorDialog theDialog = new SwingEditorDialog((Window)c, mol, ModalityType.APPLICATION_MODAL);
+		SwingEditorDialog theDialog = new SwingEditorDialog(SwingUIHelper.getWindow(this), mol, ModalityType.APPLICATION_MODAL);
 		theDialog.addStructureListener(this);
 		theDialog.setVisible(true);
 		}
@@ -799,12 +799,8 @@ public class CompoundCollectionPane<T> extends JScrollPane
 		}
 
 	private Component getParentFrame() {
-		Component c = this;
-		while (c.getParent() != null)
-			c = c.getParent();
-		return c;
-		}
-
+		return getTopLevelAncestor();
+	}
 		// This class is needed for inter-jvm drag&drop. Although not neccessary for standard environments, it prevents
 		// nasty "no native data was transfered" errors. It still might create ClassNotFoundException in the first place by
 		// the SystemFlavorMap, but as I found it does not hurt, since the context classloader will be installed after

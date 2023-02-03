@@ -1,15 +1,27 @@
 package com.actelion.research.gui.swing;
 
+import java.awt.Dialog;
+import java.awt.Window;
+import java.io.File;
+
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
+import javax.swing.text.html.HTMLEditorKit;
+
 import com.actelion.research.chem.io.CompoundFileHelper;
 import com.actelion.research.gui.FileHelper;
-import com.actelion.research.gui.generic.*;
+import com.actelion.research.gui.generic.GenericActionEvent;
+import com.actelion.research.gui.generic.GenericDialog;
+import com.actelion.research.gui.generic.GenericEventListener;
+import com.actelion.research.gui.generic.GenericImage;
+import com.actelion.research.gui.generic.GenericPopupMenu;
+import com.actelion.research.gui.generic.GenericUIHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.ScaledEditorKit;
-
-import javax.swing.*;
-import javax.swing.text.html.HTMLEditorKit;
-import java.awt.*;
-import java.io.File;
 
 public class SwingUIHelper implements GenericUIHelper {
 	private JComponent mParentComponent;
@@ -21,16 +33,12 @@ public class SwingUIHelper implements GenericUIHelper {
 
 	@Override
 	public void showMessage(String message) {
-		JOptionPane.showMessageDialog(getParent(), message);
+		JOptionPane.showMessageDialog(getWindow(), message);
 		}
 
 	@Override
 	public GenericDialog createDialog(String title, GenericEventListener<GenericActionEvent> consumer) {
-		Component c = mParentComponent;
-		while (!(c instanceof Window))
-			c = c.getParent();
-		
-		GenericDialog dialog = new SwingDialog((Window)c, title);
+		GenericDialog dialog = new SwingDialog(getWindow(), title);
 		dialog.setEventConsumer(consumer);
 		return dialog;
 		}
@@ -87,8 +95,8 @@ public class SwingUIHelper implements GenericUIHelper {
 				helpPane.setText(ex.toString());
 				}
 
-			Component c = getParent();
-			mHelpDialog = new JDialog((Window)c, title, Dialog.DEFAULT_MODALITY_TYPE);
+			Window c = getWindow();
+			mHelpDialog = new JDialog(c, title, Dialog.DEFAULT_MODALITY_TYPE);
 
 			mHelpDialog.setSize(HiDPIHelper.scale(520), HiDPIHelper.scale(440));
 			mHelpDialog.getContentPane().add(new JScrollPane(helpPane,
@@ -99,17 +107,19 @@ public class SwingUIHelper implements GenericUIHelper {
 			mHelpDialog.setVisible(true);
 			}
 		else {
-			Component c = getParent();
+			Window c = getWindow();
 			int x = (mHelpDialog.getX() + mHelpDialog.getWidth() / 2>=c.getX() + c.getWidth() / 2) ?
 					c.getX() - 8 - mHelpDialog.getWidth() : c.getX() + 8 + c.getWidth();
 			mHelpDialog.setLocation(x, c.getY());
 			}
 		}
 
-	private Component getParent() {
-		Component parent = mParentComponent;
-		while (parent.getParent() != null)
-			parent = parent.getParent();
-		return parent;
-		}
+	private Window getWindow() {
+		return getWindow(mParentComponent);
 	}
+
+	public static Window getWindow(JComponent c) {
+		return (Window) c.getTopLevelAncestor();
+	}
+	
+}

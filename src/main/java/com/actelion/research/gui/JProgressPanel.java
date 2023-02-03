@@ -37,6 +37,8 @@ package com.actelion.research.gui;
 import com.actelion.research.calc.ProgressController;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.HiDPIIconButton;
+import com.actelion.research.gui.swing.SwingUIHelper;
+
 import info.clearthought.layout.TableLayout;
 
 import javax.swing.*;
@@ -181,10 +183,7 @@ public class JProgressPanel extends JPanel implements ActionListener,ProgressCon
 	private void doAction(final int action, final String text, final int v1, final int v2) {
 		switch (action) {
 			case SHOW_ERROR:
-				Component c = this;
-				while (!(c instanceof Frame))
-					c = c.getParent();
-				JOptionPane.showMessageDialog(c, text);
+				JOptionPane.showMessageDialog(SwingUIHelper.getWindow(this), text);
 				break;
 			case START_PROGRESS:
 				mProgressBar.setVisible(true);
