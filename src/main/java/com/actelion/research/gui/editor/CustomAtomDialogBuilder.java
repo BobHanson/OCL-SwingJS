@@ -143,7 +143,8 @@ public class CustomAtomDialogBuilder extends AsynchronousQueryBuilder {
 				mMol.setAtomCustomLabel(mAtom, mOldCustomLabel);
 			}
 		}
-		// OK is handled by AsynchronousQueryBuilder to setQueryFeatures
+		// OK and disposal is handled by AsynchronousQueryBuilder to setQueryFeatures
+		handleOkCancel(e);
 	}
 
 	@Override
