@@ -70,7 +70,7 @@ import java.util.Comparator;
 import java.util.TreeMap;
 
 @Deprecated
-public class JDrawArea extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
+public class JDrawArea extends SwingCanvas implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 	static final long serialVersionUID = 0x20061019;
 
 	public static final int MODE_MULTIPLE_FRAGMENTS = 1;
@@ -96,8 +96,6 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	private static final String ITEM_REMOVE_MAPPING = "Remove Manual Atom Mapping";
 	private static final String ITEM_FLIP_HORIZONTALLY = "Flip Horizontally";
 	private static final String ITEM_FLIP_VERTICALLY = "Flip Vertically";
-
-	private static final long WARNING_MILLIS = 1200;
 
 	private static final float FRAGMENT_MAX_CLICK_DISTANCE = 24.0f;
 	private static final float FRAGMENT_GROUPING_DISTANCE = 1.4f;	// in average bond lengths
@@ -152,7 +150,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	private boolean mShiftIsDown, mAltIsDown, mControlIsDown, mMouseIsDown,
 					mIsAddingToSelection, mAtomColorSupported, mAllowQueryFeatures;
 	private boolean[] mIsSelectedAtom, mIsSelectedObject;
-	private String mOtherLabel,mWarningMessage;
+	private String mOtherLabel;
 	private String[] mAtomText;
 	private ExtendedDepictor mDepictor;
 	private StereoMolecule mMol;	    // molecule being modified directly by the drawing editor
@@ -863,16 +861,6 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			}
 			catch (Exception ex) {}
 		}
-	}
-
-	private void showWarningMessage(String msg) {
-		mWarningMessage = msg;
-		repaint();
-		new Thread(() -> {
-			try { Thread.sleep(WARNING_MILLIS); } catch (InterruptedException ie) {}
-			mWarningMessage = null;
-			repaint();
-		} ).start();
 	}
 
 	public void mousePressed(MouseEvent e)

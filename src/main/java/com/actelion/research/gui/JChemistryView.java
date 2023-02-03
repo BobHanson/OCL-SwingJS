@@ -61,7 +61,7 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.util.ArrayList;
 
-public class JChemistryView extends JComponent
+public class JChemistryView extends SwingCanvas
 				 implements ActionListener, DragGestureListener, DragSourceListener, MouseListener, MouseMotionListener {
 	public static final int PASTE_AND_DROP_OPTION_ALLOW_FRAGMENT_STATE_CHANGE = 1;
 	public static final int PASTE_AND_DROP_OPTION_KEEP_ATOM_COLORS = 2;
@@ -77,8 +77,6 @@ public class JChemistryView extends JComponent
 	private static final String ITEM_SAVE_RXN = "Save Reaction File...";
 	private static final String ITEM_COPY_MOLS = "Copy Molecules";
 	private static final String ITEM_PASTE_MOLS = "Paste Molecules";
-
-	private static final long WARNING_MILLIS = 1200;
 
 	private static final long serialVersionUID = 20150204L;
 	private static final int UPDATE_REDRAW_ONLY = 0;
@@ -102,7 +100,6 @@ public class JChemistryView extends JComponent
 	private int 				mFragmentNoColor;
 	private MoleculeDropAdapter mMoleculeDropAdapter = null;
 	private ReactionDropAdapter mReactionDropAdapter = null;
-	private String              mWarningMessage;
 
 
 	/**
@@ -705,16 +702,6 @@ public class JChemistryView extends JComponent
 		setContent(rxn);
 		repaint();
 		informListeners();
-		}
-
-	protected void showWarningMessage(String msg) {
-		mWarningMessage = msg;
-		repaint();
-		new Thread(() -> {
-			try { Thread.sleep(WARNING_MILLIS); } catch (InterruptedException ie) {}
-			mWarningMessage = null;
-			repaint();
-			} ).start();
 		}
 
 	public Transferable getMoleculeTransferable() {

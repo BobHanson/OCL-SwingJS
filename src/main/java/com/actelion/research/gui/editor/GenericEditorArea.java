@@ -41,6 +41,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.TreeMap;
 
+import javax.swing.Timer;
+
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.AbstractDrawingObject;
 import com.actelion.research.chem.DepictorTransformation;
@@ -133,7 +135,7 @@ public class GenericEditorArea implements GenericEventListener {
 	private static final String ITEM_SHOW_SYMMETRY = "Show Symmetry";
 	private static final String ITEM_SHOW_NORMAL = "Show Normal";
 
-	private static final long WARNING_MILLIS = 1200;
+	private static final int WARNING_MILLIS = 1200;
 
 	private static final float FRAGMENT_MAX_CLICK_DISTANCE = 24.0f;
 	private static final float FRAGMENT_GROUPING_DISTANCE = 1.4f;    // in average bond lengths
@@ -964,17 +966,15 @@ public class GenericEditorArea implements GenericEventListener {
 		}
 	}
 
-	private void showWarningMessage(String msg) {
+	protected void showWarningMessage(String msg) {
 		mWarningMessage = msg;
 		mCanvas.repaint();
-		new Thread(() -> {
-			try {
-				Thread.sleep(WARNING_MILLIS);
-			} catch (InterruptedException ie) {
-			}
+		Timer t = new Timer(WARNING_MILLIS, (a) -> {
 			mWarningMessage = null;
 			mCanvas.repaint();
-		}).start();
+		});
+		t.setRepeats(false);
+		t.start();
 	}
 
 	private void eventHappened(GenericMouseEvent e) {
