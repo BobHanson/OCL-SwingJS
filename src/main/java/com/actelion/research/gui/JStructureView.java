@@ -56,7 +56,7 @@ import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 
-public class JStructureView extends JComponent implements ActionListener,MouseListener,MouseMotionListener,StructureListener {
+public class JStructureView extends SwingCanvas implements ActionListener,MouseListener,MouseMotionListener,StructureListener {
     static final long serialVersionUID = 0x20061113;
 
     private static final String ITEM_COPY = "Copy Structure";
@@ -65,7 +65,6 @@ public class JStructureView extends JComponent implements ActionListener,MouseLi
 	private static final String ITEM_PASTE_WITH_NAME = ITEM_PASTE+" or Name";
 	private static final String ITEM_CLEAR = "Clear Structure";
 
-	private static final long WARNING_MILLIS = 1200;
 
 	private static final int DRAG_MARGIN = 12;
 
@@ -80,7 +79,6 @@ public class JStructureView extends JComponent implements ActionListener,MouseLi
 	protected MoleculeDropAdapter mDropAdapter = null;
 	protected int mAllowedDragAction;
 	protected int mAllowedDropAction;
-	private String mWarningMessage;
 	private int[] mAtomHiliteColor;
 	private float[] mAtomHiliteRadius;
 	private double mTextSizeFactor;
@@ -496,16 +494,6 @@ public class JStructureView extends JComponent implements ActionListener,MouseLi
 			mDisplayMol = mMol;
 			structureChanged();
 			}
-		}
-
-	protected void showWarningMessage(String msg) {
-		mWarningMessage = msg;
-		repaint();
-		new Thread(() -> {
-			try { Thread.sleep(WARNING_MILLIS); } catch (InterruptedException ie) {}
-			mWarningMessage = null;
-			repaint();
-			} ).start();
 		}
 
 	private void updateBackground() {
