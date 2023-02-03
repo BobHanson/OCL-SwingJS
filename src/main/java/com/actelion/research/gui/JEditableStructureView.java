@@ -103,9 +103,9 @@ public class JEditableStructureView extends JStructureView {
 
     protected SwingEditorDialog createDrawDialog() {
 		Component c = this;
-		while (!(c instanceof Frame || c instanceof Dialog))
+		while (c.getParent() != null)
 			c = c.getParent();
-		return (c instanceof Frame) ? new SwingEditorDialog((Frame) c, getMolecule(), Dialog.ModalityType.DOCUMENT_MODAL) : new SwingEditorDialog((Dialog) c, getMolecule(), Dialog.ModalityType.DOCUMENT_MODAL);
+		return new SwingEditorDialog((Window) c, getMolecule(), Dialog.ModalityType.DOCUMENT_MODAL);
 		}
 
 	public void setAllowedPseudoAtoms(int apa) {

@@ -48,14 +48,14 @@ public class JAtomLabelDialog extends JDialog implements ActionListener {
 
     private static final String[] RADICAL_STATES = { "None", "One electron (duplet)", "Two electrons (triplet)", "Two electrons (singulet)" };
 
-    private Frame mOwner;
+    private Window mOwner;
     private ExtendedMolecule mMol;
     private int mAtom;
     private JTextField mTextFieldLabel,mTextFieldMass,mTextFieldValence;
     private JComboBox mComboBoxRadical;
 
-	protected JAtomLabelDialog(Frame owner, ExtendedMolecule mol, int atom) {
-		super(owner, true);
+	protected JAtomLabelDialog(Window owner, ExtendedMolecule mol, int atom) {
+		super(owner, Dialog.DEFAULT_MODALITY_TYPE);
 		mOwner = owner;
 		mMol = mol;
 		mAtom = atom;

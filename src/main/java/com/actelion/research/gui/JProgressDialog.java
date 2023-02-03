@@ -67,7 +67,7 @@ public class JProgressDialog extends JDialog implements ActionListener,ProgressC
 	 * to be set visible without blocking the calling thread.
 	 * @param owner
 	 */
-	public JProgressDialog(Frame owner) {
+	public JProgressDialog(Window owner) {
 		this(owner, true);
 		}
 
@@ -79,9 +79,9 @@ public class JProgressDialog extends JDialog implements ActionListener,ProgressC
 	 * @param owner
 	 * @param invokeSetVisible
 	 */
-	public JProgressDialog(Frame owner, boolean invokeSetVisible) {
+	public JProgressDialog(Window owner, boolean invokeSetVisible) {
 			// initialized and shows the modal dialog without blocking the thread
-		super(owner, true);
+		super(owner, Dialog.DEFAULT_MODALITY_TYPE);
 		initialize();
 		setLocationRelativeTo(owner);
 		if (invokeSetVisible)

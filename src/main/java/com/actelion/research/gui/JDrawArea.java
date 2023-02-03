@@ -1315,15 +1315,11 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 				helpPane.setText(ex.toString());
 			}
 			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog)) {
+			while (c.getParent() != null) {
 				c = c.getParent();
 			}
 
-			if (c instanceof Frame) {
-				mHelpDialog = new JDialog((Frame) c, "Idorsia Structure Editor Help", false);
-			} else {
-				mHelpDialog = new JDialog((Dialog) c, "Idorsia Structure Editor Help", false);
-			}
+			mHelpDialog = new JDialog((Window) c, "Idorsia Structure Editor Help", Dialog.ModalityType.MODELESS);
 
 			mHelpDialog.setSize(HiDPIHelper.scale(520), HiDPIHelper.scale(440));
 			mHelpDialog.getContentPane().add(new JScrollPane(helpPane,
@@ -1334,7 +1330,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			mHelpDialog.setVisible(true);
 		} else {
 			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog)) {
+			while (c.getParent() != null) {
 				c = c.getParent();
 			}
 
@@ -1615,15 +1611,12 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	{
 		if (mAllowQueryFeatures) {
 			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog) && c.getParent() != null) {
+			while (c.getParent() != null) {
 				c = c.getParent();
 			}
 			storeState();
 			boolean showReactionHints = ((mMode & MODE_REACTION) != 0);
-			if (c instanceof Dialog)
-				new JAtomQueryFeatureDialog((Dialog) c, mMol, atom, showReactionHints);
-			else
-				new JAtomQueryFeatureDialog((Frame) c, mMol, atom, showReactionHints);
+			new JAtomQueryFeatureDialog((Window) c, mMol, atom, showReactionHints);
 			fireMoleculeChanged();
 			update(UPDATE_REDRAW);
 		}
@@ -1633,14 +1626,11 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	{
 		if (mAllowQueryFeatures) {
 			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog) && c.getParent() != null) {
+			while (c.getParent() != null) {
 				c = c.getParent();
 			}
 			storeState();
-			if (c instanceof Dialog)
-				new JBondQueryFeatureDialog((Dialog) c, mMol, bond);
-			else
-				new JBondQueryFeatureDialog((Frame) c, mMol, bond);
+			new JBondQueryFeatureDialog((Window) c, mMol, bond);
 			fireMoleculeChanged();
 			update(UPDATE_REDRAW);
 		}

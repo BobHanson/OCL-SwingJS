@@ -47,6 +47,7 @@ import com.actelion.research.gui.swing.SwingCursorHelper;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Dialog.ModalityType;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
@@ -407,7 +408,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 			mol = mModel.getMolecule(mEditedIndex);
 			}
 		Component c = getParentFrame();
-		SwingEditorDialog theDialog = (c instanceof Frame) ? new SwingEditorDialog((Frame)c, mol) : new SwingEditorDialog((Dialog)c, mol);
+		SwingEditorDialog theDialog = new SwingEditorDialog((Window)c, mol, ModalityType.APPLICATION_MODAL);
 		theDialog.addStructureListener(this);
 		theDialog.setVisible(true);
 		}
@@ -799,7 +800,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 
 	private Component getParentFrame() {
 		Component c = this;
-		while (c != null && !(c instanceof Frame) && !(c instanceof Dialog))
+		while (c.getParent() != null)
 			c = c.getParent();
 		return c;
 		}

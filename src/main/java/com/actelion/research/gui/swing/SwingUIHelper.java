@@ -27,13 +27,10 @@ public class SwingUIHelper implements GenericUIHelper {
 	@Override
 	public GenericDialog createDialog(String title, GenericEventListener<GenericActionEvent> consumer) {
 		Component c = mParentComponent;
-		while (// BH SwingJS 2023 adds Window
-				!(c instanceof Frame || c instanceof Dialog || c instanceof Window))
+		while (!(c instanceof Window))
 			c = c.getParent();
-
-		GenericDialog dialog = (c instanceof Frame) ? new SwingDialog((Frame)c, title) 
-				: (c instanceof Dialog) ? new SwingDialog((Dialog)c, title)
-						: new SwingDialog((Window)c, title);
+		
+		GenericDialog dialog = new SwingDialog((Window)c, title);
 		dialog.setEventConsumer(consumer);
 		return dialog;
 		}
@@ -91,10 +88,7 @@ public class SwingUIHelper implements GenericUIHelper {
 				}
 
 			Component c = getParent();
-			if (c instanceof Frame)
-				mHelpDialog = new JDialog((Frame)c, title, false);
-			else
-				mHelpDialog = new JDialog((Dialog)c, title, false);
+			mHelpDialog = new JDialog((Window)c, title, Dialog.DEFAULT_MODALITY_TYPE);
 
 			mHelpDialog.setSize(HiDPIHelper.scale(520), HiDPIHelper.scale(440));
 			mHelpDialog.getContentPane().add(new JScrollPane(helpPane,
@@ -114,7 +108,7 @@ public class SwingUIHelper implements GenericUIHelper {
 
 	private Component getParent() {
 		Component parent = mParentComponent;
-		while (!(parent instanceof Frame || parent instanceof Dialog) && parent.getParent() != null)
+		while (parent.getParent() != null)
 			parent = parent.getParent();
 		return parent;
 		}

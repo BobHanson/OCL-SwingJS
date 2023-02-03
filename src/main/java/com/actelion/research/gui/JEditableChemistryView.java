@@ -149,13 +149,10 @@ public class JEditableChemistryView extends JChemistryView {
 
 	protected SwingEditorDialog createDrawDialog(String title, Reaction reaction) {
 		Component c = this;
-		while (!(c instanceof Frame || c instanceof Dialog))
+		while (c.getParent() != null)
 			c = c.getParent();
-
-		SwingEditorDialog d = (c instanceof Frame) ?
-			  new SwingEditorDialog((Frame)c, reaction, Dialog.ModalityType.DOCUMENT_MODAL)
-			: new SwingEditorDialog((Dialog)c, reaction, Dialog.ModalityType.DOCUMENT_MODAL);
-
+		SwingEditorDialog d = new SwingEditorDialog((Window)c, reaction, Dialog.ModalityType.DOCUMENT_MODAL);
+			  			  
 		if (title != null)
 			d.setTitle(title);
 
@@ -164,12 +161,10 @@ public class JEditableChemistryView extends JChemistryView {
 
 	protected SwingEditorDialog createDrawDialog(String title, StereoMolecule[] mol) {
 		Component c = this;
-		while (!(c instanceof Frame || c instanceof Dialog))
+		while (c.getParent() != null)
 			c = c.getParent();
 
-		SwingEditorDialog d = (c instanceof Frame) ?
-			  new SwingEditorDialog((Frame)c, mol, Dialog.ModalityType.DOCUMENT_MODAL)
-			: new SwingEditorDialog((Dialog)c, mol, Dialog.ModalityType.DOCUMENT_MODAL);
+		SwingEditorDialog d = new SwingEditorDialog((Window)c, mol, Dialog.ModalityType.DOCUMENT_MODAL);
 
 		if (title != null)
 			d.setTitle(title);
