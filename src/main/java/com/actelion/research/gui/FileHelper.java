@@ -275,9 +275,12 @@ public class FileHelper extends CompoundFileHelper {
 	 * version returns quickly.
 	 */
 	public static boolean fileExists(final File file, final long timeOutMillis) {
+		if (/** @j2sNative true || */false) {
+			// no need to handle this using a timeout in SwingJS
+			return file.exists();
+		}
 		final AtomicBoolean exists = new AtomicBoolean(false);
 		final AtomicBoolean done = new AtomicBoolean(false);
-
 		new Thread(() -> {
 			exists.set(file.exists());
 			done.set(true);

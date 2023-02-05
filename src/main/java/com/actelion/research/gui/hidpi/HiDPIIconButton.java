@@ -141,6 +141,8 @@ public class HiDPIIconButton extends JButton {
 		private static final long FRAME_RATE = 80L;
 		private volatile int mFrameCount;
 		private volatile boolean mRunning;
+		private int state;
+		private Timer timer;
 
 		public Animator(int frameCount) {
 			mFrameCount = frameCount;
@@ -149,26 +151,27 @@ public class HiDPIIconButton extends JButton {
 		public void start() {
 			if (!mRunning) {
 				mRunning = true;
-				new Thread(() -> {
-					int state = 0;
-					while (mRunning) {
-						try {
-							Thread.sleep(FRAME_RATE);
-							final int frameNo = ++state % mFrameCount;
-							SwingUtilities.invokeLater(() -> setIcon(mAnimationIcon[frameNo]));
-							}
-						catch (InterruptedException ie) {}
-						}
-					}).start();
-				}
+				state = 0;
+				timer = new Timer((int) FRAME_RATE, (a) -> {
+					if (!mRunning) {
+						timer.stop();
+						return;
+					}
+					final int frameNo = ++state % mFrameCount;
+					SwingUtilities.invokeLater(() -> setIcon(mAnimationIcon[frameNo]));
+				});
+				timer.setRepeats(true);
+				timer.start();
 			}
-
+		}
+		
 		public void stop() {
 			mRunning = false;
+			timer = null;
 			}
 
 		public boolean isRunning() {
 			return mRunning;
 		}
-		}
+	}
 	}
