@@ -110,9 +110,7 @@ public class FileHelper extends CompoundFileHelper {
 	 * 
 	 */
 	public void selectFileToOpenAsync(String title, int filetypes, Consumer<File> whenDone) {
-		selectFileToOpenAsync(title, filetypes, null, whenDone, () -> {
-			whenDone.accept(null);
-		});
+		selectFileToOpenAsync(title, filetypes, null, whenDone);
 	}
 
 	/**
@@ -169,8 +167,7 @@ public class FileHelper extends CompoundFileHelper {
 		return selectedFile;
 	}
 
-	public void selectFileToOpenAsync(String title, int filetypes, String initialFileName, Consumer<File> onOK,
-			Runnable onCancel) {
+	public void selectFileToOpenAsync(String title, int filetypes, String initialFileName, Consumer<File> whenDone) {
 		AsyncFileChooser fileChooser = new AsyncFileChooser();
 
 		// file chooser height does not automatically grow with UI scale factor
@@ -198,27 +195,27 @@ public class FileHelper extends CompoundFileHelper {
 			}
 		}
 
-		fileChooser.showOpenDialog(mParent, () -> {
-			setCurrentDirectory(fileChooser.getCurrentDirectory());
-			File selectedFile = fileChooser.getSelectedFile();
-			out: while (true) {
-				if (selectedFile.exists())
-					break;
-				if (selectedFile.getName().contains(".") || filetypes == cFileTypeDirectory)
-					break;
-				ArrayList<String> list = getExtensionList(filetypes);
-				for (String extension : list) {
-					File file = new File(selectedFile.getPath() + extension);
-					if (file.exists()) {
-						selectedFile = file;
-						break out;
+		fileChooser.showOpenDialog(mParent, (selectedFile) -> {
+			if (selectedFile != null) {
+				setCurrentDirectory(fileChooser.getCurrentDirectory());
+				out: while (true) {
+					if (selectedFile.exists())
+						break;
+					if (selectedFile.getName().contains(".") || filetypes == cFileTypeDirectory)
+						break;
+					ArrayList<String> list = getExtensionList(filetypes);
+					for (String extension : list) {
+						File file = new File(selectedFile.getPath() + extension);
+						if (file.exists()) {
+							selectedFile = file;
+							break out;
+						}
 					}
+					break;
 				}
-				break;
 			}
-			onOK.accept(selectedFile);
-
-		}, onCancel);
+			whenDone.accept(selectedFile);
+		});
 
 	}
 
