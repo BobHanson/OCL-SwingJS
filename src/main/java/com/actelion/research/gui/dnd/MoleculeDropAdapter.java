@@ -196,7 +196,7 @@ public class MoleculeDropAdapter implements DropTargetListener
 
     private void DEBUG(String s)
     {
-        if (true || debug) {
+        if (debug) {
             System.err.println(s);
             System.err.flush();
         }
