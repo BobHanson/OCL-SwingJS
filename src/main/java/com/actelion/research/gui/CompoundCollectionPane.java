@@ -258,55 +258,53 @@ public class CompoundCollectionPane<T> extends JScrollPane
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals(COPY) && mHighlightedIndex != -1) {
 			mClipboardHandler.copyMolecule(mModel.getMolecule(mHighlightedIndex));
-			}
-		else if (e.getActionCommand().equals(PASTE)) {
+		} else if (e.getActionCommand().equals(PASTE)) {
 			int index = (mHighlightedIndex == -1) ? mModel.getSize() : mHighlightedIndex;
 			ArrayList<StereoMolecule> molList = mClipboardHandler.pasteMolecules();
 			if (molList != null) {
 				int errorCount = 0;
-				for (StereoMolecule mol:molList) {
+				for (StereoMolecule mol : molList) {
 					mol.setFragment(mCreateFragments);
 					if (mCompoundFilter == null || mCompoundFilter.moleculeQualifies(mol))
 						mModel.addMolecule(index, mol);
 					else
 						errorCount++;
-					}
-				if (errorCount != 0)
-					JOptionPane.showMessageDialog(getParentFrame(), errorCount+" compound(s) could not be added, because they doesn't qualify.");
 				}
+				if (errorCount != 0)
+					JOptionPane.showMessageDialog(getParentFrame(),
+							errorCount + " compound(s) could not be added, because they doesn't qualify.");
 			}
-		else if (e.getActionCommand().equals(ADD)) {
+		} else if (e.getActionCommand().equals(ADD)) {
 			editStructure(-1);
-			}
-		else if (e.getActionCommand().equals(EDIT) && mHighlightedIndex != -1) {
+		} else if (e.getActionCommand().equals(EDIT) && mHighlightedIndex != -1) {
 			editStructure(mHighlightedIndex);
-			}
-		else if (e.getActionCommand().equals(REMOVE) && mHighlightedIndex != -1) {
+		} else if (e.getActionCommand().equals(REMOVE) && mHighlightedIndex != -1) {
 			mModel.remove(mHighlightedIndex);
 			mHighlightedIndex = -1;
-			}
-		else if (e.getActionCommand().equals(REMOVE_ALL)) {
+		} else if (e.getActionCommand().equals(REMOVE_ALL)) {
 			mModel.clear();
 			mHighlightedIndex = -1;
 		} else if (e.getActionCommand().equals(OPEN)) {
-			new FileHelper(getParentFrame()).readStructuresFromFileAsync(true, (compounds) -> {
-			if (compounds != null) {
-				for (StereoMolecule compound:compounds)
-					compound.setFragment(mCreateFragments);
-				if (mCompoundFilter != null) {
+			new FileHelper(getParentFrame()).readStructuresFromFileAsync(true, (list) -> {
+				if (list != null) {
+					for (Object compound : list) {
+						((StereoMolecule) compound).setFragment(mCreateFragments);
+					}
+					ArrayList<StereoMolecule> compounds = new ArrayList<>();
 					int count = 0;
-					for (int i = compounds.size() - 1; i >= 0; i--) {
-						if (!mCompoundFilter.moleculeQualifies(compounds.get(i))) {
-							compounds.remove(i);
+					for (int i = 0, n = list.size(); i < n; i++) {
+						StereoMolecule m = (StereoMolecule) list.get(i);
+						if (mCompoundFilter != null && !mCompoundFilter.moleculeQualifies(m)) {
 							count++;
-							}
-						}
-					if (count != 0) {
-							JOptionPane.showMessageDialog(getParentFrame(), Integer.toString(count)
-									.concat(" compounds were removed, because they don't qualify."));
+						} else {
+							compounds.add(m);
 						}
 					}
-				mModel.addMoleculeList(compounds);
+					if (count != 0) {
+						JOptionPane.showMessageDialog(getParentFrame(),
+								Integer.toString(count).concat(" compounds were removed, because they don't qualify."));
+					}
+					mModel.addMoleculeList(compounds);
 				}
 			});
 		} else if (e.getActionCommand().equals(SAVE_DWAR)) {
@@ -315,18 +313,19 @@ public class CompoundCollectionPane<T> extends JScrollPane
 			if (filename != null) {
 				try {
 					String title = mCreateFragments ? "Fragment" : "Structure";
-					BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"UTF-8"));
+					BufferedWriter writer = new BufferedWriter(
+							new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"));
 					writer.write("<datawarrior-fileinfo>");
 					writer.newLine();
 					writer.write("<version=\"3.1\">");
 					writer.newLine();
-					writer.write("<rowcount=\""+mModel.getSize()+"\">");
+					writer.write("<rowcount=\"" + mModel.getSize() + "\">");
 					writer.newLine();
 					writer.write("</datawarrior-fileinfo>");
 					writer.newLine();
 					writer.write("<column properties>");
 					writer.newLine();
-					writer.write("<columnName=\""+title+"\">");
+					writer.write("<columnName=\"" + title + "\">");
 					writer.newLine();
 					writer.write("<columnProperty=\"specialType\tidcode\">");
 					writer.newLine();
@@ -334,69 +333,64 @@ public class CompoundCollectionPane<T> extends JScrollPane
 					writer.newLine();
 					writer.write("<columnProperty=\"specialType\tidcoordinates2D\">");
 					writer.newLine();
-					writer.write("<columnProperty=\"parent\t"+title+"\">");
+					writer.write("<columnProperty=\"parent\t" + title + "\">");
 					writer.newLine();
 					writer.write("</column properties>");
 					writer.newLine();
-					writer.write(title+"\tcoords");
+					writer.write(title + "\tcoords");
 					writer.newLine();
-					for (int i=0; i<mModel.getSize(); i++) {
+					for (int i = 0; i < mModel.getSize(); i++) {
 						if (mModel instanceof DefaultCompoundCollectionModel.IDCode) {
-							String idcode = (String)mModel.getCompound(i);
+							String idcode = (String) mModel.getCompound(i);
 							int index = idcode.indexOf(' ');
 							if (index == -1) {
 								writer.write(idcode.substring(0, index));
 								writer.write('\t');
-								writer.write(idcode.substring(index+1));
-								}
-							else {
+								writer.write(idcode.substring(index + 1));
+							} else {
 								writer.write(idcode);
 								writer.write('\t');
-								}
 							}
-						else {
+						} else {
 							Canonizer canonizer = new Canonizer(mModel.getMolecule(i));
 							writer.write(canonizer.getIDCode());
 							writer.write('\t');
 							writer.write(canonizer.getEncodedCoordinates());
-							}
-						writer.newLine();
 						}
+						writer.newLine();
+					}
 					writer.close();
-					}
-				catch (IOException ioe) {
+				} catch (IOException ioe) {
 					JOptionPane.showMessageDialog(getParentFrame(), ioe.toString());
-					}
 				}
 			}
-		else if (e.getActionCommand().equals(SAVE_SDF2)
-			  || e.getActionCommand().equals(SAVE_SDF3)) {
+		} else if (e.getActionCommand().equals(SAVE_SDF2) || e.getActionCommand().equals(SAVE_SDF3)) {
 			String version = "Version " + (e.getActionCommand().equals(SAVE_SDF2) ? "2" : "3");
-			String filename = new FileHelper(getParentFrame()).selectFileToSave(
-					"Save SD-File "+version, FileHelper.cFileTypeSD, "Untitled");
+			String filename = new FileHelper(getParentFrame()).selectFileToSave("Save SD-File " + version,
+					FileHelper.cFileTypeSD, "Untitled");
 			if (filename != null) {
 				try {
-					BufferedWriter theWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"UTF-8"));
-	
-					for (int i=0; i<mModel.getSize(); i++) {
+					BufferedWriter theWriter = new BufferedWriter(
+							new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"));
+
+					for (int i = 0; i < mModel.getSize(); i++) {
 						StereoMolecule mol = mModel.getMolecule(i);
-	
+
 						if (e.getActionCommand().equals(SAVE_SDF3))
 							new MolfileV3Creator(mol).writeMolfile(theWriter);
 						else
 							new MolfileCreator(mol).writeMolfile(theWriter);
-	
+
 						theWriter.write("$$$$");
 						theWriter.newLine();
-						}
+					}
 					theWriter.close();
-					}
-				catch (IOException ioe) {
+				} catch (IOException ioe) {
 					JOptionPane.showMessageDialog(getParentFrame(), ioe.toString());
-					}
 				}
 			}
 		}
+	}
 
 	private void editStructure(int index) {
 		mEditedIndex = index;

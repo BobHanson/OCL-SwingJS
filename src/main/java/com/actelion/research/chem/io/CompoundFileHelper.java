@@ -38,6 +38,8 @@ import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.reaction.Reaction;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -94,11 +96,13 @@ public abstract class CompoundFileHelper {
 	private static File sCurrentDirectory;
 	private int mRecordCount, mErrorCount;
 
-	public abstract String selectOption(String message, String title, String[] option);
+	protected abstract String selectOption(String message, String title, String[] option);
+
+	protected abstract void selectOptionAsync(String message, String title, String[] option, ActionListener listener);
 
 	public abstract File selectFileToOpen(String title, int filetypes);
 
-	public abstract void selectFileToOpenAsync(String title, int filetypes, Consumer<File> onOK);
+	public abstract void selectFileToOpenAsync(String title, int filetypes, Consumer<File> whenDone);
 
 	public abstract String selectFileToSave(String title, int filetype, String newFileName);
 
@@ -114,34 +118,49 @@ public abstract class CompoundFileHelper {
 
 	public ArrayList<StereoMolecule> readStructuresFromFile(boolean readIdentifier) {
 		File file = selectFileToOpen("Please select a compound file", cFileTypeCompoundFiles);
-		return readStructuresFromFile(file, readIdentifier);
+		return (file == null ? null : readStructuresFromFile(file, readIdentifier));
 	}
 
-	public void readStructuresFromFileAsync(boolean readIdentifier, Consumer<ArrayList<StereoMolecule>> onOK) {
-		selectFileToOpenAsync("Please select a compound file", cFileTypeCompoundFiles, (f) -> {
-			onOK.accept(readStructuresFromFile(f, readIdentifier));
-		});
-	}
-
-	public ArrayList<String> readIDCodesFromFile() {
-		File file = selectFileToOpen("Please select a compound file", cFileTypeCompoundFiles);
-		return readIDCodesFromFile(file);
-	}
-
-	public void readIDCodesFromFileAsync(Consumer<ArrayList<String>> onOK) {
-		selectFileToOpenAsync("Please select a compound file", cFileTypeCompoundFiles, (f) -> {
-			onOK.accept(readIDCodesFromFile(f));
+	public void readStructuresFromFileAsync(boolean readIdentifier, Consumer<ArrayList<?>> whenDone) {
+		selectFileToOpenAsync("Please select a compound file", cFileTypeCompoundFiles, (file) -> {
+			if (file == null) 
+				whenDone.accept(null);
+			else if (readIdentifier)
+				readStructuresFromFileAsync(file, true, whenDone);
+			else
+				whenDone.accept(readStructuresFromFile(file, false));
 		});
 	}
 
 	public ArrayList<StereoMolecule> readStructuresFromFile(File file, boolean readIdentifier) {
 		if (file == null)
-			return null;
-
+			return readStructuresFromFile(readIdentifier);
 		ArrayList<StereoMolecule> moleculeList = new ArrayList<StereoMolecule>();
-		readChemObjectsFromFile(file, moleculeList, null, null, readIdentifier, false);
-
+		readChemObjectsFromFileAsync(file, moleculeList, null, null, readIdentifier, false, null);
 		return moleculeList;
+	}
+
+	public void readStructuresFromFileAsync(File file, boolean readIdentifier,
+			Consumer<ArrayList<?>> whenDone) {
+		if (file == null) {
+			readStructuresFromFileAsync(readIdentifier, whenDone);
+		} else {
+			readChemObjectsFromFileAsync(file, new ArrayList<StereoMolecule>(), null, null, readIdentifier, false, whenDone);
+		}
+	}
+
+	public ArrayList<String> readIDCodesFromFile() {
+		File file = selectFileToOpen("Please select a compound file", cFileTypeCompoundFiles);
+		return (file == null ? null : readIDCodesFromFile(file));
+	}
+
+	public void readIDCodesFromFileAsync(Consumer<ArrayList<?>> whenDone) {
+		selectFileToOpenAsync("Please select a compound file", cFileTypeCompoundFiles, (file) -> {
+			if (file == null)
+				whenDone.accept(null);
+			else
+				readIDCodesFromFileAsync(file, whenDone);
+		});
 	}
 
 	/**
@@ -152,12 +171,36 @@ public abstract class CompoundFileHelper {
 	 */
 	public ArrayList<String> readIDCodesFromFile(File file) {
 		if (file == null)
-			return null;
-
+			return readIDCodesFromFile();
 		ArrayList<String> idcodeList = new ArrayList<String>();
-		readChemObjectsFromFile(file, null, idcodeList, null, false, false);
-
+		readChemObjectsFromFileAsync(file, null, idcodeList, null, false, false, null);
 		return idcodeList;
+	}
+
+	public void readIDCodesFromFileAsync(File file, Consumer<ArrayList<?>> whenDone) {
+		if (file == null) {
+			readIDCodesFromFileAsync(whenDone);
+			return;
+		}
+		readChemObjectsFromFileAsync(file, null, new ArrayList<String>(), null, false, false, whenDone);
+	}
+
+		
+	public ArrayList<String[]> readIDCodesWithNamesFromFile(boolean readIDCoords) {
+		File file = selectFileToOpen("Please select substance file", CompoundFileHelper.cFileTypeMOL
+				| CompoundFileHelper.cFileTypeSD | CompoundFileHelper.cFileTypeDataWarrior);
+		return (file == null ? null : readIDCodesWithNamesFromFile(file, readIDCoords));
+	}	
+
+	public void readIDCodesWithNamesFromFileAsync(boolean readIDCoords, Consumer<ArrayList<?>> whenDone) {
+		selectFileToOpenAsync("Please select substance file", CompoundFileHelper.cFileTypeMOL
+				| CompoundFileHelper.cFileTypeSD | CompoundFileHelper.cFileTypeDataWarrior, (file) -> {
+					if (file == null) {
+						whenDone.accept(null);
+						return;
+					}
+					readIDCodesWithNamesFromFileAsync(file, readIDCoords, whenDone);
+				});
 	}
 
 	/**
@@ -171,21 +214,35 @@ public abstract class CompoundFileHelper {
 	 */
 	public ArrayList<String[]> readIDCodesWithNamesFromFile(File file, boolean readIDCoords) {
 		if (file == null)
-			file = selectFileToOpen("Please select substance file", CompoundFileHelper.cFileTypeMOL
-					| CompoundFileHelper.cFileTypeSD | CompoundFileHelper.cFileTypeDataWarrior);
-
-		if (file == null)
-			return null;
-
+			return readIDCodesWithNamesFromFile(readIDCoords);
 		ArrayList<String[]> idcodeWithIDList = new ArrayList<String[]>();
-		readChemObjectsFromFile(file, null, null, idcodeWithIDList, false, readIDCoords);
-
+		readChemObjectsFromFileAsync(file, null, null, idcodeWithIDList, false, readIDCoords, null);
 		return idcodeWithIDList;
 	}
+	
+	public void readIDCodesWithNamesFromFileAsync(File file, boolean readIDCoords, Consumer<ArrayList<?>> whenDone) {
+		if (file == null) {
+			readIDCodesWithNamesFromFileAsync(readIDCoords, whenDone);
+			return;
+		}
+		readChemObjectsFromFileAsync(file, null, null, new ArrayList<String[]>(), false, readIDCoords, whenDone);
+	}
 
-	private void readChemObjectsFromFile(File file, ArrayList<StereoMolecule> moleculeList,
+	
+	/**
+	 * May or may not be called asynchronously
+	 * 
+	 * @param file
+	 * @param moleculeList
+	 * @param idcodeList
+	 * @param idcodeWithIDList
+	 * @param readIdentifier
+	 * @param readIDCoords
+	 * @param whenDone
+	 */
+	private void readChemObjectsFromFileAsync(File file, ArrayList<StereoMolecule> moleculeList,
 			ArrayList<String> idcodeList, ArrayList<String[]> idcodeWithIDList, boolean readIdentifier,
-			boolean readIDCoords) {
+			boolean readIDCoords, Consumer<ArrayList<?>> whenDone) {
 		mRecordCount = 0;
 		mErrorCount = 0;
 		String filename = file.getName();
@@ -194,34 +251,47 @@ public abstract class CompoundFileHelper {
 
 		if (extention.equals(".mol") || extention.equals(".mol2")) {
 			StereoMolecule mol = null;
-			if (extention.equals(".mol"))
+			if (extention.equals(".mol")) {
 				mol = new MolfileParser().getCompactMolecule(file);
-			else
+			} else {
 				try {
 					mol = new Mol2FileParser().load(filename);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-
-			if (mol != null && mol.getAllAtoms() != 0) {
-				if (moleculeList != null)
-					moleculeList.add(mol);
-				if (idcodeList != null || idcodeWithIDList != null) {
-					Canonizer canonizer = new Canonizer(mol);
-					String idcode = canonizer.getIDCode();
-					String coords = canonizer.getEncodedCoordinates();
-					if (idcode != null && coords.length() != 0 && readIDCoords)
-						idcode = idcode + " " + coords;
-					if (idcodeList != null)
-						idcodeList.add(idcode);
-					if (idcodeWithIDList != null) {
-						String[] idcodeWithID = new String[2];
-						idcodeWithID[0] = idcode;
-						idcodeWithID[1] = mol.getName();
-						idcodeWithIDList.add(idcodeWithID);
-					}
-				}
 			}
+			if (mol == null || mol.getAllAtoms() == 0) {
+				if (whenDone != null)
+					whenDone.accept(null);
+				return;
+			}
+			if (moleculeList != null) {
+				moleculeList.add(mol);
+				if (whenDone != null)
+					whenDone.accept(moleculeList);
+				return;
+			}
+			Canonizer canonizer = new Canonizer(mol);
+			String idcode = canonizer.getIDCode();
+			String coords = canonizer.getEncodedCoordinates();
+			if (idcode != null && coords.length() != 0 && readIDCoords)
+				idcode = idcode + " " + coords;
+			if (idcodeList != null) {
+				idcodeList.add(idcode);
+				if (whenDone != null) {
+					whenDone.accept(idcodeList);
+				}
+				return;
+			}
+			// must be true: if (idcodeWithIDList != null) {
+			String[] idcodeWithID = new String[2];
+			idcodeWithID[0] = idcode;
+			idcodeWithID[1] = mol.getName();
+			idcodeWithIDList.add(idcodeWithID);
+			if (whenDone != null) {
+				whenDone.accept(idcodeWithIDList);
+			}
+//			}
 			return;
 		}
 
@@ -229,24 +299,51 @@ public abstract class CompoundFileHelper {
 				: (extention.equals(".dwar")) ? new DWARFileParser(file)
 						: (extention.equals(".ode")) ? new ODEFileParser(file) : null;
 
-		// If we create molecules,
-		// then we might set the name field with the proper identifier
-		int indexOfID = -1;
-		if (idcodeWithIDList != null || readIdentifier) {
-			String[] fieldNames = parser.getFieldNames();
-			if (fieldNames != null && fieldNames.length != 0) {
-				String id = selectOption("Select compound name or identifier", filename, fieldNames);
-				if (id != null)
-					for (int i = 0; i < fieldNames.length; i++)
+		if (idcodeWithIDList == null && !readIdentifier) {
+			parseChemObjects(parser, moleculeList, idcodeList, idcodeWithIDList, -1, readIDCoords);
+			return;
+		}
+
+		String[] fieldNames = parser.getFieldNames();
+		Consumer<Integer> c = (indexOfID) -> {
+			parseChemObjects(parser instanceof SDFileParser ? new SDFileParser(file, fieldNames) : parser, moleculeList,
+					idcodeList, idcodeWithIDList, indexOfID.intValue(), readIDCoords);
+			if (whenDone != null)
+				whenDone.accept(
+						moleculeList != null ? moleculeList : idcodeList != null ? idcodeList : idcodeWithIDList);
+		};
+		if (fieldNames == null || fieldNames.length == 0) {
+			c.accept(Integer.valueOf(-1));
+			return;
+		}
+		
+		selectOptionAsync("Select compound name or identifier", filename, fieldNames, new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String id = e.getActionCommand();
+				int indexOfID = -1;
+				if (id != null) {
+					// If we create molecules,
+					// then we might set the name field with the proper identifier
+					for (int i = 0; i < fieldNames.length; i++) {
 						if (fieldNames[i].equals(id)) {
 							indexOfID = i;
 							break;
 						}
+					}
+				}
+				c.accept(Integer.valueOf(indexOfID));
 			}
-			if (parser instanceof SDFileParser)
-				parser = new SDFileParser(file, fieldNames);
-		}
+		});
+	}
 
+	private void parseChemObjects(CompoundFileParser parser, ArrayList<StereoMolecule> moleculeList, 
+			ArrayList<String> idcodeList, ArrayList<String[]> idcodeWithIDList, int indexOfID, boolean readIDCoords) {
+		if (parser == null) {
+			mErrorCount++;
+			return;
+		}
 		while (parser.next()) {
 			mRecordCount++;
 			boolean isError = false;
@@ -294,6 +391,7 @@ public abstract class CompoundFileHelper {
 			if (isError)
 				mErrorCount++;
 		}
+
 	}
 
 	public int getRecordCount() {

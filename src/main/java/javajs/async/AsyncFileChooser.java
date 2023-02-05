@@ -17,7 +17,7 @@ import javax.swing.filechooser.FileSystemView;
  * A simple Asynchronous file chooser for JavaScript and Java.
  * 
  * Requires an OK runnable; JavaScript can return notification of cancel for
- * file reading only, not saving.
+ * file reading on all platforms, maybe not for saving on all; now using window.focus.
  * 
  * @author Bob Hanson
  */
@@ -25,7 +25,7 @@ import javax.swing.filechooser.FileSystemView;
 public class AsyncFileChooser extends JFileChooser implements PropertyChangeListener {
 
 	private int optionSelected;
-	private Runnable ok, cancel; // sorry, no CANCEL in JavaScript for file open
+	private Runnable ok, cancel; 
 	@SuppressWarnings("unused")
 	private boolean isAsyncSave = true;
 	private static boolean notified;
@@ -80,8 +80,7 @@ public class AsyncFileChooser extends JFileChooser implements PropertyChangeList
 	 */
 	public void showDialog(Component frame, String btnLabel, Runnable ok, Runnable cancel) {
 		this.ok = ok;
-		if (getDialogType() != JFileChooser.SAVE_DIALOG && cancel != null)
-			notifyCancel();
+		this.cancel = cancel;
 		process(super.showDialog(frame, btnLabel));
 	}
 
@@ -93,8 +92,7 @@ public class AsyncFileChooser extends JFileChooser implements PropertyChangeList
 	 */
 	public void showOpenDialog(Component frame, Runnable ok, Runnable cancel) {
 		this.ok = ok;
-		if (cancel != null)
-			notifyCancel();
+		this.cancel = cancel;
 		process(super.showOpenDialog(frame));
 	}
 
