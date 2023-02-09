@@ -34,12 +34,12 @@
 
 package com.actelion.research.chem;
 
-import com.actelion.research.util.Angle;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+
+import com.actelion.research.util.Angle;
 
 /**
  * While the Molecule class covers all primary molecule information as atom and bond properties,
@@ -3743,5 +3743,65 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 		return c;
 	}
+
+	public int mpPreferredSide(int bond) {
+		int[] value = new int[cMaxConnAtoms];
+		double[] angle = new double[cMaxConnAtoms];
+		double[] bondAngle = new double[2];
+
+		int angles = 0;
+		for (int i=0; i<2; i++) {
+			int atm = getBondAtom(i,bond);
+
+			for (int j=0; j<getConnAtoms(atm); j++) {
+				int connBond = getConnBond(atm,j);
+				if (connBond == bond)
+					continue;
+
+				if (angles == 4)
+					return 0;
+
+				int connAtom = getConnAtom(atm,j);
+
+				value[angles] = 16;
+
+				// Prefer bond on side with conjugated pi systems
+				if (getAtomPi(connAtom) != 0)
+					value[angles] += isRingAtom(connAtom) ? 1 : 4;
+
+				// Prefer bond inside of ring. Even more, if it is aromatic.
+				if (isRingBond(bond)
+				 && isRingBond(connBond)) {
+					int sharedRing = getRingSet().getSharedRing(bond, connBond);
+					if (sharedRing != -1)
+						value[angles] += getRingSet().isAromatic(sharedRing) ? 64 : 6;
+					}
+
+				angle[angles++] = getBondAngle(atm, connAtom);
+				}
+			}
+
+		boolean changed;
+		bondAngle[0] = getBondAngle(getBondAtom(0,bond),getBondAtom(1,bond));
+		if (bondAngle[0] < 0) {
+			bondAngle[1] = bondAngle[0] + Math.PI;
+			changed = false;
+			}
+		else {
+			bondAngle[1] = bondAngle[0];
+			bondAngle[0] = bondAngle[1] - Math.PI;
+			changed = true;
+			}
+
+		int side = 0;
+		for (int i=0; i<angles; i++) {
+			if ((angle[i] > bondAngle[0]) && (angle[i] < bondAngle[1]))
+				side -= value[i];
+			else
+				side += value[i];
+			}
+
+		return (changed) ? -side : side;
+		}
 
 }

@@ -1071,7 +1071,7 @@ public abstract class AbstractDepictor<T> {
 			else {
 								// standard carbon-carbon double bond. Thus,one bond
 								// connects the atom centers and the other lies aside.
-				int side = mpPreferredSide(bnd);
+				int side = mMol.mpPreferredSide(bnd);
 				if (side == 0) side = 1;
 				aLine.x1 = theLine.x1;
 				aLine.y1 = theLine.y1;
@@ -1205,7 +1205,7 @@ public abstract class AbstractDepictor<T> {
 			aLine.x2 = theLine.x2;
 			aLine.y2 = theLine.y2;
 
-			int side = (inverted) ? -mpPreferredSide(bnd) : mpPreferredSide(bnd);
+			int side = (inverted) ? -mMol.mpPreferredSide(bnd) : mMol.mpPreferredSide(bnd);
 			if (side == 0) side = 1;
 
 			mpCalcPiBondOffset(theLine.x2 - theLine.x1,
@@ -1659,62 +1659,6 @@ public abstract class AbstractDepictor<T> {
 			theLine.x2  = sx;
 			theLine.y2 = sy;
 			}
-		}
-
-
-	private int mpPreferredSide(int bnd) {
-		boolean[] isAromatic = new boolean[ExtendedMolecule.cMaxConnAtoms];
-		boolean[] isInRing = new boolean[ExtendedMolecule.cMaxConnAtoms];
-		double[] angle = new double[ExtendedMolecule.cMaxConnAtoms];
-		double[] bondAngle = new double[2];
-
-		int angles = 0;
-		for (int i=0; i<2; i++) {
-			int atm = mMol.getBondAtom(i,bnd);
-
-			for (int j=0; j<mMol.getConnAtoms(atm); j++) {
-				int connBond = mMol.getConnBond(atm,j);
-				if (connBond == bnd)
-					continue;
-
-				if (angles == 4)
-					return 0;
-
-				isAromatic[angles] = mMol.isAromaticBond(connBond);
-				isInRing[angles] = mMol.isRingBond(connBond);
-				angle[angles++] = mMol.getBondAngle(atm, mMol.getConnAtom(atm,j));
-				}
-			}
-
-		boolean changed;
-		bondAngle[0] = mMol.getBondAngle(mMol.getBondAtom(0,bnd),mMol.getBondAtom(1,bnd));
-		if (bondAngle[0] < 0) {
-			bondAngle[1] = bondAngle[0] + Math.PI;
-			changed = false;
-			}
-		else {
-			bondAngle[1] = bondAngle[0];
-			bondAngle[0] = bondAngle[1] - Math.PI;
-			changed = true;
-			}
-
-		int side = 0;
-		for (int i=0; i<angles; i++) {
-			int value;
-			if (isAromatic[i])
-				value = 20;
-			else if (isInRing[i])
-				value = 17;
-			else
-				value = 16;
-
-			if ((angle[i] > bondAngle[0]) && (angle[i] < bondAngle[1]))
-				side -= value;
-			else
-				side += value;
-			}
-
-		return (changed) ? -side : side;
 		}
 
 
