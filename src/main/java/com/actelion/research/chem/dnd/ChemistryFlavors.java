@@ -60,8 +60,9 @@ public class ChemistryFlavors {
         DF_MDLMOLFILEV3,
         DF_SMILES,
         DF_IDCODE,
-        DataFlavor.stringFlavor
-    };
+        DataFlavor.stringFlavor,
+        new DataFlavor(
+                "text/plain;class=java.io.InputStream", "Plain Text")};
 
     public static final DataFlavor DF_SERIALIZED_REACTION = new SerializedClassFlavor(com.actelion.research.chem.reaction.Reaction.class, "Native OpenChemLib Reaction");
     public static final DataFlavor DF_REACTION_SMILES = new DataFlavor("chemical/x-daylight-reactionsmiles;class=java.lang.String", "Daylight Reaction Smiles");

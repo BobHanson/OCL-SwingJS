@@ -37,10 +37,13 @@ import com.actelion.research.chem.*;
 import com.actelion.research.chem.dnd.ChemistryFlavors;
 import com.actelion.research.chem.name.StructureNameResolver;
 
+import sun.awt.datatransfer.DataTransferer;
+
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.*;
+import java.util.Arrays;
 
 public class MoleculeDropAdapter implements DropTargetListener
 {
@@ -178,10 +181,29 @@ public class MoleculeDropAdapter implements DropTargetListener
 
     protected DataFlavor chooseDropFlavor(DropTargetDropEvent e)
     {
+    	
+    	
+    	DataFlavor[] flavors = e.getTransferable().getTransferDataFlavors();
         for (int i=0; i<ChemistryFlavors.MOLECULE_FLAVORS.length; i++) {
-            if (e.isDataFlavorSupported(ChemistryFlavors.MOLECULE_FLAVORS[i])) {
-                return ChemistryFlavors.MOLECULE_FLAVORS[i];
-            }
+        	DataFlavor f = ChemistryFlavors.MOLECULE_FLAVORS[i];
+        	for (int j = 0; j  < flavors.length; j++) {
+        		DataFlavor df = flavors[j];
+        		System.out.println(f.toString().equals(df.toString()));
+        		System.out.println(df);
+        		try {
+        		System.out.println(DataTransferer.canonicalName(f.getParameter("charset")));
+        		System.out.println(DataTransferer.canonicalName(df.getParameter("charset")));
+        		} catch (Exception ex) {
+        			System.out.println(ex + "");
+        		}
+        		
+        		if (f.equals(df)) {
+        			return f;
+        		}
+        	}
+//            if (e.isDataFlavorSupported(f)) {
+//                return ChemistryFlavors.MOLECULE_FLAVORS[i];
+//            }
         }
         return null;
     }

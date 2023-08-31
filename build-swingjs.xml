@@ -1,0 +1,51 @@
+<project name="OCL-SwingJS" default="jar" basedir=".">
+
+    <!-- those properties are generic and don't have to be changed-->
+    <property name="project" value="${ant.project.name}" />
+
+    <property name="src.dir" value="src/main/java" />
+    <property name="res.dir" value="src/main/resources" />
+    <property name="build.dir" value="build" />
+    <property name="site.dir" value="site" />
+    <property name="dist.dir" value="dist" />
+
+    <path id="srcs">
+        <dirset dir="." includes="${src.dir}" />
+    </path>
+
+
+    <!-- targets -->
+    <target name="clean">
+        <echo message="Cleaning..."/>
+        <delete dir="${build.dir}" failonerror="false" />
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${build.dir}" />
+        <javac
+                destdir="${build.dir}"
+                failonerror="true" source="1.8" target="1.8" debug="false" encoding="ISO-8859-1">
+
+            <src refid="srcs" />
+
+            <include name="**/*.java" />
+        </javac>
+
+        <copy overwrite="true" todir="${build.dir}">
+            <fileset dir="${res.dir}" includes="**/*" />
+        </copy>
+    </target>
+
+    <target name="jar" depends="compile">
+        <jar basedir="${build.dir}" includes="**/*" excludes="**/*.jar" destfile="${dist.dir}/${project}.jar" >
+            <manifest>
+                <attribute name="Created-By" value="${user.name}" />
+            </manifest>
+        </jar>
+        <zip basedir="${site.dir}" 
+        	 includes="**/*"
+       	     destfile="${dist.dir}/${project}.zip" 
+        />
+    </target>
+
+</project>
