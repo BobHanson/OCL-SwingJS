@@ -2374,21 +2374,21 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		return (atom2 == startAtom) ? -1 : atom2;
 		}
 
-		/**
-		 * Checks whether atom is one of the two atoms of an axial chirality bond of BINAP type.
-		 * Condition: non-aromatic single bond connecting two aromatic rings with 6 or more members
-		 * that together bear at least three ortho substituents. A stereo bond indicating the
-		 * chirality is not(!!!) a condition.
-		 * @param atom to check, whether it is part of a bond, which has BINAP type of axial chirality
-		 * @return opposite atom of axial chirality bond or -1 if axial chirality conditions are not met
-		 */
-	private int findBINAPOppositeAtom(int atom) {
-		if (mConnAtoms[atom] == 3 && isAromaticAtom(atom) && getAtomRingSize(atom) >= 6)
-			for (int i = 0; i< mConnAtoms[atom]; i++)
-				if (isBINAPChiralityBond(mConnBond[atom][i]))
-					return mConnAtom[atom][i];
-		return -1;
-		}
+//		/**
+//		 * Checks whether atom is one of the two atoms of an axial chirality bond of BINAP type.
+//		 * Condition: non-aromatic single bond connecting two aromatic rings with 6 or more members
+//		 * that together bear at least three ortho substituents. A stereo bond indicating the
+//		 * chirality is not(!!!) a condition.
+//		 * @param atom to check, whether it is part of a bond, which has BINAP type of axial chirality
+//		 * @return opposite atom of axial chirality bond or -1 if axial chirality conditions are not met
+//		 */
+//	private int findBINAPOppositeAtom(int atom) {
+//		if (mConnAtoms[atom] == 3 && isAromaticAtom(atom) && getAtomRingSize(atom) >= 6)
+//			for (int i = 0; i< mConnAtoms[atom]; i++)
+//				if (isBINAPChiralityBond(mConnBond[atom][i]))
+//					return mConnAtom[atom][i];
+//		return -1;
+//		}
 
 
 	/**
@@ -3430,11 +3430,25 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	 * @param hasValid3DCoords pass true, if molecule has 3D-atom-coordinates
 	 */
 	public void removeExplicitHydrogens(boolean hasValid2DCoords, boolean hasValid3DCoords) {
+		removeExplicitHydrogensCarbonOnly(hasValid2DCoords, false);
+	}
+
+	/**
+	 * Allows for the standard organic chemist's style of only remove H atoms from
+	 * carbon, leaving NH, OH, SH, etc.
+	 * 
+	 * @param hasValid2DCoords
+	 * @param carbonsOnly
+	 */
+	public void removeExplicitHydrogensCarbonOnly(boolean hasValid2DCoords, boolean carbonsOnly) {
 		// calculate EZ and TH stereo parities if 2D-atom coordinates are available
 		ensureHelperArrays(hasValid2DCoords ? cHelperParities : cHelperNeighbours);
 		mAllAtoms = mAtoms;
 		mAllBonds = mBonds;
-		for (int atom=0; atom<mAtoms; atom++) {
+		for (int atom = 0; atom < mAtoms; atom++) {
+			// BH added 2024.12.15
+			if (carbonsOnly && getAtomicNo(atom) < 0)
+				continue;
 			if (mAllConnAtoms[atom] != mConnAtoms[atom]) {
 				// If we have an abnormal valence implicitly defined by explicit
 				// hydrogens, we need to explicitly define that abnormal valence!
@@ -3448,18 +3462,18 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 						int explicitAbnormalValence = getAtomAbnormalValence(atom);
 						if (explicitAbnormalValence == -1 || explicitAbnormalValence < abnormalValence)
 							setAtomAbnormalValence(atom, abnormalValence);
-						}
 					}
 				}
 			}
+		}
 
 		if (hasValid2DCoords)
 			setStereoBondsFromParity();
 
 		mValidHelperArrays = cHelperNone;
-		}
+	}
 
-
+	
 	private void calculateNeighbours() {
 		mConnAtoms = new int[mAllAtoms];
 		mAllConnAtoms = new int[mAllAtoms];

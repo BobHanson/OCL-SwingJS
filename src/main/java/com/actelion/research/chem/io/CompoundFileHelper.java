@@ -33,11 +33,6 @@
 
 package com.actelion.research.chem.io;
 
-import com.actelion.research.chem.Canonizer;
-import com.actelion.research.chem.MolfileParser;
-import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.reaction.Reaction;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
@@ -46,6 +41,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+
+import com.actelion.research.chem.Canonizer;
+import com.actelion.research.chem.MolfileParser;
+import com.actelion.research.chem.StereoMolecule;
+import com.actelion.research.chem.moreparsers.CDXParser;
+import com.actelion.research.chem.reaction.Reaction;
 
 public abstract class CompoundFileHelper {
 	public static final int cFileTypeMask = 0x007FFFFF;
@@ -249,8 +250,15 @@ public abstract class CompoundFileHelper {
 		int index = filename.indexOf('.');
 		String extention = (index == -1) ? "" : filename.substring(index).toLowerCase();
 
-		if (extention.equals(".mol") || extention.equals(".mol2")) {
-			StereoMolecule mol = null;
+		CompoundFileParser parser = null;
+		StereoMolecule mol = null;
+		switch (extention) {
+		case ".cdx":
+		case ".cdxml":
+			mol = CDXParser.parseFile(file.getAbsolutePath());
+			break;
+		case ".mol":
+		case ".mol2":
 			if (extention.equals(".mol")) {
 				mol = new MolfileParser().getCompactMolecule(file);
 			} else {
@@ -260,11 +268,21 @@ public abstract class CompoundFileHelper {
 					e.printStackTrace();
 				}
 			}
-			if (mol == null || mol.getAllAtoms() == 0) {
-				if (whenDone != null)
-					whenDone.accept(null);
-				return;
-			}
+			break;
+		case ".sdf":
+			parser = new SDFileParser(file);
+			break;
+		case ".dwar":
+			parser = new DWARFileParser(file);
+			break;
+		case ".ode":
+			parser = new ODEFileParser(file);
+			break;
+		default:
+			parser = null;
+			break;
+		}
+		if (mol != null && mol.getAllAtoms() > 0) {
 			if (moleculeList != null) {
 				moleculeList.add(mol);
 				if (whenDone != null)
@@ -293,20 +311,22 @@ public abstract class CompoundFileHelper {
 			}
 //			}
 			return;
+
 		}
-
-		CompoundFileParser parser = (extention.equals(".sdf")) ? new SDFileParser(file)
-				: (extention.equals(".dwar")) ? new DWARFileParser(file)
-						: (extention.equals(".ode")) ? new ODEFileParser(file) : null;
-
+		if (parser == null) {
+			if (whenDone != null)
+				whenDone.accept(null);
+			return;
+		}
 		if (idcodeWithIDList == null && !readIdentifier) {
 			parseChemObjects(parser, moleculeList, idcodeList, idcodeWithIDList, -1, readIDCoords);
 			return;
 		}
 
 		String[] fieldNames = parser.getFieldNames();
+		CompoundFileParser p = parser;
 		Consumer<Integer> c = (indexOfID) -> {
-			parseChemObjects(parser instanceof SDFileParser ? new SDFileParser(file, fieldNames) : parser, moleculeList,
+			parseChemObjects(p instanceof SDFileParser ? new SDFileParser(file, fieldNames) : p, moleculeList,
 					idcodeList, idcodeWithIDList, indexOfID.intValue(), readIDCoords);
 			if (whenDone != null)
 				whenDone.accept(
@@ -316,7 +336,7 @@ public abstract class CompoundFileHelper {
 			c.accept(Integer.valueOf(-1));
 			return;
 		}
-		
+
 		selectOptionAsync("Select compound name or identifier", filename, fieldNames, new ActionListener() {
 
 			@Override

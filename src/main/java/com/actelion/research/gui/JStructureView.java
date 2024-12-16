@@ -34,7 +34,43 @@
 
 package com.actelion.research.gui;
 
-import com.actelion.research.chem.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DragSourceDropEvent;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+
+import javax.swing.JFrame;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.UIManager;
+
+import com.actelion.research.chem.AbstractDepictor;
+import com.actelion.research.chem.IDCodeParser;
+import com.actelion.research.chem.IsomericSmilesCreator;
+import com.actelion.research.chem.SmilesParser;
+import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.name.StructureNameResolver;
 import com.actelion.research.gui.clipboard.IClipboardHandler;
 import com.actelion.research.gui.dnd.MoleculeDragAdapter;
@@ -43,18 +79,9 @@ import com.actelion.research.gui.dnd.MoleculeTransferable;
 import com.actelion.research.gui.generic.GenericDepictor;
 import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
+import com.actelion.research.gui.swing.SwingCursorHelper;
 import com.actelion.research.gui.swing.SwingDrawContext;
 import com.actelion.research.util.ColorHelper;
-import com.actelion.research.gui.swing.SwingCursorHelper;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
-import java.awt.dnd.*;
-import java.awt.event.*;
-import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
 
 public class JStructureView extends SwingCanvas implements ActionListener,MouseListener,MouseMotionListener,StructureListener {
     static final long serialVersionUID = 0x20061113;
@@ -277,15 +304,14 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
             return;
 
         Graphics2D g2 = (Graphics2D)g;
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        setGraphicsRenderingHints(g2);
 
 		Color fg = g2.getColor();
 		Color bg = getBackground();
-		g2.setColor(bg);
-		g2.fill(new Rectangle(insets.left, insets.top, theSize.width, theSize.height));
-
+		if (bg != null) {
+			g2.setColor(bg);
+			g2.fill(new Rectangle(insets.left, insets.top, theSize.width, theSize.height));
+		}
 		if (mShowBorder && !mDisableBorder) {
 			GenericRectangle rect = mDepictor.getBoundingRect();
 			if (rect != null) {
@@ -297,25 +323,7 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 
 		g2.setColor(fg);
 
-		if (mDisplayMol != null && mDisplayMol.getAllAtoms() != 0) {
-			mDepictor = new GenericDepictor(mDisplayMol);
-            mDepictor.setDisplayMode(mDisplayMode);
-            mDepictor.setFactorTextSize(mTextSizeFactor);
-            mDepictor.setAtomText(mAtomText);
-            mDepictor.setAtomHighlightColors(mAtomHiliteColor, mAtomHiliteRadius);
-
-            int bgRGB = bg.getRGB();
-			if (!isEnabled())
-                mDepictor.setOverruleColor(ColorHelper.getContrastColor(0x808080, bgRGB), bgRGB);
-			else
-				mDepictor.setForegroundColor(getForeground().getRGB(), bgRGB);
-
-			int avbl = HiDPIHelper.scale(AbstractDepictor.cOptAvBondLen);
-			SwingDrawContext context = new SwingDrawContext((Graphics2D)g);
-			mDepictor.validateView(context, new GenericRectangle(insets.left, insets.top, theSize.width,theSize.height),
-								   AbstractDepictor.cModeInflateToMaxAVBL | mChiralTextPosition | avbl);
-            mDepictor.paint(context);
-			}
+		mDepictor = depict(g2, getSize(), getInsets());
 
 		if (mWarningMessage != null) {
 			int fontSize = HiDPIHelper.scale(12);
@@ -329,6 +337,12 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 			g.setColor(original);
 			}
 		}
+
+	private void setGraphicsRenderingHints(Graphics2D g2) {
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+	}
 
 	public void setIDCode(String idcode) {
 		setIDCode(idcode, null);
@@ -407,7 +421,7 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		return mDisplayMol;
 		}
 
-    public AbstractDepictor getDepictor() {
+    public GenericDepictor getDepictor() {
         return mDepictor;
         }
 
@@ -624,9 +638,82 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		if (mShowBorder != showBorder) {
 			mShowBorder = showBorder;
 			repaint();
+		}
+	}
+	public GenericDepictor depict(Graphics2D g2, Dimension theSize, Insets insets) {
+		if (mDisplayMol == null && mDisplayMol.getAllAtoms() == 0)
+			return null;
+		GenericDepictor depictor = new GenericDepictor(mDisplayMol);
+        depictor.setDisplayMode(mDisplayMode);
+        depictor.setFactorTextSize(mTextSizeFactor);
+        depictor.setAtomText(mAtomText);
+        depictor.setAtomHighlightColors(mAtomHiliteColor, mAtomHiliteRadius);
+        Color bg = getBackground();
+        int bgRGB = (bg == null ? 0 : bg.getRGB());
+		if (!isEnabled())
+            depictor.setOverruleColor(ColorHelper.getContrastColor(0x808080, bgRGB), bgRGB);
+		else
+			depictor.setForegroundColor(getForeground().getRGB(), bgRGB);
+		int avbl = HiDPIHelper.scale(AbstractDepictor.cOptAvBondLen * (float) scaling);
+		Graphics2D g = g2;
+		if (theSize == null)
+			theSize = new Dimension(1000,1000);
+		if (insets == null)
+			insets = new Insets(5, 5, 5, 5);
+		int width = theSize.width - (insets.left + insets.right);
+		int height = theSize.height - (insets.top + insets.bottom);		
+		if (g == null) {
+			g = getTempGraphics();
+		}	
+		SwingDrawContext context = new SwingDrawContext(g);
+		depictor.validateView(context, new GenericRectangle(insets.left, insets.top, width, height),
+							   AbstractDepictor.cModeInflateToMaxAVBL | mChiralTextPosition | avbl
+							   );
+		if (g2 != null) {
+	        setGraphicsRenderingHints(g2);
+			depictor.paint(context);
+		}
+		return depictor;
+	}
+
+	private BufferedImage tempImage;
+
+	private Graphics2D getTempGraphics() {
+		if (tempImage == null)
+			tempImage = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_ARGB);
+		return tempImage.createGraphics();
+	}
+
+	/**
+	 * BH 2024.12.15 to fit the display size to the molecule when generating an image
+	 */
+	private boolean setSizeToStructure = false;
+
+	private double scaling = 1;
+	
+	public Dimension setSizeToStructure(boolean TF) {
+		setSizeToStructure = TF;
+			return getPreferredSize();
+	}
+	
+	public void setScaling(double scaling) {
+		this.scaling  = scaling;
+	}
+
+	@Override
+	public Dimension getPreferredSize() {
+		if (!isPreferredSizeSet()) {
+			// allows for getting the preferred size prior to addition to a site
+			AbstractDepictor<?> d = (setSizeToStructure ? depict(null, null, null) : null);
+			// BH 2024.12.15
+			if (d != null) {
+				GenericRectangle b = d.getBoundingRect();
+				if (b.width > 0 && b.height > 0)
+					return new Dimension((int) b.width + 10, (int) b.height + 10);
 			}
 		}
-
+		return super.getPreferredSize();
+	}
 /*	public java.awt.datatransfer.FlavorMap getSystemFlavorMap() {
 	    return new OurFlavorMap();
 	    }
@@ -664,4 +751,71 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
     	    return ((SystemFlavorMap)SystemFlavorMap.getDefaultFlavorMap()).getNativesForFlavor(flav);
     	    }
         }*/
+
+	/**
+	 * Creates a standard "chemist's" view of the molecule, with H atoms on heteroatoms, but otherwise absent.
+	 * 
+	 * @param mol
+	 * @return a JStructureView
+	 */
+	public static JStructureView getStandardView(StereoMolecule mol) {
+		return createView(mol, 0, 1, Color.white);
+	}
+
+	/**
+	 * Creates a JStructureView for this molecule, allowing for adjustments for 
+	 * depictor mode, scaling, and background.
+	 * 
+	 * @param mol the molecule to render
+	 * @param mode flags indicating how to show the image. See StereoMolecule.java
+	 * @param scaling factor; 0 will be treats as 1
+	 * @param bg background color (or null for transparent)
+	 * @return a JStructureView
+	 */
+	public static JStructureView createView(StereoMolecule mol, int mode, double scaling, Color bg) {		
+		mol.removeExplicitHydrogensCarbonOnly(true, true);
+		JStructureView mArea = new JStructureView(mol);
+		if (mode == 0)
+			mode = AbstractDepictor.cDModeSuppressCIPParity 
+			    | AbstractDepictor.cDModeSuppressESR
+				| AbstractDepictor.cDModeSuppressChiralText;
+		mArea.setDisplayMode(mode);
+		mArea.setBackground(bg);
+		mArea.setScaling(scaling);
+		mArea.setSizeToStructure(true);
+		return mArea;
+	}
+
+	/**
+	 * Shows the view in a frame scaled to the molecule. 
+	 * @param mArea
+	 * @param title
+	 */
+	public void showInFrame(String title, Point loc) {
+		JFrame frame = new JFrame(title);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		JFrame d = frame;
+		d.add(this);
+		d.pack();
+		d.setLocation(loc.x, loc.y);
+		d.setVisible(true);
+	}
+
+	/**
+	 * Creates a buffered image, setting the size to to match the structure.
+	 * @param mArea
+	 * @return buffered image
+	 */
+	public BufferedImage getSizedImage() {
+		Dimension d = getPreferredSize();
+		BufferedImage bi = new BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = bi.createGraphics();
+		Color c = getBackground();
+		if (c != null) {
+			g.setColor(c);
+			g.fillRect(0, 0, d.width, d.height);
+		}
+		depict(g, d, null);
+		return bi;
+	}
     }

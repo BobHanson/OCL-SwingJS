@@ -274,6 +274,7 @@ public class FileHelper extends CompoundFileHelper {
 	 * delay, if a file is/was on a network share which is currently unmounted. This
 	 * version returns quickly.
 	 */
+	@SuppressWarnings("unused")
 	public static boolean fileExists(final File file, final long timeOutMillis) {
 		if (/** @j2sNative true || */false) {
 			// no need to handle this using a timeout in SwingJS

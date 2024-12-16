@@ -581,4 +581,6 @@ public class StereoMolecule extends ExtendedMolecule {
 
 	private void writeObject(ObjectOutputStream stream) throws IOException {}
 	private void readObject(ObjectInputStream stream) throws IOException {}
-	}
+
+
+}
