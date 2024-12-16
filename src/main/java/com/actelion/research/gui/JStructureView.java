@@ -655,21 +655,19 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		else
 			depictor.setForegroundColor(getForeground().getRGB(), bgRGB);
 		int avbl = HiDPIHelper.scale(AbstractDepictor.cOptAvBondLen * (float) scaling);
-		Graphics2D g = g2;
+		Graphics2D g = (g2 == null ? getTempGraphics() : g2);
 		if (theSize == null)
 			theSize = new Dimension(1000,1000);
 		if (insets == null)
 			insets = new Insets(5, 5, 5, 5);
 		int width = theSize.width - (insets.left + insets.right);
 		int height = theSize.height - (insets.top + insets.bottom);		
-		if (g == null) {
-			g = getTempGraphics();
-		}	
 		SwingDrawContext context = new SwingDrawContext(g);
 		depictor.validateView(context, new GenericRectangle(insets.left, insets.top, width, height),
 							   AbstractDepictor.cModeInflateToMaxAVBL | mChiralTextPosition | avbl
 							   );
 		if (g2 != null) {
+			// not just setting preferred size
 	        setGraphicsRenderingHints(g2);
 			depictor.paint(context);
 		}

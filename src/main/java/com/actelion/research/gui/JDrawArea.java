@@ -33,7 +33,60 @@
 
 package com.actelion.research.gui;
 
-import com.actelion.research.chem.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.awt.Toolkit;
+import java.awt.Window;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.TreeMap;
+
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import javax.swing.text.html.HTMLEditorKit;
+
+import com.actelion.research.chem.AbstractDepictor;
+import com.actelion.research.chem.AbstractDrawingObject;
+import com.actelion.research.chem.Depictor2D;
+import com.actelion.research.chem.DepictorTransformation;
+import com.actelion.research.chem.DrawingObjectList;
+import com.actelion.research.chem.ExtendedDepictor;
+import com.actelion.research.chem.MarkushStructure;
+import com.actelion.research.chem.Molecule;
+import com.actelion.research.chem.NamedSubstituents;
+import com.actelion.research.chem.SSSearcher;
+import com.actelion.research.chem.StereoMolecule;
+import com.actelion.research.chem.TextDrawingObject;
 import com.actelion.research.chem.coords.CoordinateInventor;
 import com.actelion.research.chem.io.CompoundFileHelper;
 import com.actelion.research.chem.io.RDFileParser;
@@ -46,28 +99,16 @@ import com.actelion.research.chem.reaction.ReactionArrow;
 import com.actelion.research.gui.clipboard.IClipboardHandler;
 import com.actelion.research.gui.dnd.MoleculeDropAdapter;
 import com.actelion.research.gui.editor.EditorEvent;
-import com.actelion.research.gui.generic.*;
+import com.actelion.research.gui.generic.GenericEventListener;
+import com.actelion.research.gui.generic.GenericPolygon;
+import com.actelion.research.gui.generic.GenericRectangle;
+import com.actelion.research.gui.generic.GenericShape;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.ScaledEditorKit;
+import com.actelion.research.gui.swing.SwingCursorHelper;
 import com.actelion.research.gui.swing.SwingDrawContext;
 import com.actelion.research.gui.swing.SwingUIHelper;
 import com.actelion.research.util.ColorHelper;
-import com.actelion.research.gui.swing.SwingCursorHelper;
-
-import javax.swing.*;
-import javax.swing.text.html.HTMLEditorKit;
-import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.event.*;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.TreeMap;
 
 @Deprecated
 public class JDrawArea extends SwingCanvas implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
@@ -469,7 +510,7 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 		return ColorHelper.intermediateColor(selectionColor, background, 0.5f);
 	}
 
-	private void drawHiliting(GenericDrawContext context, Graphics g)
+	private void drawHiliting(SwingDrawContext context, Graphics g)
 	{
 		if (mHiliteBondSet != null) {
 			g.setColor(chainHiliteColor());

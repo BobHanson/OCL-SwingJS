@@ -1,5 +1,10 @@
 package com.actelion.research.gui.generic;
 
+/**
+ * A interface common to SwingDrawContext and FXDrawContext
+ * 
+ */
+
 public interface GenericDrawContext {
 	float getLineWidth();
 	void setLineWidth(float lineWidth);

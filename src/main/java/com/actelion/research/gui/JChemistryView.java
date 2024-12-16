@@ -33,7 +33,48 @@
 
 package com.actelion.research.gui;
 
-import com.actelion.research.chem.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DragGestureEvent;
+import java.awt.dnd.DragGestureListener;
+import java.awt.dnd.DragSource;
+import java.awt.dnd.DragSourceContext;
+import java.awt.dnd.DragSourceDragEvent;
+import java.awt.dnd.DragSourceDropEvent;
+import java.awt.dnd.DragSourceEvent;
+import java.awt.dnd.DragSourceListener;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.InvalidDnDOperationException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.UIManager;
+
+import com.actelion.research.chem.AbstractDepictor;
+import com.actelion.research.chem.DepictorTransformation;
+import com.actelion.research.chem.DrawingObjectList;
+import com.actelion.research.chem.ExtendedDepictor;
+import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.io.CompoundFileHelper;
 import com.actelion.research.chem.io.RDFileParser;
 import com.actelion.research.chem.io.RXNFileParser;
@@ -45,21 +86,11 @@ import com.actelion.research.gui.dnd.MoleculeTransferable;
 import com.actelion.research.gui.dnd.ReactionDropAdapter;
 import com.actelion.research.gui.dnd.ReactionTransferable;
 import com.actelion.research.gui.editor.GenericEditorArea;
-import com.actelion.research.gui.generic.GenericDrawContext;
 import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.swing.SwingCursorHelper;
 import com.actelion.research.gui.swing.SwingDrawContext;
 import com.actelion.research.util.ColorHelper;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.datatransfer.Transferable;
-import java.awt.dnd.*;
-import java.awt.event.*;
-import java.awt.geom.Rectangle2D;
-import java.io.File;
-import java.util.ArrayList;
 
 public class JChemistryView extends SwingCanvas
 				 implements ActionListener, DragGestureListener, DragSourceListener, MouseListener, MouseMotionListener {
@@ -252,7 +283,7 @@ public class JChemistryView extends SwingCanvas
 		theSize.width -= insets.left + insets.right;
 		theSize.height -= insets.top + insets.bottom;
 
-		GenericDrawContext context = new SwingDrawContext((Graphics2D)g);
+		SwingDrawContext context = new SwingDrawContext((Graphics2D)g);
 
 		if (mSize == null
 		 || mSize.width != theSize.width
