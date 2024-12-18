@@ -83,7 +83,7 @@ public class SwingEditorArea extends JPanel implements GenericCanvas {
 		if (dropAction != DnDConstants.ACTION_NONE) {
 			MoleculeDropAdapter d = new MoleculeDropAdapter() {
 				public void onDropMolecule(StereoMolecule mol, Point p) {
-					mDrawArea.addPastedOrDropped(mol, new GenericPoint(p.x, p.y));
+					mDrawArea.addPastedOrDropped(mol, (p == null ? null : new GenericPoint(p.x, p.y)));
 				}
 			};
 

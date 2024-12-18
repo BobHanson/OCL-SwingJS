@@ -8,7 +8,9 @@
     <property name="build.dir" value="build" />
     <property name="site.dir" value="site" />
     <property name="dist.dir" value="dist" />
-
+    <property name="jars.dir" value="jars" />
+	<property name="inchi.jar" value="jni-inchi-0.7-jar-with-dependencies.jar" />
+	
     <path id="srcs">
         <dirset dir="." includes="${src.dir}" />
     </path>
@@ -22,6 +24,7 @@
 
     <target name="compile">
         <mkdir dir="${build.dir}" />
+        <unjar dest="${build.dir}" src="${jars.dir}/${inchi.jar}"/>
         <javac
                 destdir="${build.dir}"
                 failonerror="true" source="1.8" target="1.8" debug="false" encoding="ISO-8859-1">
@@ -30,17 +33,14 @@
 
             <include name="**/*.java" />
         </javac>
-
         <copy overwrite="true" todir="${build.dir}">
             <fileset dir="${res.dir}" includes="**/*" />
         </copy>
     </target>
 
     <target name="jar" depends="compile">
-        <jar basedir="${build.dir}" includes="**/*" excludes="**/*.jar" destfile="${dist.dir}/${project}.jar" >
-            <manifest>
-                <attribute name="Created-By" value="${user.name}" />
-            </manifest>
+        <jar basedir="${build.dir}" includes="**/*" excludes="**/*.jar" destfile="${dist.dir}/${project}.jar" 
+   	         manifest="manifest/application.txt">
         </jar>
         <zip basedir="${site.dir}" 
         	 includes="**/*"

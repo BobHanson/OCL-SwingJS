@@ -35,15 +35,21 @@ package com.actelion.research.gui.dnd;
 
 import com.actelion.research.chem.*;
 import com.actelion.research.chem.dnd.ChemistryFlavors;
+import com.actelion.research.chem.io.CompoundFileHelper;
 import com.actelion.research.chem.name.StructureNameResolver;
+import com.actelion.research.gui.FileHelper;
 
 import sun.awt.datatransfer.DataTransferer;
 
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 public class MoleculeDropAdapter implements DropTargetListener
 {
@@ -116,7 +122,8 @@ public class MoleculeDropAdapter implements DropTargetListener
                     DEBUG("Object is " + o);
                     mol = createFromDataFlavor(chosen,o);
                     if (mol != null) {
-                        onDropMolecule(mol,e.getLocation());
+                    	boolean isFile = (chosen.equals(DataFlavor.javaFileListFlavor));
+                        onDropMolecule(mol,isFile ? null : e.getLocation());
                         e.dropComplete(true);
                     } else {
                         System.err.println("Drop failed: " + e);
@@ -141,6 +148,19 @@ public class MoleculeDropAdapter implements DropTargetListener
     protected StereoMolecule createFromDataFlavor(DataFlavor chosen, Object o) throws Exception
     {
         StereoMolecule mol = null;
+		if (chosen.equals(DataFlavor.javaFileListFlavor)){
+				List<File> fileList = (List<File>) o;
+			File f = fileList.get(0);
+			String fileName = f.getAbsolutePath().trim();
+			if (fileName.endsWith(".URL")) {
+				// this is a drag drop from a link on a web page. We can do better.
+				return null;
+			}
+			List<StereoMolecule> list = new FileHelper(null).readStructuresFromFile(f, false);
+			if (list == null  || list.size() == 0)
+				return null;
+			return list.get(0);			
+		}
         if (chosen.equals(ChemistryFlavors.DF_SERIALIZED_MOLECULE) && o instanceof Molecule) {
             mol = new StereoMolecule((Molecule)o);
         } else if (chosen.equals(ChemistryFlavors.DF_MDLMOLFILE)
@@ -179,11 +199,10 @@ public class MoleculeDropAdapter implements DropTargetListener
         return false;
     }
 
-    protected DataFlavor chooseDropFlavor(DropTargetDropEvent e)
+	protected DataFlavor chooseDropFlavor(DropTargetDropEvent e)
     {
-    	
-    	
-    	DataFlavor[] flavors = e.getTransferable().getTransferDataFlavors();
+    	Transferable t = e.getTransferable();
+    	DataFlavor[] flavors = t.getTransferDataFlavors();
         for (int i=0; i<ChemistryFlavors.MOLECULE_FLAVORS.length; i++) {
         	DataFlavor f = ChemistryFlavors.MOLECULE_FLAVORS[i];
         	for (int j = 0; j  < flavors.length; j++) {
@@ -196,7 +215,10 @@ public class MoleculeDropAdapter implements DropTargetListener
         		} catch (Exception ex) {
         			System.out.println(ex + "");
         		}
-        		
+
+        		if (df.equals(DataFlavor.javaFileListFlavor)) {
+        			return df;
+        		}
         		if (f.equals(df)) {
         			return f;
         		}

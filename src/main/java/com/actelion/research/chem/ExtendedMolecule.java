@@ -82,6 +82,8 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	transient private int mConnBond[][];
 	transient private int mConnBondOrder[][];
 
+	private boolean[] mReallySimpleHydrogens;
+
 	public ExtendedMolecule() {
 		}
 
@@ -284,6 +286,13 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		return mConnAtom[atom].length - mAllConnAtoms[atom];
 		}
 
+	/**
+	 * @param atom
+	 * @return check the list of REALLY simple hydrogen atoms
+	 */
+	public boolean isReallySimpleHydrogen(int atom) {
+		return mReallySimpleHydrogens != null && mReallySimpleHydrogens[atom];
+		}
 
 	/**
 	 * This is different from the Hendrickson pi-value, which considers pi-bonds to carbons only.
@@ -1272,6 +1281,30 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		return isOrganicAtom(atom)
 				|| mAtomicNo[atom] == 13	// Al
 				|| mAtomicNo[atom] >= 171;	// amino acids
+		}
+
+	/**
+	 * 
+	 * NEW 
+	 * 
+	 * Calculates and returns the number of implicit hydrogens of the molecule.
+	 * For hydrogens atoms, metals except Al, or a noble gases, 0 is assumed.
+	 * For all other atom kinds the number of implicit hydrogens is basically
+	 * the lowest typical valence that is compatible with the occupied valence,
+	 * minus the occupied valence corrected by atom charge and radical state.
+	 * If this molecule is a fragment, then 0 is returned.
+	 * @return number of implicit hydrogens of the molecule
+	 */
+	public int getImplicitHydrogens() {
+		if (mIsFragment)
+			return 0;
+
+		ensureHelperArrays(cHelperNeighbours);
+		int implicitHydrogens = 0;
+		for (int atom=0; atom<mAtoms; atom++)
+			implicitHydrogens += getImplicitHydrogens(atom);
+
+		return implicitHydrogens;
 		}
 
 	/**
@@ -3203,24 +3236,24 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	 */
 	private void handleHydrogens() {
 		// find all hydrogens that are connected to a non-H atom and therefore can be implicit		
-		boolean[] isHydrogen = findSimpleHydrogens();
+		mReallySimpleHydrogens = findSimpleHydrogens();
 
 					// move all hydrogen atoms to end of atom table
 		int lastNonHAtom = mAllAtoms;
 		do lastNonHAtom--;
-			while ((lastNonHAtom >= 0) && isHydrogen[lastNonHAtom]);
+			while ((lastNonHAtom >= 0) && mReallySimpleHydrogens[lastNonHAtom]);
 
 		for (int atom=0; atom<lastNonHAtom; atom++) {
-			if (isHydrogen[atom]) {
+			if (mReallySimpleHydrogens[atom]) {
 				swapAtoms(atom, lastNonHAtom);
 
 				// swap simple H flags also
-				boolean temp = isHydrogen[atom];
-				isHydrogen[atom] = isHydrogen[lastNonHAtom];
-				isHydrogen[lastNonHAtom] = temp;
+				boolean temp = mReallySimpleHydrogens[atom];
+				mReallySimpleHydrogens[atom] = mReallySimpleHydrogens[lastNonHAtom];
+				mReallySimpleHydrogens[lastNonHAtom] = temp;
 
 				do lastNonHAtom--;
-					while (isHydrogen[lastNonHAtom]);
+					while (mReallySimpleHydrogens[lastNonHAtom]);
 				}
 			}
 		mAtoms = lastNonHAtom + 1;
@@ -3235,8 +3268,8 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		for (int bond=0; bond<mAllBonds; bond++) {	// mark all bonds to hydrogen
 			int atom1 = mBondAtom[0][bond];
 			int atom2 = mBondAtom[1][bond];
-			if (isHydrogen[atom1]
-			 || isHydrogen[atom2])
+			if (mReallySimpleHydrogens[atom1]
+			 || mReallySimpleHydrogens[atom2])
 				isHydrogenBond[bond] = true;
 			}
 

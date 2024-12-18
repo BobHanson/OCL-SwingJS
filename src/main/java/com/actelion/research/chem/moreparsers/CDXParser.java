@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import com.actelion.research.chem.PeriodicTable;
+import com.actelion.research.chem.Molecule;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.coords.CoordinateInventor;
 
@@ -595,7 +595,7 @@ public class CDXParser extends XmlReader {
 		}
 
 		thisAtom.elementNumber = (!checkWarningOK(w) ? 0 : element == null ? 6 : parseIntStr(element));
-		thisAtom.symbol = PeriodicTable.symbol(thisAtom.elementNumber);
+		thisAtom.symbol = Molecule.cAtomLabel[thisAtom.elementNumber];
 		s = atts.get("isotope");
 		if (s != null)
 			thisAtom.isotope = parseIntStr(s);
@@ -824,7 +824,6 @@ public class CDXParser extends XmlReader {
 		}
 		for (int i = bsBonds.nextSetBit(0); i >= 0; i = bsBonds.nextSetBit(i + 1)) {
 			CDBond bond = bonds.get(i);	
-			System.out.println("creating bond " + bond.type + " " + bond);
 			int ib = mol.addBond(bond.atom1.index, bond.atom2.index);
 			mol.setBondType(ib, bond.type);
 		}

@@ -771,12 +771,13 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 	 * @return a JStructureView
 	 */
 	public static JStructureView createView(StereoMolecule mol, int mode, double scaling, Color bg) {		
-		mol.removeExplicitHydrogensCarbonOnly(true, true);
 		JStructureView mArea = new JStructureView(mol);
 		if (mode == 0)
 			mode = AbstractDepictor.cDModeSuppressCIPParity 
 			    | AbstractDepictor.cDModeSuppressESR
-				| AbstractDepictor.cDModeSuppressChiralText;
+				| AbstractDepictor.cDModeSuppressChiralText
+				| AbstractDepictor.cDModeBHNoSimpleHydrogens
+				;
 		mArea.setDisplayMode(mode);
 		mArea.setBackground(bg);
 		mArea.setScaling(scaling);

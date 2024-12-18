@@ -874,7 +874,9 @@ public class GenericEditorArea implements GenericEventListener {
 	public boolean addPastedOrDropped(StereoMolecule mol, GenericPoint p) {
 		if (mol == null || mol.getAllAtoms() == 0)
 			return false;
-
+		if (p == null) {
+			mMol.clear();
+		}
 		if (mol.getAllBonds() != 0) {
 			double avbl = getScaledAVBL();
 			new GenericDepictor(mol).updateCoords(mCanvas.getDrawContext(),
