@@ -5,11 +5,9 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
@@ -17,7 +15,6 @@ import javax.swing.SwingUtilities;
 
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.MolfileCreator;
-import com.actelion.research.chem.MolfileV3Creator;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.moreparsers.CDXParser;
