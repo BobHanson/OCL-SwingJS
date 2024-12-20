@@ -37,11 +37,9 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
+ * Adapted from org.jmol.adapters.readers.xml.XmlReader.
+ * 
  * A generic XML reader template -- by itself, does nothing.
- * 
- * The actual readers are XmlCmlReader, XmlMolproReader (which is an extension
- * of XmlCmlReader), XmlChem3dReader, and XmlOdysseyReader.
- * 
  * 
  * XmlReader takes all XML streams, whether from a file reader or from DOM.
  * 
@@ -56,52 +54,27 @@ import org.xml.sax.helpers.DefaultHandler;
  * XmlHandler extends DefaultHandler is the generic interface to both reader and
  * DOM element parsing.
  * 
- * XmlCmlReader extends XmlReader
- * 
- * XmlMolproReader extends XmlCmlReader. If you feel like expanding on that,
- * feel free.
- * 
- * XmlChem3dReader extends XmlReader. That one is simple; no need to expand on
- * it at this time.
- * 
- * XmlOdysseyReader extends XmlReader. That one is simple; no need to expand on
- * it at this time.
- * 
  * Note that the tag processing routines are shared between SAX and DOM
  * processors. This means that attributes must be transformed from either
  * Attributes (SAX) or JSObjects (DOM) to Hashtable name:value pairs. This is
- * taken care of in JmolXmlHandler for all readers.
- * 
- * TODO 27/8/06:
- * 
- * Several aspects of CifReader are NOT YET implemented here. These include
- * loading a specific model when there are several, applying the symmetry, and
- * loading fractional coordinates. [DONE for CML reader 2/2007 RMH]
- * 
+ * taken care of in XmlHandler for all readers.
  * 
  * Test files:
  * 
  * molpro: vib.xml odyssey: water.xodydata cml: a wide variety of files in
  * data-files.
  * 
- * -Bob Hanson
+ * -Bob Hanson 2006.03.27
  * 
  */
 
 abstract public class XmlReader {
 
-  //protected String[] domAttributes;
-  public XmlReader parent = this; // was much more complicated. Now much simpler. 
-  // No longer: XmlReader itself; to be assigned by the subReader
   public Map<String, String> atts = new Hashtable<String, String>();
 
   protected String err;
   	
   protected BufferedReader reader;
-
-  protected void setMyError(String err) {
-	  this.err = err;
-  }
 
   protected String parseXML() {
     org.xml.sax.XMLReader saxReader = null;
@@ -143,8 +116,6 @@ abstract public class XmlReader {
   }
 
   /**
-   * 
-   * @param parent
    * @param saxReader
    * @throws Exception
    */
@@ -159,9 +130,7 @@ abstract public class XmlReader {
   }
 
   private void parseJSDOM(BufferedReader rdr) throws UnsupportedEncodingException {
-      //domAttributes = getDOMAttributes();
       attribs = new Object[1];
-      //attArgs = new Object[1];
       domObj = new Object[1];
       Object o = "";
       byte[] data = null;
@@ -214,8 +183,6 @@ abstract public class XmlReader {
   }
 
   /**
-   * totally untested, probably useless
-   * 
    * @param id  
    * @param data 
    * @return dom object 
@@ -263,24 +230,14 @@ abstract public class XmlReader {
     return d;
   }
   
-//  protected String[] getDOMAttributes() {
-//    // different subclasses will implement this differently
-//    return new String[] { "id" };
-//  }
-
   ////////////////////////////////////////////////////////////////
 
   /**
    * 
    * @param localName
-   * @param nodeName TODO
+   * @param nodeName
    */
-  protected void processStartElement(String localName, String nodeName) {
-    /* 
-     * specific to each xml reader
-     */
-  }
-
+  abstract protected void processStartElement(String localName, String nodeName);
   /*
    *  keepChars is used to signal 
    *  that characters between end tags should be kept
@@ -299,11 +256,7 @@ abstract public class XmlReader {
    * 
    * @param localName
    */
-  void processEndElement(String localName) {
-    /* 
-     * specific to each xml reader
-     */
-  }
+  abstract void processEndElement(String localName);
 
   //////////////////// DOM or JavaScript parsing /////////////////
 
@@ -398,22 +351,6 @@ abstract public class XmlReader {
      * 
      */
     {
-//
-//      // Java only -- no longer loading only specific values
-//
-//      Number N = (Number) jsObjectGetMember(attributes, "length");
-//      int n = (N == null ? 0 : N.intValue());
-//      for (int i = n; --i >= 0;) {
-//        attArgs[0] = Integer.valueOf(i);
-//        attArgs[0] = jsObjectCall(attributes, "item", attArgs);
-//        if (attArgs[0] != null) {
-//          String attValue = (String) jsObjectGetMember(attArgs, "value");
-//          if (attValue != null)
-//            atts.put(
-//                ((String) jsObjectGetMember(attArgs, "name")).toLowerCase(),
-//                attValue);
-//        }
-//      }
       if (true)
         return;
     }
@@ -425,21 +362,6 @@ abstract public class XmlReader {
   
   
 
-//  /**
-//   * @j2sIgnore
-//   * 
-//   * @param jsObject
-//   * @param method
-//   * @param args
-//   * @return object
-//   */
-//  private Object jsObjectCall(Object[] jsObject, String method, Object[] args) {
-//    {
-//    return parent.vwr.apiPlatform.getJsObjectInfo(jsObject, method,
-//        args == null ? nullObj : args);
-//    }
-//  }
-//
   /**
    * @param jsObject  
    * @param name 
@@ -453,12 +375,12 @@ abstract public class XmlReader {
      * 
      */
     {
-    return null;//parent.vwr.apiPlatform.getJsObjectInfo(jsObject, name, null);
+    return null;
     }
   }
 
   public void endDocument() {
-    // CML reader uses this
+	  // can be implmented
   }
 
   public static class XmlHandler extends DefaultHandler {
@@ -528,21 +450,11 @@ abstract public class XmlReader {
 	    xmlReader.atts.clear();
 	    for (int i = attributes.getLength(); --i >= 0;)
 	      xmlReader.atts.put(attributes.getLocalName(i).toLowerCase(), attributes.getValue(i));
-//	    if (Logger.debugging) {
-//	      debugContext += " " + localName;
-//	      Logger.debug("start " + debugContext);
-//	    }
 	    xmlReader.processStartElement(localName.toLowerCase(), nodeName.toLowerCase());
 	  }
 
 	  @Override
 	  public void endElement(String uri, String localName, String qName) {
-//	    if (Logger.debugging) {
-//	      if (Logger.debugging) {
-//	        Logger.debug("end " + debugContext);
-//	      }
-//	      debugContext = debugContext.substring(0, debugContext.lastIndexOf(" "));
-//	    }
 	    xmlReader.processEndElement(localName.toLowerCase());
 	  }
 
@@ -556,11 +468,6 @@ abstract public class XmlReader {
 
 	  public InputSource resolveEntity(String name, String publicId,
 	                                   String baseURI, String systemId) {
-//	    if (Logger.debugging) {
-//	      Logger.debug("Not resolving this:" + "\n      name: " + name
-//	          + "\n  systemID: " + systemId + "\n  publicID: " + publicId
-//	          + "\n   baseURI: " + baseURI);
-//	    }
 	    return null;
 	  }
 

@@ -254,8 +254,6 @@ public class Canonizer {
 
 		mZCoordinatesAvailable = ((mode & COORDS_ARE_3D) != 0) || mMol.is3D();
 		
-		mZCoordinatesAvailable = true;
-		
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0) {
 			mTHParity = new byte[mMol.getAtoms()];
 			mTHParityIsPseudo = new boolean[mMol.getAtoms()];

@@ -1,5 +1,6 @@
 package com.actelion.research.chem.moreparsers;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,6 +15,10 @@ import java.util.Arrays;
 public class ParserUtils {
 
 	private ParserUtils() {
+	}
+
+	public static byte[] getResourceBytes(Class<?> c, String fileName) throws FileNotFoundException, IOException {
+		return getLimitedStreamBytes(c.getResourceAsStream(fileName), -1, null, true, true);
 	}
 
 	public static byte[] getLimitedStreamBytes(InputStream is, long n, OutputStream out, boolean andCloseInput,

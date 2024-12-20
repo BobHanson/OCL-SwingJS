@@ -51,6 +51,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.SwingUtilities;
+
 public class MoleculeDropAdapter implements DropTargetListener
 {
     public static final boolean debug = false;
@@ -100,45 +102,50 @@ public class MoleculeDropAdapter implements DropTargetListener
         DEBUG("dragExit");
     }
 
-    @Override
-    public void drop(DropTargetDropEvent e)
-    {
-        if (active_) {
-            // This is neccesary to make sure the correct classloader tries to load the Transferable
-            ClassLoader cl = this.getClass().getClassLoader();
-            DEBUG("MoleculeDropAdapter   ClassLoader " + cl);
-            DEBUG("MoleculeDropAdapter   Ignoring setContextclassloader!!!");
+	@Override
+	public void drop(DropTargetDropEvent e) {
+		if (active_) {
+			// This is neccesary to make sure the correct classloader tries to load the
+			// Transferable
+			ClassLoader cl = this.getClass().getClassLoader();
+			DEBUG("MoleculeDropAdapter   ClassLoader " + cl);
+			DEBUG("MoleculeDropAdapter   Ignoring setContextclassloader!!!");
 //            Thread.currentThread().setContextClassLoader(cl);
-            DEBUG("MoleculeDropAdapter " + e);
-            try {
-                Transferable tr = e.getTransferable();
-                DEBUG("Transferable is " + tr);
-                DataFlavor chosen = chooseDropFlavor(e);
-                StereoMolecule mol = null;
-                if (chosen != null) {
-                    e.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
-                    DEBUG("Chose is " + chosen);
-                    Object o = tr.getTransferData(chosen);
-                    DEBUG("Object is " + o);
-                    mol = createFromDataFlavor(chosen,o);
-                    if (mol != null) {
-                    	boolean isFile = (chosen.equals(DataFlavor.javaFileListFlavor));
-                        onDropMolecule(mol,isFile ? null : e.getLocation());
-                        e.dropComplete(true);
-                    } else {
-                        System.err.println("Drop failed: " + e);
-                        e.dropComplete(false);
-                    }
-                    return;
-                } else {
-                    System.err.println("Drop failed: " + e);
-                    e.rejectDrop();
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }   // active_
-    }
+			DEBUG("MoleculeDropAdapter " + e);
+			try {
+				Transferable tr = e.getTransferable();
+				DEBUG("Transferable is " + tr);
+				DataFlavor chosen = chooseDropFlavor(e);
+				if (chosen != null) {
+					e.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
+					DEBUG("Chose is " + chosen);
+					Object o = tr.getTransferData(chosen);
+					DEBUG("Object is " + o);
+					e.dropComplete(true);
+					SwingUtilities.invokeLater(() -> {
+						try {
+							StereoMolecule mol = createFromDataFlavor(chosen, o);
+							if (mol != null) {
+								boolean isFile = (chosen.equals(DataFlavor.javaFileListFlavor));
+								onDropMolecule(mol, isFile ? null : e.getLocation());
+							} else {
+								System.err.println("Drop failed: " + e);
+							}
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+
+					});
+					return;
+				} else {
+					System.err.println("Drop failed: " + e);
+					e.rejectDrop();
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		} // active_
+	}
 
     public DataFlavor[] getFlavors()
     {
@@ -207,15 +214,6 @@ public class MoleculeDropAdapter implements DropTargetListener
         	DataFlavor f = ChemistryFlavors.MOLECULE_FLAVORS[i];
         	for (int j = 0; j  < flavors.length; j++) {
         		DataFlavor df = flavors[j];
-        		System.out.println(f.toString().equals(df.toString()));
-        		System.out.println(df);
-        		try {
-        		System.out.println(DataTransferer.canonicalName(f.getParameter("charset")));
-        		System.out.println(DataTransferer.canonicalName(df.getParameter("charset")));
-        		} catch (Exception ex) {
-        			System.out.println(ex + "");
-        		}
-
         		if (df.equals(DataFlavor.javaFileListFlavor)) {
         			return df;
         		}

@@ -247,7 +247,7 @@ public abstract class CompoundFileHelper {
 		mRecordCount = 0;
 		mErrorCount = 0;
 		String filename = file.getName();
-		int index = filename.indexOf('.');
+		int index = filename.lastIndexOf('.');
 		String extention = (index == -1) ? "" : filename.substring(index).toLowerCase();
 
 		CompoundFileParser parser = null;
