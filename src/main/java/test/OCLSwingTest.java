@@ -1,5 +1,6 @@
-package swingjs;
+package test;
 
+import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
@@ -32,7 +33,7 @@ public class OCLSwingTest {
 	public static int nFrame;
 
 	public static void main(String[] args) {
-		String outdir = "C:/temp/";
+		String outdir = null;//"C:/temp/";
 		testCDXParsers(outdir);
 		testInChIParsers(outdir);
 		testSmilesParser(outdir);
@@ -260,11 +261,17 @@ public class OCLSwingTest {
 		SwingEditorArea area = (SwingEditorArea) p.getComponent(0);
 		area.getGenericDrawArea().setDisplayMode(mode);
 
-		SwingDialog d = new SwingDialog(null, "testing2");
+		SwingDialog d = new SwingDialog(null, "testing2", ModalityType.MODELESS);
 
-		d.setSize(new Dimension(500, 500));
+		p.setPreferredSize(new Dimension(500, 500));
 		d.add(p);
-		d.setVisible(true);
+		d.showDialog(()->{
+			System.out.println("OK");
+			System.exit(0);
+		},()->{
+			System.out.println("cancel");
+			System.exit(1);
+		});
 	}
 
 	static class OclCodeCheck {
