@@ -1,5 +1,7 @@
 package com.actelion.research.chem.moreparsers;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -77,12 +79,15 @@ public class ParserUtils {
 
 	public static byte[] getURLContentsAsBytes(String url) {
 		try {
-			if (url.indexOf("//") < 0)
-				url = "file:///" + url;
+			url = ensureURLPath(url);
 			return getLimitedStreamBytes(new URL(url).openStream(), -1, null, true, true);
 		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	private static String ensureURLPath(String url) {
+		return (url.indexOf("://") < 0 ? "file://" + (url.startsWith("/") ? "" : "/") + url : url);
 	}
 
 }

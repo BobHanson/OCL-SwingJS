@@ -31,7 +31,12 @@ public class OCLSwingJS {
 
 	public static void main(String[] args) {
 		showDialogTest(null);
+		/**
+		 * @j2sNative
+		 */
+		{
 		System.exit(0);
+		}
 	}
 
 	@SuppressWarnings("unused")
