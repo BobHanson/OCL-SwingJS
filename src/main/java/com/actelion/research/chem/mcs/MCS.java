@@ -119,7 +119,7 @@ public class MCS {
 	 * @param frag
 	 * @param excluded
 	 */
-	public void set(StereoMolecule mol, StereoMolecule frag, boolean excluded[]) {
+	public void set(StereoMolecule mol, StereoMolecule frag, boolean[] excluded) {
 
 		StereoMolecule fragBiggestSub = new StereoMolecule(frag);
 
@@ -480,7 +480,7 @@ public class MCS {
 				int type = frag.getBondType(i);
 				if(frag.isDelocalizedBond(i)){
 					type = Molecule.cBondTypeDelocalized;
-					// fragSubBonds.setBondQueryFeature(bondIndexNew, Molecule.cBondQFDelocalized, true);
+					// fragSubBonds.setBondQueryFeature(bondIndexNew, Molecule.cBondTypeDelocalized, true);
 				}
 				// int bondIndexNew = fragSubBonds.addBond(indexAtomNew1, indexAtomNew2, type);
 				fragSubBonds.addBond(indexAtomNew1, indexAtomNew2, type);

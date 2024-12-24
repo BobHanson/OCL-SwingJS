@@ -34,42 +34,99 @@
 
 package com.actelion.research.gui;
 
+import com.actelion.research.gui.hidpi.HiDPIHelper;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 
 public class JImagePanelFixedSize extends JPanel {
-	private Image		mImage;
+	private BufferedImage   mImage;
 
     public JImagePanelFixedSize() {
 		super();
 		}
 
-    public JImagePanelFixedSize(String fileName) {
-		super();
+	/**
+	 * Creates an image panel with the supplied image file name.
+	 * After reading the image, it is automatically UI-scaled (enlarged on high-res screens).
+	 * @param fileName
+	 */
+	public JImagePanelFixedSize(String fileName) {
+		this(fileName, 1.0);
+		}
 
-		readImage(fileName);
-		Dimension size = new Dimension(mImage.getWidth(this), mImage.getHeight(this));
+	/**
+	 * Creates an image panel with the supplied image file name.
+	 * After reading the image, it is automatically UI-scaled (enlarged on high-res screens).
+	 * The provided scale factor does not include UI-scaling and is used if source image
+	 * has a high resolution to allow lossless UI-scaling.
+	 * @param fileName
+	 * @param scale typically smaller than 1.0 for high-res images that shall not loose during UI-scaling
+	 */
+    public JImagePanelFixedSize(String fileName, double scale) {
+		super();
+		readAndScaleImage(fileName, scale);
+		}
+
+	/**
+	 * Creates a JImagePanelFixedSize without any scaling.
+	 * If you need UI-scaling, the image has to be scaled in advance.
+	 * @param image
+	 */
+	public JImagePanelFixedSize(BufferedImage image) {
+		super();
+		mImage = image;
+		initializeSize(mImage.getWidth(), mImage.getHeight());
+		}
+
+	private void initializeSize(int width, int height) {
+		Dimension size = new Dimension(width, height);
 		setMinimumSize(size);
 		setMaximumSize(size);
 		setPreferredSize(size);
 		}
 
 	public void setImage(String fileName) {
-		readImage(fileName);
+		setImage(fileName, 1.0);
+		}
+
+	public void setImage(String fileName, double scale) {
+		readAndScaleImage(fileName, scale);
 		repaint();
 		}
 
 	@Override public void paintComponent(Graphics g) {
-		g.drawImage(mImage,0,0,this);
+		if (mImage != null)
+			g.drawImage(mImage,0,0, this);
 		}
 
-	private void readImage(String fileName) {
+	private void readAndScaleImage(String fileName, double scale) {
 		try {
-			BufferedInputStream in=new BufferedInputStream(getClass().getResourceAsStream(fileName));
+			BufferedInputStream in = new BufferedInputStream(getClass().getResourceAsStream(fileName));
 			mImage = ImageIO.read(in);
+			if (mImage != null) {
+				int width = (int)(scale * HiDPIHelper.scale(mImage.getWidth()));
+				int height = (int)(scale * HiDPIHelper.scale(mImage.getHeight()));
+				mImage = scaleImage(mImage, width, height);
+				initializeSize(width, height);
+				}
 			}
 		catch (Exception e) {}
+		}
+
+	public static BufferedImage scaleImage(BufferedImage image, int width, int height) {
+		if (width == image.getWidth()
+		 && height == image.getHeight())
+			return image;
+
+		AffineTransform scaleTransform = AffineTransform.getScaleInstance(
+				(double)width / image.getWidth(), (double)height / image.getHeight());
+		AffineTransformOp bilinearScaleOp = new AffineTransformOp(scaleTransform, AffineTransformOp.TYPE_BILINEAR);
+		return bilinearScaleOp.filter(image, new BufferedImage(width, height, image.getType()));
 		}
 	}

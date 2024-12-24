@@ -1,11 +1,7 @@
 package com.actelion.research.chem.phesa;
 
 import com.actelion.research.calc.ThreadMaster;
-import com.actelion.research.chem.Canonizer;
-import com.actelion.research.chem.Coordinates;
-import com.actelion.research.chem.IDCodeParserWithoutCoordinateInvention;
-import com.actelion.research.chem.Molecule;
-import com.actelion.research.chem.StereoMolecule;
+import com.actelion.research.chem.*;
 import com.actelion.research.chem.alignment3d.PheSAAlignmentOptimizer;
 import com.actelion.research.chem.alignment3d.PheSAAlignmentOptimizer.PheSASetting;
 import com.actelion.research.chem.alignment3d.transformation.Rotation;
@@ -20,8 +16,8 @@ import com.actelion.research.chem.descriptor.DescriptorHandler;
 import com.actelion.research.chem.descriptor.DescriptorInfo;
 import com.actelion.research.chem.phesaflex.FlexibleShapeAlignment;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -252,7 +248,8 @@ public class DescriptorHandlerShape implements DescriptorHandler<PheSAMolecule,S
 	 * additional output:
 	 * element 0: total similarity (identical to getSimilarity(...))
 	 * element 1: pharmacophore similarity
-	 * element 2: contribution to similarity that originates from additional volumes (incl/excl)
+	 * element 2: shape similarity
+	 * element 3: contribution to similarity that originates from additional volumes (incl/excl)
 	 * @return
 	 */
 	public double[] getPreviousPheSAResult() {
@@ -357,7 +354,7 @@ public class DescriptorHandlerShape implements DescriptorHandler<PheSAMolecule,S
 	
 	public PheSAMolecule decode(byte[] arr) {
 
-		return decode(new String(arr));
+		return decode(new String(arr, StandardCharsets.UTF_8));
 		
 	}
 	

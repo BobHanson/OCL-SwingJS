@@ -161,6 +161,8 @@ public class ClipboardHandler implements IClipboardHandler
 								if (column != -1)
 									continue;
 							}
+							if (line.length() == 0)
+								continue;
 							try {
 								String idcode = line;
 								if (column != -1) {
@@ -176,7 +178,7 @@ public class ClipboardHandler implements IClipboardHandler
 							if (mol == null || mol.getAllAtoms() == 0) {
 								mol = new StereoMolecule();
 								try {
-									new SmilesParser(smartsMode, false).parse(mol, line);
+									new SmilesParser(smartsMode).parse(mol, line);
 								}
 								catch (Exception e) {
 									mol = null;

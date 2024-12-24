@@ -65,12 +65,18 @@
 
 package com.actelion.research.chem;
 
-import com.actelion.research.calc.ArrayUtilsCalc;
-import com.actelion.research.chem.descriptor.DescriptorEncoder;
-import com.actelion.research.chem.descriptor.DescriptorHandler;
-import com.actelion.research.util.BurtleHasher;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
-import java.util.*;
+import com.actelion.research.calc.ArrayUtilsCalc;
+import com.actelion.research.calc.statistics.median.MedianStatisticFunctions;
+import com.actelion.research.chem.descriptor.DescriptorHandler;
 
 /**
  *
@@ -91,6 +97,35 @@ public class ExtendedMoleculeFunctions {
 	public static final int [] arrRGroupsAtomicNo = {142,143,144,129,130,131,132,133,134,135,136,137,138,139,140,141};
 
 	public static final String [] arrRGroupsSymbol = {"R1","R2","R3","R4","R5","R6","R7","R8","R9","R10","R11","R12","R13","R14","R15","R16"};
+
+
+	public final static Coordinates getCenterGravity(ExtendedMolecule mol) {
+
+		int n = mol.getAllAtoms();
+
+		int [] indices = new int [n];
+
+		for (int i = 0; i < indices.length; i++) {
+			indices[i]=i;
+		}
+
+		return getCenterGravity(mol, indices);
+	}
+
+	public final static Coordinates getCenterGravity(ExtendedMolecule mol, int[] indices) {
+
+		Coordinates c = new Coordinates();
+		for (int i = 0; i < indices.length; i++) {
+			c.x += mol.getAtomX(indices[i]);
+			c.y += mol.getAtomY(indices[i]);
+			c.z += mol.getAtomZ(indices[i]);
+		}
+		c.x /= indices.length;
+		c.y /= indices.length;
+		c.z /= indices.length;
+
+		return c;
+	}
 
 
 	public static void makeSkeleton(StereoMolecule mol) {
@@ -741,6 +776,23 @@ public class ExtendedMoleculeFunctions {
 		return arr;
 	}
 
+	public final static int [] getTopologicalDistances(int [][] topoDistMatrix, int [] at1, int [] at2) {
+
+		int [] d = new int[at1.length*at2.length];
+		int cc=0;
+		for (int i = 0; i < at1.length; i++) {
+			for (int j = 0; j < at2.length; j++) {
+				d[cc++]=topoDistMatrix[at1[i]][at2[j]];
+			}
+		}
+
+		return d;
+	}
+	public final static int getMedianTopologicalDistance(int [][] topoDistMatrix, int [] at1, int [] at2) {
+		int [] d = getTopologicalDistances(topoDistMatrix, at1, at2);
+		int medTopoDist = MedianStatisticFunctions.getMedianForInteger(d).median;
+		return medTopoDist;
+	}
 
 	public final static int getTopologicalDistance(ExtendedMolecule mol, int at1, int at2) {
 		int dist = 0;
@@ -1163,9 +1215,7 @@ public class ExtendedMoleculeFunctions {
 	public static boolean isIsolatedCarbon(StereoMolecule mol, int indexAtCentral, int [] arrIndexAt){
 
 		boolean isolated=true;
-
 		int nConnected = mol.getConnAtoms(indexAtCentral);
-
 		boolean [] arrConnected = new boolean[mol.getAtoms()];
 
 		for (int i = 0; i < nConnected; i++) {
@@ -1176,7 +1226,6 @@ public class ExtendedMoleculeFunctions {
 			if(!arrConnected[indexAt]){
 				continue;
 			}
-
 			if(mol.getAtomicNo(indexAt)==6){
 				isolated=false;
 				break;
@@ -1245,19 +1294,31 @@ public class ExtendedMoleculeFunctions {
 	}
 
 
-	public static int getNumAlcoholicOxygen(StereoMolecule mol){
-
+	public static int getTotalCharge(StereoMolecule mol){
 		int n = 0;
-
 		for (int i = 0; i < mol.getAllAtoms(); i++) {
+			n+=mol.getAtomCharge(i);
+		}
+		return n;
+	}
+	public static int getNumAtomsCharged(StereoMolecule mol){
+		int n = 0;
+		for (int i = 0; i < mol.getAllAtoms(); i++) {
+			if(mol.getAtomCharge(i)!=0){
+				n++;
+			}
+		}
+		return n;
+	}
 
+	public static int getNumAlcoholicOxygen(StereoMolecule mol){
+		int n = 0;
+		for (int i = 0; i < mol.getAllAtoms(); i++) {
 			if(isAlcoholicOxygen(mol, i)){
 				n++;
 			}
 		}
-
 		return n;
-
 	}
 
 	public static int getNumThioEther(StereoMolecule mol){
@@ -1704,6 +1765,7 @@ public class ExtendedMoleculeFunctions {
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static float getSimilarity(StereoMolecule m1, StereoMolecule m2, DescriptorHandler dh){
 
 		Object d1 = dh.createDescriptor(m1);

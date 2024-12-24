@@ -34,7 +34,11 @@
 
 package com.actelion.research.chem;
 
-import java.io.*;
+import com.actelion.research.chem.coords.CoordinateInventor;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 public class StereoMolecule extends ExtendedMolecule {
     static final long serialVersionUID = 0x2006CAFE;
@@ -70,6 +74,12 @@ public class StereoMolecule extends ExtendedMolecule {
 		}
 
 
+	@Override
+	public void clear() {
+		super.clear();
+		mCanonizer = null;
+		}
+
 	public StereoMolecule getCompactCopy() {
 		StereoMolecule theCopy = new StereoMolecule(mAllAtoms, mAllBonds);
 		copyMolecule(theCopy);
@@ -90,7 +100,7 @@ public class StereoMolecule extends ExtendedMolecule {
 		// the rare case where we have valid parities and no atom coordinates.
 		// Then mCanonizer is null and the parities were read as part of a persistent
 		// molecule. In this case and parity and CIP validity needs to be copied.
-		// Otherwise parity is a perceived property from up/down bonds or 3D atom coords
+		// Otherwise, parity is a perceived property from up/down bonds or 3D atom coords
 		// and should be freshly calculated. 
 		if (mCanonizer != null)
 			destMol.mValidHelperArrays = cHelperNone;
@@ -101,9 +111,9 @@ public class StereoMolecule extends ExtendedMolecule {
 	 * If fragment separation is only needed, if there are multiple fragments, it may be more
 	 * efficient to run this functionality in two steps, e.g.:<br>
 	 * int[] fragmentNo = new int[mol.getAllAtoms()];<br>
-	 * int fragmentCount = getFragmentNumbers(fragmentNo, boolean, boolean);<br>
+	 * int fragmentCount = mol.getFragmentNumbers(fragmentNo, false, false);<br>
 	 * if (fragmentCount > 1) {<br>
-	 *     StereoMolecule[] fragment = getUniqueFragmentsEstimated(int[] fragmentNo, fragmentCount);<br>
+	 *     StereoMolecule[] fragment = mol.getFragments(fragmentNo, fragmentCount);<br>
 	 *     ...<br>
 	 *     }<br>
 	 * @return
@@ -190,6 +200,13 @@ public class StereoMolecule extends ExtendedMolecule {
 
         if ((required & ~mValidHelperArrays) == 0)
 			return;
+
+        // If we have valid parities, but no atom coordinates, and if we need to run the Canonizer
+		// for extended stereo features, then we need to create 2D-coordinates first to not loose
+		// the given parities, because the Canonizer recalculates parities from coords and up/down bonds.
+		if ((mValidHelperArrays & cHelperParities) != 0
+		 && (mAllAtoms > 1) && mCoordinates[0].equals(mCoordinates[1]))
+			new CoordinateInventor(0).invent(this);
 
         if (mAssignParitiesToNitrogen)
         	required |= cHelperBitIncludeNitrogenParities;
@@ -581,6 +598,4 @@ public class StereoMolecule extends ExtendedMolecule {
 
 	private void writeObject(ObjectOutputStream stream) throws IOException {}
 	private void readObject(ObjectInputStream stream) throws IOException {}
-
-
-}
+	}

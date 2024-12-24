@@ -103,6 +103,7 @@ import com.actelion.research.gui.generic.GenericEventListener;
 import com.actelion.research.gui.generic.GenericPolygon;
 import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.gui.generic.GenericShape;
+import com.actelion.research.gui.generic.GenericUIHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.ScaledEditorKit;
 import com.actelion.research.gui.swing.SwingCursorHelper;
@@ -902,7 +903,7 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 			}
 			catch (Exception ex) {}
 		}
-					
+
 				});
 	}
 
@@ -1971,17 +1972,17 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 
 							@Override
 							public void run() {
-								mOtherAtom = mMol.getAtomicNo(atom);
-								mOtherMass = mMol.getAtomMass(atom);
-								mOtherValence = mMol.getAtomAbnormalValence(atom);
-								mOtherRadical = mMol.getAtomRadical(atom);
-								mOtherLabel = mMol.getAtomCustomLabel(atom);
-								fireMoleculeChanged();
-								update(UPDATE_REDRAW);
-							}
+						mOtherAtom = mMol.getAtomicNo(atom);
+						mOtherMass = mMol.getAtomMass(atom);
+						mOtherValence = mMol.getAtomAbnormalValence(atom);
+						mOtherRadical = mMol.getAtomRadical(atom);
+						mOtherLabel = mMol.getAtomCustomLabel(atom);
+						fireMoleculeChanged();
+						update(UPDATE_REDRAW);
+					}
 							
 						};
-						if (SwingUIHelper.isAsynchronous()) {
+						if (GenericUIHelper.isAsynchronous()) {
 							new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom, whenDone, whenDone);							
 							// continues - end of thread;
 							return;
@@ -2711,15 +2712,15 @@ public class JDrawArea extends SwingCanvas implements ActionListener, KeyListene
 		return KEY_IS_INVALID;
 	}
 
-	/**
-	 * @param s
-	 * @return true if s is either a valid atom symbol or a valid substituent name
-	 */
-	private boolean isValidAtomKeyStroke(String s)
-	{
-		return Molecule.getAtomicNoFromLabel(s) != 0
-			|| NamedSubstituents.getSubstituentIDCode(s) != null;
-	}
+//	/**
+//	 * @param s
+//	 * @return true if s is either a valid atom symbol or a valid substituent name
+//	 */
+//	private boolean isValidAtomKeyStroke(String s)
+//	{
+//		return Molecule.getAtomicNoFromLabel(s) != 0
+//			|| NamedSubstituents.getSubstituentIDCode(s) != null;
+//	}
 
 	/**
 	 * @param s

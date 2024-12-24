@@ -54,9 +54,9 @@ public class FileHelper extends CompoundFileHelper {
 
 	public FileHelper(Component parent) {
 		mParent = parent;
-	}
+		}
 
-	protected String selectOption(String message, String title, String[] option) {
+	public String selectOption(String message, String title, String[] option) {
 		return (SwingUtilities.isEventDispatchThread()
 				? (String) JOptionPane.showInputDialog(mParent, message, title, JOptionPane.QUESTION_MESSAGE, null,
 						option, option[0])
@@ -67,15 +67,14 @@ public class FileHelper extends CompoundFileHelper {
 		if (SwingUtilities.isEventDispatchThread())
 			new AsyncDialog().showInputDialog(mParent, message, title, JOptionPane.QUESTION_MESSAGE, null, option, option[0],
 					listener);
-	}
+		}
 
 	public void showMessage(String message) {
 		JOptionPane.showMessageDialog(mParent, message);
-	}
+		}
 
 	/**
 	 * For compatibility reasons...
-	 * 
 	 * @param parent
 	 * @param title
 	 * @param filetypes
@@ -83,7 +82,7 @@ public class FileHelper extends CompoundFileHelper {
 	 */
 	public static File getFile(Component parent, String title, int filetypes) {
 		return new FileHelper(parent).selectFileToOpen(title, filetypes);
-	}
+		}
 
 	public static void getFileAsync(Component parent, String title, int filetypes, Consumer<File> whenDone) {
 		new FileHelper(parent).selectFileToOpenAsync(title, filetypes, whenDone);
@@ -93,16 +92,16 @@ public class FileHelper extends CompoundFileHelper {
 		ArrayList<File> list = new ArrayList<>();
 		if (fileExists(directory)) {
 			javax.swing.filechooser.FileFilter ff = FileHelper.createFileFilter(filetypes, false);
-			for (File file : directory.listFiles((File pathname) -> ff.accept(pathname)))
+			for (File file:directory.listFiles((File pathname) -> ff.accept(pathname) ))
 				list.add(file);
-		}
+			}
 
 		return list;
-	}
+		}
 
 	public File selectFileToOpen(String title, int filetypes) {
 		return selectFileToOpen(title, filetypes, null);
-	}
+		}
 
 	/**
 	 * Note that this asynchronous version does not give any callback on Cancel in
@@ -116,8 +115,8 @@ public class FileHelper extends CompoundFileHelper {
 	/**
 	 * Shows a file-open-dialog, lets the user choose and returns the selected file.
 	 * 
-	 * @param title           of the dialog shown
-	 * @param filetypes       one or more file types defined in CompoundFileHelper
+	 * @param title of the dialog shown
+	 * @param filetypes one or more file types defined in CompoundFileHelper
 	 * @param initialFileName null or a suggested file name with or without complete
 	 *                        path
 	 * @return null or selected file
@@ -159,13 +158,13 @@ public class FileHelper extends CompoundFileHelper {
 		if (selectedFile.getName().contains(".") || filetypes == cFileTypeDirectory)
 			return selectedFile;
 		ArrayList<String> list = getExtensionList(filetypes);
-		for (String extension : list) {
-			File file = new File(selectedFile.getPath() + extension);
+		for (String extension:list) {
+			File file = new File(selectedFile.getPath()+extension);
 			if (file.exists())
 				return file;
-		}
+			}
 		return selectedFile;
-	}
+		}
 
 	public void selectFileToOpenAsync(String title, int filetypes, String initialFileName, Consumer<File> whenDone) {
 		AsyncFileChooser fileChooser = new AsyncFileChooser();
@@ -223,8 +222,8 @@ public class FileHelper extends CompoundFileHelper {
 	 * Shows a file-save-dialog, lets the user choose and return the file's path and
 	 * name.
 	 * 
-	 * @param title       of the dialog shown
-	 * @param filetype    one of the file types defined in CompoundFileHelper
+	 * @param title of the dialog shown
+	 * @param filetype one of the file types defined in CompoundFileHelper
 	 * @param newFileName null or a suggested file name with or without extension
 	 * @return null or complete file path and name
 	 */
@@ -253,12 +252,12 @@ public class FileHelper extends CompoundFileHelper {
 				else
 					fileChooser.setSelectedFile(
 							new File(FileHelper.getCurrentDirectory(), newFileName.substring(index + 1)));
+				}
 			}
-		}
 		int option = fileChooser.showSaveDialog(mParent);
 		setCurrentDirectory(fileChooser.getCurrentDirectory());
 		return (option != JFileChooser.APPROVE_OPTION) ? null : fileChooser.getFile().getPath();
-	}
+		}
 
 	/**
 	 * java.io.File.exists() and java.nio.file.Files.exists() may cause minutes of
@@ -267,13 +266,13 @@ public class FileHelper extends CompoundFileHelper {
 	 */
 	public static boolean fileExists(final File file) {
 		return fileExists(file, TIME_OUT);
-	}
+		}
 
-	/**
+		/**
 	 * java.io.File.exists() and java.nio.file.Files.exists() may cause minutes of
 	 * delay, if a file is/was on a network share which is currently unmounted. This
 	 * version returns quickly.
-	 */
+		  */
 	@SuppressWarnings("unused")
 	public static boolean fileExists(final File file, final long timeOutMillis) {
 		if (/** @j2sNative true || */false) {
@@ -282,10 +281,11 @@ public class FileHelper extends CompoundFileHelper {
 		}
 		final AtomicBoolean exists = new AtomicBoolean(false);
 		final AtomicBoolean done = new AtomicBoolean(false);
+
 		new Thread(() -> {
 			exists.set(file.exists());
 			done.set(true);
-		}).start();
+			} ).start();
 
 		long start = System.currentTimeMillis();
 		do {
@@ -294,8 +294,10 @@ public class FileHelper extends CompoundFileHelper {
 			} catch (InterruptedException ie) {
 			}
 
-		} while (!done.get() && System.currentTimeMillis() < start + timeOutMillis);
+			} while (!done.get() && System.currentTimeMillis() < start + timeOutMillis);
 
 		return exists.get();
+		}
+
+
 	}
-}

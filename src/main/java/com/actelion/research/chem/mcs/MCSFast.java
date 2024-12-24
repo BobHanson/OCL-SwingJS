@@ -461,7 +461,7 @@ public class MCSFast {
 				if(frag.isDelocalizedBond(i)){
 					type = Molecule.cBondTypeDelocalized;
 					
-					// fragSubBonds.setBondQueryFeature(bondIndexNew, Molecule.cBondQFDelocalized, true);
+					// fragSubBonds.setBondQueryFeature(bondIndexNew, Molecule.cBondTypeDelocalized, true);
 				}
 				
 				// int bondIndexNew = fragSubBonds.addBond(indexAtomNew1, indexAtomNew2, type);

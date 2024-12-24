@@ -55,8 +55,11 @@ public class MolecularPropertyHelper {
 	public static final int MOLECULAR_PROPERTY_AROMRINGCOUNT = 12;
 	public static final int MOLECULAR_PROPERTY_BASIC_NITROGENS = 13;
 	public static final int MOLECULAR_PROPERTY_ACIDIC_OXYGENS = 14;
+	public static final int MOLECULAR_PROPERTY_TOXICITY_RISK = 15;
 
-	public static final PropertySpecification[] SPEC = {
+	// Fitness between min and max is 1.0. Fitness at min-halfWidth or max+halfWidth is 1.0/e
+	// rangeMin and rangeMax are used as limits for the graph depicting the fuzzy score
+	private static final PropertySpecification[] SPEC = {
 			new PropertySpecification("molweight", "Molecular weight", "", "400", 50f, 0f, 800f),
 			new PropertySpecification("cLogP", "cLogP", "", "4", 0.5f, 0f, 8f),
 			new PropertySpecification("cLogS", "cLogS", "-4", "", 0.5f, -8f, 2f),
@@ -72,6 +75,7 @@ public class MolecularPropertyHelper {
 			new PropertySpecification("aromaticRings", "Aromatic ring count", "", "2", 1f, 0f, 6f),
 			new PropertySpecification("basicN", "Basic nitrogen count", "1", "", 0.5f, 0f, 6f),
 			new PropertySpecification("acidicO", "Acidic oxygen count", "1", "", 0.5f, 0, 6f),
+			new PropertySpecification("toxicity", "Toxicity Risk", "", "2", 3f, 0, 8f),
 	};
 
 	public static float calculateProperty(StereoMolecule mol, int type) {
@@ -90,6 +94,7 @@ public class MolecularPropertyHelper {
 				: (type == MOLECULAR_PROPERTY_AROMRINGCOUNT) ? mol.getAromaticRingCount()
 				: (type == MOLECULAR_PROPERTY_BASIC_NITROGENS) ? getBasicNitrogenCount(mol)
 				: (type == MOLECULAR_PROPERTY_ACIDIC_OXYGENS) ? getAcidicOxygenCount(mol)
+				: (type == MOLECULAR_PROPERTY_TOXICITY_RISK) ? getToxicityRisk(mol)
 				: Float.NaN;
 	}
 
@@ -157,6 +162,19 @@ public class MolecularPropertyHelper {
 
 	public static float getHalfFitnessWidth(int type) {
 		return SPEC[type].halfWidth;
+	}
+
+	private static int getToxicityRisk(StereoMolecule mol) {
+		int result = 0;
+		ToxicityPredictor tp = new ToxicityPredictor();
+		for (int riskType=0; riskType<ToxicityPredictor.cRiskTypes; riskType++) {
+			int risk = tp.assessRisk(mol, riskType, null);
+			if (risk == ToxicityPredictor.cLowRisk)
+				result += 1;
+			else if (risk == ToxicityPredictor.cHighRisk)
+				result += 2;
+			}
+		return result;
 	}
 
 	private static int getHAcceptorCount(StereoMolecule mol) {

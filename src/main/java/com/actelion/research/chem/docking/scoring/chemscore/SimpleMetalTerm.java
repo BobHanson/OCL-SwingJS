@@ -11,6 +11,7 @@ public class SimpleMetalTerm implements PotentialEnergyTerm {
 	
 	private static final double D1 = 2.6;
 	private static final double D2 = 3.0;
+	private static final double CUTOFF_SQ = 9.0;
 
 	
 	private static final double PHI0 = Math.PI;
@@ -53,24 +54,28 @@ public class SimpleMetalTerm implements PotentialEnergyTerm {
 		a = ligand.getCoordinates(acceptor);
 		m = receptor.getCoordinates(metal);
 		Coordinates r = a.subC(m);
-		double d = r.dist();
+		double rSq = r.distSq();
+		if(rSq<CUTOFF_SQ) {
+	
+			double d = Math.sqrt(rSq);
 
-		if(d<D1) {
-			energy = 1.0;
-		}
-		else if(d>D2) {
-			energy = 0.0;
-		}
-		
-		else {
-			double prefactor = -1.0/(D2-D1)*(1.0/d);
-			grad = r.scaleC(prefactor);
-
-			gradient[3*acceptor]+= grad.x;
-			gradient[3*acceptor+1]+= grad.y;
-			gradient[3*acceptor+2]+= grad.z;
-
-			energy = (D2-d)/(D2-D1);
+			if(d<D1) {
+				energy = 1.0;
+			}
+			else if(d>D2) {
+				energy = 0.0;
+			}
+			
+			else {
+				double prefactor = -1.0/(D2-D1)*(1.0/d);
+				grad = r.scaleC(prefactor);
+	
+				gradient[3*acceptor]+= grad.x;
+				gradient[3*acceptor+1]+= grad.y;
+				gradient[3*acceptor+2]+= grad.z;
+	
+				energy = (D2-d)/(D2-D1);
+			}
 		}
 		
 		return energy;
@@ -97,7 +102,11 @@ public class SimpleMetalTerm implements PotentialEnergyTerm {
 	    double cosTheta = r0.cosAngle(r1);
 
 	    double angleTerm = Math.acos(cosTheta) - x0;
-
+	    boolean invert = false;
+	    if(angleTerm<0) {
+	    	angleTerm=-angleTerm;
+	    	invert=true;
+	    }
 	    
 	    if(angleTerm<x1)
 	    	energy = 1.0;
@@ -105,9 +114,8 @@ public class SimpleMetalTerm implements PotentialEnergyTerm {
 	    	energy = 0.0;
 	    else {
 	    	double prefactor = -1.0/(x2-x1); //derivative of energy term with respect to 
-		    if(angleTerm<0) {
+		    if(invert) {
 		    	prefactor = -prefactor;
-		    	angleTerm = -angleTerm;
 		    }
 		    energy = (x2-angleTerm)/(x2-x1);
 

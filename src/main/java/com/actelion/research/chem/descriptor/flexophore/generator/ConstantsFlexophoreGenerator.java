@@ -4,7 +4,7 @@ import com.actelion.research.chem.descriptor.flexophore.PPNode;
 
 public class ConstantsFlexophoreGenerator {
 
-
+    public static final double SUM_VAL_HIST = 100.0;
     /**
      * Defines the resolution for the range. This is also the length for the DistHist vector.
      */
@@ -30,6 +30,7 @@ public class ConstantsFlexophoreGenerator {
      */
     // public static final double [] FILTER = FILTER05;
     public static final double [] FILTER07_ = {0.125, 0.125, 0.125,0.25,0.125, 0.125, 0.125};
+    public static final double [] FILTER05_ = {0.125, 0.25,0.25,0.25, 0.125};
 
     public static final double [] FILTER = FILTER07_;
 

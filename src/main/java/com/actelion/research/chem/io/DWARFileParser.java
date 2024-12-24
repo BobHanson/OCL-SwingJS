@@ -34,18 +34,20 @@
 
 package com.actelion.research.chem.io;
 
+import com.actelion.research.chem.*;
 import com.actelion.research.chem.descriptor.DescriptorConstants;
 import com.actelion.research.chem.descriptor.DescriptorHandlerLongFFP512;
 import com.actelion.research.chem.descriptor.DescriptorHandlerStandard2DFactory;
 import com.actelion.research.chem.descriptor.DescriptorHelper;
+import com.actelion.research.chem.reaction.Reaction;
+import com.actelion.research.chem.reaction.ReactionEncoder;
 import com.actelion.research.io.BOMSkipper;
 import com.actelion.research.util.BinaryDecoder;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Properties;
-import java.util.TreeMap;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class DWARFileParser extends CompoundFileParser implements DescriptorConstants,CompoundTableConstants {
 
@@ -76,7 +78,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
      */
 	public DWARFileParser(String fileName) {
         try {
-            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
 			BOMSkipper.skip(mReader);
             mMode = MODE_COORDINATES_PREFER_2D;
             init();
@@ -92,7 +94,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
      */
 	public DWARFileParser(File file) {
         try {
-            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
 			BOMSkipper.skip(mReader);
             mMode = MODE_COORDINATES_PREFER_2D;
             init();
@@ -124,7 +126,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
      */
     public DWARFileParser(String fileName, int mode) {
         try {
-            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
 			BOMSkipper.skip(mReader);
             mMode = mode;
             init();
@@ -141,7 +143,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
      */
     public DWARFileParser(File file, int mode) {
         try {
-            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+            mReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
 			BOMSkipper.skip(mReader);
             mMode = mode;
             init();
@@ -195,7 +197,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
             if (line.startsWith("<"+cNativeFileVersion)) {
                 String version = extractValue(line);
                 if (!version.startsWith("3.")
-                 && !version.equals(""))
+                 && !version.isEmpty())
                     throw new IOException("unsupported .dwar file version");
                 }
 
@@ -291,7 +293,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
                 }
             else {
     			columnNameList.add(columnName);
-    			columnIndexList.add(new Integer(sourceColumn));
+    			columnIndexList.add(sourceColumn);
                 }
 
 			sourceColumn++;
@@ -301,7 +303,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
 		mFieldIndex = new int[columnNameList.size()];
 		for (int i=0; i<columnNameList.size(); i++) {
 			mFieldName[i] = columnNameList.get(i);
-			mFieldIndex[i] = columnIndexList.get(i).intValue();
+			mFieldIndex[i] = columnIndexList.get(i);
 			}
 
 		mFieldData = new String[sourceColumn];
@@ -349,7 +351,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
 					 && DescriptorHelper.getDescriptorInfo(specialColumn.type).version.equals(specialColumn.version)) {
                         if (mDescriptorColumnMap == null)
                             mDescriptorColumnMap = new TreeMap<String,Integer>();
-                        mDescriptorColumnMap.put(specialColumn.type, new Integer(specialColumn.fieldIndex));
+                        mDescriptorColumnMap.put(specialColumn.type, specialColumn.fieldIndex);
                         }
                     }
                 }
@@ -466,7 +468,114 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
         return mLine;
         }
 
-    protected boolean advanceToNext() {
+	/**
+	 * Returns the raw data in the following format:
+	 * Columns are sorted according to the order of how they appear in DataWarrior:
+	 *
+	 * @param includeHeaderRow
+	 * @return
+	 */
+	public String[][] getRawData(boolean includeHeaderRow, boolean structureAsSmiles) {
+
+		String[] fn  = getFieldNames();
+		TreeMap<String,SpecialField> sfn = getSpecialFieldMap();
+
+		List<String> allFieldNames = new ArrayList<>();
+
+		allFieldNames.addAll(Arrays.stream(fn).collect(Collectors.toList()));
+		List<String> allFieldNamesForOutput = new ArrayList<>();
+		allFieldNamesForOutput.addAll(allFieldNames);
+		for(String sfi : sfn.keySet().stream().sorted(  (x,y) -> Integer.compare( sfn.get(x).fieldIndex , sfn.get(y).fieldIndex ) ).collect(Collectors.toList())) {
+			if(sfn.get(sfi).type.equals(cColumnTypeIDCode)) {
+				allFieldNames.add(sfn.get(sfi).fieldIndex, sfi);
+				allFieldNamesForOutput.add(sfi);
+			}
+		}
+
+		int nDataRows = getRowCount();
+		int nOutputRows = nDataRows + (includeHeaderRow?1:0);
+
+		String[][] rawData = new String[ nOutputRows ][ allFieldNames.size() ];
+
+		if(includeHeaderRow) {
+			for(int zi=0;zi<allFieldNamesForOutput.size();zi++) {
+				String fi = allFieldNamesForOutput.get(zi);
+				rawData[0][zi] = fi;
+			}
+		}
+
+		next();
+
+		for(int zi=0;zi<nDataRows;zi++) {
+			int zOutput = zi + (includeHeaderRow?1:0);
+
+			for(int zj=0;zj<allFieldNamesForOutput.size();zj++) {
+				// determine if structure column or not
+				String fi = allFieldNamesForOutput.get(zj); //allFieldNames.get(zj);//fn[zj];
+				String rawData_i = "";
+
+				if(sfn.containsKey(fi)) {
+					rawData_i = getSpecialFieldData(getSpecialFieldIndex(fi));
+					// special column..
+					if( sfn.get(fi).type.equals(cColumnTypeIDCode) ) {
+						if(structureAsSmiles) {
+							try{
+								StereoMolecule mi = new StereoMolecule();
+								IDCodeParser icp = new IDCodeParser();
+								icp.parse(mi,rawData_i);
+								IsomericSmilesCreator isc = new IsomericSmilesCreator(mi);
+								rawData_i = isc.getSmiles();
+							}
+							catch(Exception ex) {
+								System.out.println("Exception for: "+rawData_i);
+							}
+						}
+					}
+				}
+				else {
+					// normal column:
+					rawData_i = getFieldData( getFieldIndex( fi ) );
+				}
+				rawData[zOutput][zj] = rawData_i;
+			}
+			this.next();
+		}
+		return rawData;
+	}
+
+	public static void main(String args[]) {
+		//DWARFileParser dwfp = new DWARFileParser("C:\\data\\ActelionFragmentLibrary_smallFragments.dwar");
+		//DWARFileParser dwfp = new DWARFileParser("C:\\data\\hitexpclusteringtool\\input\\Ox1_HTS_215_Hits.dwar");
+		DWARFileParser dwfp = new DWARFileParser("C:\\dev\\pyocl\\data\\Wikipedia_Compounds_6.dwar");
+
+		String[][] rawData_a = dwfp.getRawData(true,false);
+		dwfp = new DWARFileParser("C:\\dev\\pyocl\\data\\Wikipedia_Compounds_6.dwar");
+		String[][] rawData_b = dwfp.getRawData(false,true);
+		dwfp = new DWARFileParser("C:\\dev\\pyocl\\data\\Wikipedia_Compounds_6.dwar");
+		String[][] rawData_c = dwfp.getRawData(true,true);
+		System.out.println("DATA:\n");
+		for(int zi=0;zi<rawData_a.length;zi++) {
+			for(int zj=0;zj<rawData_a[0].length;zj++) {
+				System.out.print(rawData_a[zi][zj]+" ;; ");
+			}
+			System.out.println("");
+		}
+		for(int zi=0;zi<rawData_b.length;zi++) {
+			for(int zj=0;zj<rawData_b[0].length;zj++) {
+				System.out.print(rawData_b[zi][zj]+" ;; ");
+			}
+			System.out.println();
+		}
+		for(int zi=0;zi<rawData_c.length;zi++) {
+			for(int zj=0;zj<rawData_c[0].length;zj++) {
+				System.out.print(rawData_c[zi][zj]+" ;; ");
+			}
+			System.out.println();
+		}
+	}
+
+
+	protected boolean advanceToNext() {
 		if (mReader == null)
 			return false;
 
@@ -545,7 +654,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
         if (mIDCodeColumn == -1)
             return null;
 		String s = mFieldData[mIDCodeColumn];
-		return (s == null || s.length() == 0) ? null : s;
+		return (s == null || s.isEmpty()) ? null : s;
 		}
 
 	/**
@@ -560,34 +669,64 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
         if (mCoordinateColumn == -1)
             return null;
 		String s = mFieldData[mCoordinateColumn];
-		return (s == null || s.length() == 0) ? null : s;
+		return (s == null || s.isEmpty()) ? null : s;
 		}
 
 	public String getCoordinates2D() {
 		if (mCoordinate2DColumn == -1)
 			return null;
 		String s = mFieldData[mCoordinate2DColumn];
-		return (s == null || s.length() == 0) ? null : s;
+		return (s == null || s.isEmpty()) ? null : s;
 		}
 
 	public String getCoordinates3D() {
 		if (mCoordinate3DColumn == -1)
 			return null;
 		String s = mFieldData[mCoordinate3DColumn];
-		return (s == null || s.length() == 0) ? null : s;
+		return (s == null || s.isEmpty()) ? null : s;
 		}
+
+	public Reaction getReaction(boolean ensureCoordinates) {
+		String rxnCode = null;
+		String rxnColumn = null;
+		for (SpecialField sf : mSpecialFieldMap.values()) {
+			if (CompoundTableConstants.cColumnTypeRXNCode.equals(sf.type)) {
+				rxnColumn = sf.name;
+				rxnCode = mFieldData[sf.fieldIndex];
+				break;
+			}
+		}
+
+		if (rxnCode == null)
+			return null;
+
+		String rxnMapping = null;
+		String rxnCoords = null;
+		String rxnCatalysts = null;
+		for (SpecialField sf : mSpecialFieldMap.values()) {
+			if (CompoundTableConstants.cColumnTypeReactionMapping.equals(sf.type) && rxnColumn.equals(sf.parent))
+				rxnMapping = mFieldData[sf.fieldIndex];
+			else if (CompoundTableConstants.cColumnType2DCoordinates.equals(sf.type) && rxnColumn.equals(sf.parent))
+				rxnCoords = mFieldData[sf.fieldIndex];
+			else if (CompoundTableConstants.cColumnTypeIDCode.equals(sf.type)
+					&& sf.name.equals(getColumnProperties(rxnColumn).getProperty(cColumnPropertyRelatedCatalystColumn)))
+				rxnCatalysts = mFieldData[sf.fieldIndex];
+		}
+
+		return ReactionEncoder.decode(rxnCode, rxnMapping, rxnCoords, null, rxnCatalysts, ensureCoordinates, null);
+	}
 
 	public String getMoleculeName() {
         if (mMoleculeNameColumn == -1)
             return null;
         String s = mFieldData[mMoleculeNameColumn];
-        return (s == null || s.length() == 0) ? null : s;
+        return (s == null || s.isEmpty()) ? null : s;
         }
 
     public Object getDescriptor(String shortName) {
         Integer column = (mDescriptorColumnMap == null) ? null : mDescriptorColumnMap.get(shortName);
         String s = (column == null) ? null : mFieldData[column.intValue()];
-        return (s == null || s.length() == 0) ? super.getDescriptor(shortName)
+        return (s == null || s.isEmpty()) ? super.getDescriptor(shortName)
              : (getDescriptorHandlerFactory() == null) ? null
              : getDescriptorHandlerFactory().getDefaultDescriptorHandler(shortName).decode(s);
         }
@@ -599,7 +738,7 @@ public class DWARFileParser extends CompoundFileParser implements DescriptorCons
         if (mFragFpColumn == -1)
             return null;
 		String s = mFieldData[mFragFpColumn];
-		return (s == null || s.length() == 0) ? null : s;
+		return (s == null || s.isEmpty()) ? null : s;
 		}
 
 	public String getFieldData(int no) {

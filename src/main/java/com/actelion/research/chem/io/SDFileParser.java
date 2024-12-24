@@ -39,6 +39,7 @@ import com.actelion.research.chem.UniqueStringList;
 import com.actelion.research.io.BOMSkipper;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class SDFileParser extends CompoundFileParser {
     private static final int DEFAULT_RECORDS_TO_INSPECT = 10240;
@@ -50,6 +51,7 @@ public class SDFileParser extends CompoundFileParser {
 	private String[]			mFieldName;
 	private String[]			mFieldData;
 	private int					mNoOfRecords,mIDFieldIndex;
+	private boolean				mAssumeChiralTrue;
 
 	public SDFileParser(String fileName) {
 		this(fileName, null);
@@ -61,7 +63,7 @@ public class SDFileParser extends CompoundFileParser {
 		mFieldName = fieldName;
 		
 		try {
-			mReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+			mReader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
 			BOMSkipper.skip(mReader);
 		} catch (IOException e) {
 			mReader = null;
@@ -81,7 +83,7 @@ public class SDFileParser extends CompoundFileParser {
         mNoOfRecords = -1;
 		mFieldName = fieldName;
 		try {
-    		mReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+    		mReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
 			BOMSkipper.skip(mReader);
 		} catch (IOException e) {
 			mReader = null;
@@ -102,6 +104,17 @@ public class SDFileParser extends CompoundFileParser {
 		mReader = (reader instanceof BufferedReader) ? (BufferedReader)reader : new BufferedReader(reader);
 		
 		init();
+		}
+
+
+	/**
+	 * Some software exports mol/sd-files with an unset chiral flag despite
+	 * the original molecule is a pure enantiomer. This method allows the
+	 * MolfileParser to override the molfile's chiral flag for such cases.
+	 * @param b
+	 */
+	public void setAssumeChiralTrue(boolean b) {
+		mAssumeChiralTrue = b;
 		}
 
 
@@ -154,7 +167,7 @@ public class SDFileParser extends CompoundFileParser {
 	/**
 	 * Only accurate if getFieldNames() or getFieldNames(int) was called earlier
 	 * and if the number of records of the SD-file is smaller than the number
-	 * of records that were examined within the the getFieldNames() method.
+	 * of records that were examined within the getFieldNames() method.
 	 * If not all records of the file were seen, then -1 is returned.
 	 * For getRowCount() to reliably return the record count call getFieldNames(Integer.MAX_VALUE) first.
 	 * @return number of rows or -1
@@ -269,7 +282,11 @@ public class SDFileParser extends CompoundFileParser {
 	    if (mMol != null)
 	        return mMol;
 
-	    mMol = new MolfileParser().getCompactMolecule(getNextMolFile());
+		MolfileParser molfileParser = new MolfileParser();
+		if (mAssumeChiralTrue)
+			molfileParser.setAssumeChiralTrue(true);
+
+	    mMol = molfileParser.getCompactMolecule(getNextMolFile());
 	    if (mMol != null && (mMol.getName() == null || mMol.getName().length() == 0))
 	        mMol.setName(getMoleculeName());
 	    return mMol;

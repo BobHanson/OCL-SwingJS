@@ -90,7 +90,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 
 	private final static int cWhiteSpace = 4;
 
-	private CompoundCollectionModel<T> mModel;
+	private final CompoundCollectionModel<T> mModel;
 	private IClipboardHandler   mClipboardHandler;
 	private MoleculeFilter		mCompoundFilter;
 	private int					mDisplayMode,mSelectedIndex,mHighlightedIndex,
@@ -101,7 +101,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 								mIsEnabled,mShowValidationError,mInternalDragAndDropIsMove;
 	private String[]            mMessage;
 	private ArrayList<JMenuItem> mCustomPopupItemList;
-	private ScrollPaneAutoScrollerWhenDragging mScroller;
+	private final ScrollPaneAutoScrollerWhenDragging mScroller;
 
 
 	/**
@@ -263,17 +263,17 @@ public class CompoundCollectionPane<T> extends JScrollPane
 			ArrayList<StereoMolecule> molList = mClipboardHandler.pasteMolecules();
 			if (molList != null) {
 				int errorCount = 0;
-				for (StereoMolecule mol : molList) {
+				for (StereoMolecule mol:molList) {
 					mol.setFragment(mCreateFragments);
 					if (mCompoundFilter == null || mCompoundFilter.moleculeQualifies(mol))
 						mModel.addMolecule(index, mol);
 					else
 						errorCount++;
-				}
+					}
 				if (errorCount != 0)
 					JOptionPane.showMessageDialog(getParentFrame(),
 							errorCount + " compound(s) could not be added, because they doesn't qualify.");
-			}
+				}
 		} else if (e.getActionCommand().equals(ADD)) {
 			editStructure(-1);
 		} else if (e.getActionCommand().equals(EDIT) && mHighlightedIndex != -1) {
@@ -289,7 +289,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 				if (list != null) {
 					for (Object compound : list) {
 						((StereoMolecule) compound).setFragment(mCreateFragments);
-					}
+			}
 					ArrayList<StereoMolecule> compounds = new ArrayList<>();
 					int count = 0;
 					for (int i = 0, n = list.size(); i < n; i++) {
@@ -298,13 +298,13 @@ public class CompoundCollectionPane<T> extends JScrollPane
 							count++;
 						} else {
 							compounds.add(m);
+							}
 						}
-					}
 					if (count != 0) {
 						JOptionPane.showMessageDialog(getParentFrame(),
 								Integer.toString(count).concat(" compounds were removed, because they don't qualify."));
 					}
-					mModel.addMoleculeList(compounds);
+				mModel.addMoleculeList(compounds);
 				}
 			});
 		} else if (e.getActionCommand().equals(SAVE_DWAR)) {
@@ -319,13 +319,13 @@ public class CompoundCollectionPane<T> extends JScrollPane
 					writer.newLine();
 					writer.write("<version=\"3.1\">");
 					writer.newLine();
-					writer.write("<rowcount=\"" + mModel.getSize() + "\">");
+					writer.write("<rowcount=\""+mModel.getSize()+"\">");
 					writer.newLine();
 					writer.write("</datawarrior-fileinfo>");
 					writer.newLine();
 					writer.write("<column properties>");
 					writer.newLine();
-					writer.write("<columnName=\"" + title + "\">");
+					writer.write("<columnName=\""+title+"\">");
 					writer.newLine();
 					writer.write("<columnProperty=\"specialType\tidcode\">");
 					writer.newLine();
@@ -333,37 +333,37 @@ public class CompoundCollectionPane<T> extends JScrollPane
 					writer.newLine();
 					writer.write("<columnProperty=\"specialType\tidcoordinates2D\">");
 					writer.newLine();
-					writer.write("<columnProperty=\"parent\t" + title + "\">");
+					writer.write("<columnProperty=\"parent\t"+title+"\">");
 					writer.newLine();
 					writer.write("</column properties>");
 					writer.newLine();
-					writer.write(title + "\tcoords");
+					writer.write(title+"\tcoords");
 					writer.newLine();
-					for (int i = 0; i < mModel.getSize(); i++) {
+					for (int i=0; i<mModel.getSize(); i++) {
 						if (mModel instanceof DefaultCompoundCollectionModel.IDCode) {
-							String idcode = (String) mModel.getCompound(i);
+							String idcode = (String)mModel.getCompound(i);
 							int index = idcode.indexOf(' ');
 							if (index == -1) {
 								writer.write(idcode.substring(0, index));
 								writer.write('\t');
-								writer.write(idcode.substring(index + 1));
+								writer.write(idcode.substring(index+1));
 							} else {
 								writer.write(idcode);
 								writer.write('\t');
-							}
+								}
 						} else {
 							Canonizer canonizer = new Canonizer(mModel.getMolecule(i));
 							writer.write(canonizer.getIDCode());
 							writer.write('\t');
 							writer.write(canonizer.getEncodedCoordinates());
-						}
+							}
 						writer.newLine();
-					}
+						}
 					writer.close();
 				} catch (IOException ioe) {
 					JOptionPane.showMessageDialog(getParentFrame(), ioe.toString());
+					}
 				}
-			}
 		} else if (e.getActionCommand().equals(SAVE_SDF2) || e.getActionCommand().equals(SAVE_SDF3)) {
 			String version = "Version " + (e.getActionCommand().equals(SAVE_SDF2) ? "2" : "3");
 			String filename = new FileHelper(getParentFrame()).selectFileToSave("Save SD-File " + version,
@@ -372,25 +372,25 @@ public class CompoundCollectionPane<T> extends JScrollPane
 				try {
 					BufferedWriter theWriter = new BufferedWriter(
 							new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"));
-
-					for (int i = 0; i < mModel.getSize(); i++) {
+	
+					for (int i=0; i<mModel.getSize(); i++) {
 						StereoMolecule mol = mModel.getMolecule(i);
-
+	
 						if (e.getActionCommand().equals(SAVE_SDF3))
 							new MolfileV3Creator(mol).writeMolfile(theWriter);
 						else
 							new MolfileCreator(mol).writeMolfile(theWriter);
-
+	
 						theWriter.write("$$$$");
 						theWriter.newLine();
-					}
+						}
 					theWriter.close();
 				} catch (IOException ioe) {
 					JOptionPane.showMessageDialog(getParentFrame(), ioe.toString());
+					}
 				}
 			}
 		}
-	}
 
 	private void editStructure(int index) {
 		mEditedIndex = index;
@@ -534,6 +534,9 @@ public class CompoundCollectionPane<T> extends JScrollPane
 
 	private int getMoleculeIndex(int x, int y) {
 		if (mModel.getSize() == 0 || mCellSize.width == 0 || mCellSize.height == 0)
+			return -1;
+
+		if ((mIsVertical && x >= getViewport().getViewRect().width) || (!mIsVertical && y >= getViewport().getViewRect().height))
 			return -1;
 
 		Point p = getViewport().getViewPosition();
@@ -794,7 +797,8 @@ public class CompoundCollectionPane<T> extends JScrollPane
 
 	private Component getParentFrame() {
 		return getTopLevelAncestor();
-	}
+		}
+
 		// This class is needed for inter-jvm drag&drop. Although not neccessary for standard environments, it prevents
 		// nasty "no native data was transfered" errors. It still might create ClassNotFoundException in the first place by
 		// the SystemFlavorMap, but as I found it does not hurt, since the context classloader will be installed after

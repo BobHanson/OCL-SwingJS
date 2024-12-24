@@ -36,12 +36,10 @@ package com.actelion.research.chem.io.pdb.parser;
 
 import com.actelion.research.chem.Molecule;
 import com.actelion.research.chem.Molecule3D;
-import com.actelion.research.chem.io.pdb.converter.AminoAcidsLabeledContainer;
+import com.actelion.research.chem.io.pdb.converter.AminoAcids;
 import com.actelion.research.chem.io.pdb.converter.BondsCalculator;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * ModelGroupAtoms
@@ -52,15 +50,16 @@ import java.util.Map;
 public class Residue {
 	public static double BOND_CUTOFF_SQ = 3.24;
     private List<AtomRecord> records;
-    private boolean isTerminal;
+    private boolean isTerminal,mAddBonds,mIncludeAltLocs;
     private Molecule3D mol;
 
-    public Residue(List<AtomRecord> records) {
+    public Residue(List<AtomRecord> records, boolean addBonds, boolean includeAltLocations) {
         this.records = records;
         this.isTerminal = isTerminal();
+		mAddBonds = addBonds;
+		mIncludeAltLocs = includeAltLocations;
         mol = constructFragment();
     }
-        
 
 	public boolean isTerminal() {
 		isTerminal = false;
@@ -70,39 +69,25 @@ public class Residue {
 		}
 		return isTerminal;
 	}
-    
 
-    
     private Molecule3D constructFragment() {
-    	boolean isAA = false;
-    	if(AminoAcidsLabeledContainer.INSTANCE.get(getResname())!=null)
-    		isAA = true;
-    	Molecule3D fragment;
-    	if(isAA) 
-    		fragment = constructFragmentFromIDCode(getResname());
-    	else 
-    		fragment = constructFragmentFromGeometry(getResname());
+		Molecule3D fragment = AminoAcids.createResidue(getResname(), records);
+		if (fragment == null)
+			fragment = constructFragmentFromGeometry();
     	fragment.ensureHelperArrays(Molecule.cHelperNeighbours);
     	return fragment;
     }
     
-    private Molecule3D constructFragmentFromIDCode(String resname) {
-		Molecule3D fragment;
-		Map<String,AtomRecord> recordMap = new HashMap<String,AtomRecord>();
-		for(AtomRecord record : records) {
-			String atomName = record.getAtomName();
-			recordMap.put(atomName,record);
-		}
-		fragment = AminoAcidsLabeledContainer.INSTANCE.get(resname).createResidue(recordMap);
-		if(fragment==null) {
-			fragment = constructFragmentFromGeometry(resname);
-		}
-		return fragment;
-    }
-    
-	private Molecule3D constructFragmentFromGeometry(String resname) {
+	private Molecule3D constructFragmentFromGeometry() {
 		Molecule3D fragment = new Molecule3D();
+		String altLoc = null;
 		for(AtomRecord record : records) {
+			if (!mIncludeAltLocs) {
+				if (altLoc == null)
+					altLoc = record.getAltLoc();
+				else if (!altLoc.equals(record.getAltLoc()))
+					continue;
+			}
 			int atomicNo = record.getAtomicNo();
 			int atom = fragment.addAtom(atomicNo);
 			fragment.setAtomName(atom, record.getAtomName());
@@ -116,13 +101,13 @@ public class Residue {
 			fragment.setAtomZ(atom,record.getZ());
 		}
 
-		fragment.ensureHelperArrays(Molecule.cHelperCIP);
-		try {
-			BondsCalculator.createBonds(fragment, true,null);
-			BondsCalculator.calculateBondOrders(fragment,true);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			System.err.println();
+		if (mAddBonds) {
+			try {
+				BondsCalculator.createBonds(fragment, true,null);
+				BondsCalculator.calculateBondOrders(fragment,true);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		return fragment;
@@ -179,9 +164,5 @@ public class Residue {
 				areBonded=true;
 		}
 		return areBonded;
-		
 	}
-		
-		
-
 }

@@ -2,22 +2,21 @@ package com.actelion.research.gui.fx;
 
 import com.actelion.research.gui.generic.*;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
-import com.actelion.research.gui.swing.SwingCursorHelper;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.web.WebView;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.function.Consumer;
 
 public class FXUIHelper implements GenericUIHelper {
-	private Node mParentNode;
+	private final Node mParentNode;
 	private Stage mHelpDialog;
 
 	public FXUIHelper(Node parent) {
@@ -67,66 +66,39 @@ public class FXUIHelper implements GenericUIHelper {
 		Platform.runLater(r);
 	}
 
-	@Override
 	public File openChemistryFile(boolean isReaction) {
-		return null;
-/*		return isReaction ?
-				FileHelper.getFile(mDrawArea, "Please select a reaction file",
-						FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD)
-				: FileHelper.getFile(mDrawArea, "Please select a molecule file",
-				FileHelper.cFileTypeMOL | CompoundFileHelper.cFileTypeMOL2);
-*/	}
-	
-	@Override
-	public void openChemistryFileAsync(boolean isReaction, Consumer<File> onOK) {
-		// ok.....
+		FileChooser fileChooser = new FileChooser();
+		if (isReaction) {
+			fileChooser.setTitle("Please select a reaction file");
+			fileChooser.getExtensionFilters().addAll(
+					new FileChooser.ExtensionFilter("Reaction Files", "*.rxn"));
+		}
+		else {
+			fileChooser.setTitle("Please select a molecule file");
+			fileChooser.getExtensionFilters().addAll(
+					new FileChooser.ExtensionFilter("MDL Molfiles", "*.mol"),
+					new FileChooser.ExtensionFilter("Mol2-Files", "*.mol2"));
+		}
+		return fileChooser.showOpenDialog(mParentNode.getScene().getWindow());
 	}
-
 
 	@Override
 	public void showHelpDialog(String url, String title) {
 		if (mHelpDialog == null) {
-			mHelpDialog = new Stage();
 			WebView view = new WebView();
 			view.setZoom(HiDPIHelper.getUIScaleFactor());
 			view.getEngine().load(createURL(url).toExternalForm());
-			Scene scene = new Scene(view, HiDPIHelper.scale(640), HiDPIHelper.scale(480));
+			Scene scene = new Scene(view);
+
+			mHelpDialog = new Stage();
 			mHelpDialog.setScene(scene);
+			mHelpDialog.setMinWidth(scene.getRoot().prefWidth(640));
+			mHelpDialog.setMinHeight(scene.getRoot().prefHeight(480));
 			mHelpDialog.show();
 		}
-
-
-/*		if (mHelpDialog == null || !mHelpDialog.isVisible()) {
-			JEditorPane helpPane = new JEditorPane();
-			helpPane.setEditorKit(HiDPIHelper.getUIScaleFactor() == 1f ? new HTMLEditorKit() : new ScaledEditorKit());
-			helpPane.setEditable(false);
-			try {
-				helpPane.setPage(getClass().getResource(url));
-			}
-			catch (Exception ex) {
-				helpPane.setText(ex.toString());
-			}
-
-			Component c = getParent();
-			if (c instanceof Frame)
-				mHelpDialog = new JDialog((Frame)c, title, false);
-			else
-				mHelpDialog = new JDialog((Dialog)c, title, false);
-
-			mHelpDialog.setSize(HiDPIHelper.scale(520), HiDPIHelper.scale(440));
-			mHelpDialog.getContentPane().add(new JScrollPane(helpPane,
-					JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-					JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
-			int x = (c.getX()>=8 + mHelpDialog.getWidth()) ? c.getX() - 8 - mHelpDialog.getWidth() : c.getX() + 8 + c.getWidth();
-			mHelpDialog.setLocation(x, c.getY());
-			mHelpDialog.setVisible(true);
-		}
 		else {
-			Component c = getParent();
-			int x = (mHelpDialog.getX() + mHelpDialog.getWidth() / 2>=c.getX() + c.getWidth() / 2) ?
-					c.getX() - 8 - mHelpDialog.getWidth() : c.getX() + 8 + c.getWidth();
-			mHelpDialog.setLocation(x, c.getY());
-		}*/
+			mHelpDialog.toFront();
+		}
 	}
 
 	public static URL createURL(String urlText) {
@@ -147,5 +119,4 @@ public class FXUIHelper implements GenericUIHelper {
 		}
 		return theURL;
 	}
-
 }

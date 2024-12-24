@@ -102,9 +102,9 @@ public class Depictor2D extends AbstractDepictor<Graphics2D> {
       mContext.drawString(theString, (float)(x-strWidth/2.0),
           (float)(y+(float)mpTextSize/3.0));
     } else {
-      mContext.drawGlyphVector(mCurrentGlyphVector, (float)(x-strWidth/2.0),
-          (float)(y+(float)mpTextSize/3.0));      
-    }	
+		mContext.drawGlyphVector(mCurrentGlyphVector, (float)(x-strWidth/2.0),
+										(float)(y+(float)mpTextSize/3.0));
+		}
 	}
 
 	@Override
@@ -156,7 +156,7 @@ public class Depictor2D extends AbstractDepictor<Graphics2D> {
 			}
 		}
 		return mCurrentStringWidth;
-	}
+		}
 
 	@Override
 	protected void setTextSize(int theSize) {

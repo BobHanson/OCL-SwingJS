@@ -43,9 +43,8 @@ import java.io.*;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.util.*;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.*;
 
 public class Matrix {
 
@@ -128,43 +127,29 @@ public class Matrix {
      * @param arrArr
      */
     public Matrix(double [][]arrArr) {
-    	
         data = new double[arrArr.length][];
-        
         int rows = arrArr.length;
-        
         int cols = arrArr[0].length;
-        
         for (int i = 0; i < rows; i++) {
         	double [] arr = new double [cols];
-        	
         	System.arraycopy(arrArr[i], 0, arr, 0, cols);
-            
             data[i] = arr;
         }
     }
 
     public Matrix(double [][]arrArr, boolean flat) {
-
         if(!flat){
             throw new RuntimeException("Only flat constructor!");
         }
-
         data = arrArr;
-
     }
 
     public Matrix(float [][]arrArr) {
-    	
         data = new double[arrArr.length][arrArr[0].length];
-        
         int rows = arrArr.length;
-        
         int cols = arrArr[0].length;
-        
         for (int i = 0; i < rows; i++) {
         	double [] arr = new double [cols];
-        	
         	for (int j = 0; j < arr.length; j++) {
         		data[i][j] = arrArr[i][j];
 			}
@@ -2062,7 +2047,7 @@ public class Matrix {
     public boolean equal(Matrix ma) {
         boolean bEQ = true;
 
-        if(equalDimension(ma) == true) {
+        if(equalDimension(ma)) {
             for (int i = 0; i < getRowDim(); i++) {
                 for (int j = 0; j < getColDim(); j++) {
                     if(data[i][j] != ma.data[i][j]) {
@@ -2081,7 +2066,7 @@ public class Matrix {
     public boolean equal(Matrix ma, double dLimit) {
         boolean bEQ = true;
 
-        if(equalDimension(ma) == true) {
+        if(equalDimension(ma)) {
             for (int i = 0; i < getRowDim(); i++) {
                 for (int j = 0; j < getColDim(); j++) {
                     double dDiff = Math.abs(data[i][j] - ma.data[i][j]);
@@ -2320,7 +2305,7 @@ public class Matrix {
         //
         
         // C = A * B
-        if ( (transA == false) && (transB == false)) {
+        if (!transA && !transB) {
         	
             int n = cols();
             
@@ -2379,7 +2364,7 @@ public class Matrix {
         // C = A' * B
         //
         // Matrix A is transposed
-        if ( (transA == true) && (transB == false)) {
+        if (transA && !transB) {
 
             // Reverse n
             int n = rows();
@@ -2444,7 +2429,7 @@ public class Matrix {
         // C = A * B'
         //
         // Matrix B is transposed
-        if ( (transA == false) && (transB == true)) {
+        if (!transA && transB) {
             int n = cols();
             
             int m = rows();
@@ -2498,7 +2483,7 @@ public class Matrix {
         // C = A' * B'
         //
         // Matrix A + B are transposed
-        if ( (transA == true) && (transB == true)) {
+        if (transA && transB) {
         	
             // Reverse n
             int n = rows();
@@ -2807,7 +2792,7 @@ public class Matrix {
     public List<Double> getRowAsList(int row) {
         List<Double> list = new ArrayList<Double>();
         for (int ii = 0; ii < data[0].length; ii++) {
-          list.add(new Double(data[row][ii]));
+          list.add(data[row][ii]);
         }
         return list;
     }
@@ -2969,6 +2954,21 @@ public class Matrix {
         return var;
     }
 
+    public double getVarianceRow(int row) {
+        double var = 0;
+
+        int cols = cols();
+        double mean = getMeanRow(row);
+        double dSum = 0;
+        for (int i = 0; i < cols; i++) {
+        	dSum += (data[row][i] - mean) * (data[row][i] - mean);
+        }
+
+        var = dSum / (cols - 1.0);
+
+        return var;
+    }
+
     public double getVarianceCentered() {
         double var = 0;
 
@@ -3089,10 +3089,14 @@ public class Matrix {
 
 
     public void shuffleRows() {
-        Random rnd = new Random();
         int r = rows();
-        for(int i = r; i > 1; --i) {
-            swapRows(i, rnd.nextInt(i));
+        List<Integer> li = new ArrayList<>(r);
+        for (int i = 0; i < r; i++) {
+            li.add(i);
+        }
+        Collections.shuffle(li);
+        for (int i = 0; i < li.size(); i++) {
+            swapRows(i, li.get(i));
         }
     }
 
@@ -3445,7 +3449,10 @@ public class Matrix {
         return sb.toString();
     }
     public String toString(int digits) {
-        return toString(rows(), cols(), digits);
+        return toString(rows(), cols(), digits, 0);
+    }
+    public String toString(int digits, int width) {
+        return toString(rows(), cols(), digits, width);
     }
 
     /**
@@ -3455,7 +3462,7 @@ public class Matrix {
      * @param digits
      * @return
      */
-    public String toString(int rowEnd, int colEnd, int digits) {
+    public String toString(int rowEnd, int colEnd, int digits, int width) {
 
         int iRequireDigits = 20;
 
@@ -3471,7 +3478,7 @@ public class Matrix {
           iCounter++;
         }
 
-        DecimalFormat nf = new DecimalFormat(sFormat);
+        DecimalFormat nf = new DecimalFormat(sFormat, new DecimalFormatSymbols(Locale.US));
 
         int len = getRowDim() * getColDim() * iRequireDigits;
         StringBuilder sb = new StringBuilder(len);
@@ -3483,8 +3490,12 @@ public class Matrix {
             	String sVal = nf.format(data[i][j]);
             	if(data[i][j]==Double.MAX_VALUE)
             		sVal = "Max";
-            	
-                sb.append(sVal);
+
+                StringBuilder sbVal = new StringBuilder(sVal);
+                while (sbVal.length()<width){
+                    sbVal.insert(0, " ");
+                }
+                sb.append(sbVal.toString());
                 
                 if(j<data[0].length-1)
                 	sb.append(OUT_SEPARATOR_COL);
@@ -3867,9 +3878,6 @@ public class Matrix {
     	return sbAll.toString();
     }
 
-    
-    
-    
 	public void writeSerialized(File fiOut) throws IOException {
 		FileOutputStream fos = new FileOutputStream(fiOut);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -3923,7 +3931,7 @@ public class Matrix {
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File(
                 sFile), bApppend));
 
-            StringBuffer sVal = new StringBuffer();
+            StringBuffer sVal;
             for (int ii = 0; ii < data.length; ii++) {
                 sVal = new StringBuffer();
                 for (int jj = 0; jj < data[0].length; jj++) {

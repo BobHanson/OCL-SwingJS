@@ -110,7 +110,12 @@ public class ConstantsDWAR {
 	 */
 	@Deprecated
 	public static final String TAG_IDCODE = "idcode";
-	
+
+	// From SAR analysis
+	public static final String TAG_IDCODE_SCAFFOLD = "Scaffold";
+
+	public static final String TAG_COORDINATES_SCAFFOLD = "scaffoldAtomCoords";
+
 	public static final String TAG_IDCODE2 = "Structure";
 
 	public static final String TAG_COOR2 = "idcoordinates2D";
@@ -123,6 +128,8 @@ public class ConstantsDWAR {
 	 * Can be one or multiple sets of 3D coordinates.
 	 */
 	public static final String TAG_COOR3D = "idcoordinates3D";
+
+	public static final String TAG_COOR3D_MMFF = "3D-Structure (low-energy random, mmff94s+)";
 
 	/**
 	 * Contains the idcode and the 3d coordinates.
@@ -150,8 +157,11 @@ public class ConstantsDWAR {
 	public static final String TAG_NAME = "Name";
 	
 	public static final String TAG_RECORD_NO = "Record No";
-	
+
+	@Deprecated // use TAG_CMP_ID instead!
 	public static final String TAG_ACTNO = "Idorsia No";
+
+	public static final String TAG_CMP_ID = "CompoundIdentifier";
 
 	public static final String TAG_SOURCE = "Source";
 
@@ -183,7 +193,9 @@ public class ConstantsDWAR {
 	public static final String TAG_REACTION_MAPPING = "ReactionMapping";
 	public static final String TAG_REACTION_DRAW_OBJ = "ReactionDrawingObjects";
 	
-	public static final String CHARSET_ENCODING = "UTF8";
+	public static final String CHARSET_ENCODING = "UTF8"
+			;
+	public static final int MOLECULE_START_R_GROUPS = 129;
 
 
 	

@@ -152,7 +152,7 @@ public class JAtomLabelDialog extends JDialog implements ActionListener {
 				onCancel.run();
 		}
 	}
-	
+
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() instanceof JTextField) {
 			processAtomLabel();
@@ -165,7 +165,7 @@ public class JAtomLabelDialog extends JDialog implements ActionListener {
 			if (onOK != null)
 				onOK.run();
 		}
-	}
+		}
 
 	private void processAtomLabel() {
 		String text = mTextFieldLabel.getText();

@@ -33,6 +33,8 @@
 
 package com.actelion.research.chem.properties.complexity;
 
+import com.actelion.research.util.Formatter;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +125,7 @@ public class ContainerFragBondsSolutions {
 
 	protected static int START_CAPACITY = 100;
 
-	protected static int DEFAULT_CAPACITY = 2 * 1000 * 1000;
+	protected static int DEFAULT_CAPACITY = 4 * 1000 * 1000;
 
 	protected static int MAX_NUM_BONDS = 100;
 
@@ -149,32 +151,23 @@ public class ContainerFragBondsSolutions {
 	 * reached.
 	 */
 	public ContainerFragBondsSolutions(int bits, int totalCapacity) {
-		
 		this.bits = bits;
-
 		int [] arrHashMapCapacity = getHashMapCapacity(totalCapacity);
-
 		init(arrHashMapCapacity, totalCapacity);
 	}
 	
 	private int [] getHashMapCapacity(int totalMaximumCapacity) {
 
         int totalCapacity = 0;
-
 		int [] arrCapacity = new int [MAX_NUM_BONDS+1];
-
         for (int i = 0; i < arrCapacity.length; i++) {
             arrCapacity[i]=1;
         }
 
         for (int i = 0; i < ARR_CAPACITY.length; i++) {
-
             arrCapacity[i]= ARR_CAPACITY[i];
-
             totalCapacity += arrCapacity[i];
-
 			maximumNumberBondsInFragment = i;
-
             if(totalCapacity>=totalMaximumCapacity) {
                 break;
             }
@@ -223,16 +216,14 @@ public class ContainerFragBondsSolutions {
 		}
 		
 		if(ELUSIVE)
-			System.out.println("ContainerFragBondsSolutions initialized cumulated hash map capacity " + cumulatedInitHashMapCapacity + ".");
+			System.out.println("ContainerFragBondsSolutions initialized cumulated hash map capacity " + Formatter.group(cumulatedInitHashMapCapacity) + ".");
 		
 		liHMFragmentDefinedByBonds = new ArrayList<HashMap<IBitArray,IBitArray>>();
 		
 		liHMFragmentDefinedByBonds.add(new HashMap<IBitArray, IBitArray>());
 
 		for (int i = 0; i < arrCapacity.length; i++) {
-			
 			liHMFragmentDefinedByBonds.add(new HashMap<IBitArray, IBitArray>(arrCapacity[i]));
-			
 		}
 		
 		containerListFragmentDefinedByBonds = new ContainerBitArray(bits, totalCapacity);
@@ -278,20 +269,14 @@ public class ContainerFragBondsSolutions {
 	}
 	
 	public IBitArray getWithCopy(IBitArray orign){
-		
 		IBitArray f = containerListFragmentDefinedByBonds.get();
-		
 		f.copyIntoThis(orign);
-		
 		return f;
 	}
 	
 	public List<IBitArray> getList(int bonds){
-		
 		HashMap<IBitArray, IBitArray> hm = liHMFragmentDefinedByBonds.get(bonds);
-
-		
-		return new ArrayList<IBitArray>(hm.values());
+		return new ArrayList<>(hm.values());
 	}
 	
 
@@ -347,7 +332,7 @@ public class ContainerFragBondsSolutions {
 
 		HashMap<IBitArray, IBitArray> hm = liHMFragmentDefinedByBonds.get(bits);
 
-		List<IBitArray> li = new ArrayList<IBitArray>(hm.keySet());
+		List<IBitArray> li = new ArrayList<>(hm.keySet());
 
 		for (IBitArray bitArray : li) {
 			containerListFragmentDefinedByBonds.receycle(bitArray);

@@ -57,9 +57,9 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	private JPanel         mButtonPanel;
 	private boolean        mIsCancelled;
 	private ArrayList<StructureListener> mListener;
-	
+
 // BH Just use the Window constructor -- Java will test for Frame or Dialog
-	
+
 //	/**
 //	 * Creates a modal chemical editor dialog to edit a single molecule,
 //	 * which may, of course, consist of multiple disconnected fragments.

@@ -263,15 +263,6 @@ public TableLayoutConstraints (String constraints)
     StringTokenizer st = new StringTokenizer(constraints, ", ");
     int numToken = st.countTokens();
 
-    // BH?? No real issue, but it is bad form to force the code to throw avoidable exceptions. 
-    // In JavaScript we often need to debug at points, and it is really annoying to have to click
-    // through these. Adding while breaks
-    
-    
-    
-    while (true) {
-    
-    
     try
     {
         // Check constraints
@@ -280,32 +271,23 @@ public TableLayoutConstraints (String constraints)
 
         // Get the first column (assume component is in only one column)
         String tokenA = st.nextToken();
-        col1 = new Integer(tokenA).intValue();
+        col1 = Integer.parseInt(tokenA);
         col2 = col1;
 
         // Get the first row (assume component is in only one row)
         String tokenB = st.nextToken();
-        row1 = new Integer(tokenB).intValue();
+        row1 = Integer.parseInt(tokenB);
         row2 = row1;
 
-// -- exception here if only two tokens
-        
-        if (!st.hasMoreTokens()) {
-        	break; // BH 2023
-        }
-        // Get next two tokens  -- BH: throws exception if 
+        // Get next two tokens
         tokenA = st.nextToken();
         tokenB = st.nextToken();
 
         try
         {
             // Attempt to use tokens A and B as col2 and row2
-            col2 = new Integer(tokenA).intValue();
-            row2 = new Integer(tokenB).intValue();
-
-            if (!st.hasMoreTokens()) {
-            	break;
-            }
+            col2 = Integer.parseInt(tokenA);
+            row2 = Integer.parseInt(tokenB);
 
             // Get next two tokens
             tokenA = st.nextToken();
@@ -313,15 +295,10 @@ public TableLayoutConstraints (String constraints)
         }
         catch (NumberFormatException error)
         {
-        	// BH note -- but then tokenA and tokenB will not be defined! 
-        	// Yow, purposely throwing ANOTHER exception!
-        	// Sorry - just not my style! 
-        	
             col2 = col1;
             row2 = row1;
         }
 
-        // 
         // Check if token means horizontally justification the component
         if ((tokenA.equalsIgnoreCase("L")) || (tokenA.equalsIgnoreCase("LEFT")))
             hAlign = LEFT;
@@ -358,11 +335,7 @@ public TableLayoutConstraints (String constraints)
         else
             throw new RuntimeException();
     }
-    catch (NoSuchElementException error) {
-    	
-    	// here if only two elements
-    	
-    }
+    catch (NoSuchElementException error) {}
     catch (RuntimeException error)
     {
         throw new IllegalArgumentException
@@ -372,12 +345,7 @@ public TableLayoutConstraints (String constraints)
              "  col1, row1, col2, row2, hAlign, vAlign\n" +
              "Constraints provided '" + constraints + "'");
     }
-    
-    break;
 
-    } // end while 
-    //
-    
     // Make sure row2 >= row1
     if (row2 < row1)
         row2 = row1;

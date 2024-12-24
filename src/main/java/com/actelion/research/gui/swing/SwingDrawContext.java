@@ -148,19 +148,19 @@ public class SwingDrawContext implements GenericDrawContext {
 
 	@SuppressWarnings("unused")
 	@Override
-	public void drawCenteredString(double x, double y, String s) {	
+	public void drawCenteredString(double x, double y, String s) {
 		double width, height;
 		if (/** @j2sNative true ||*/false) {
 			width = mG.getFontMetrics().stringWidth(s);
 			height = mG.getFontMetrics().getHeight();
 			mG.drawString(s,  (int) (x -width/2), (int) (y + height/3));			
 		} else {
-			GlyphVector gv = mG.getFont().createGlyphVector(mG.getFontRenderContext(), s);
+		GlyphVector gv = mG.getFont().createGlyphVector(mG.getFontRenderContext(), s);
 			width = gv.getLogicalBounds().getWidth();
-			mG.drawGlyphVector(gv, (float)(x-width/2.0), (float)(y+(double)mG.getFont().getSize()/3.0));
+		mG.drawGlyphVector(gv, (float)(x-width/2.0), (float)(y+(double)mG.getFont().getSize()/3.0));
 		}
 	}
-	
+
 	@Override
 	public GenericRectangle getBounds(String s) {
 		Rectangle2D r = mG.getFontMetrics().getStringBounds(s, mG);

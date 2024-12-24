@@ -13,8 +13,6 @@ import javafx.stage.Window;
 
 public class FXDialog extends Dialog<String> implements GenericDialog {
 	private GridPane mContent;
-	protected Runnable onOK;
-	protected Runnable onCancel;
 
 	public FXDialog(Window parent, String title) {
 		initOwner(parent);
@@ -28,15 +26,10 @@ public class FXDialog extends Dialog<String> implements GenericDialog {
 	@Override
 	public void setEventConsumer(GenericEventListener<GenericActionEvent> consumer) {
 		setResultConverter(dialogButton -> {
-			if (dialogButton == ButtonType.OK) {
+			if (dialogButton == ButtonType.OK)
 				consumer.eventHappened(new GenericActionEvent(this, GenericActionEvent.WHAT_OK,0));
-				if (onOK != null)
-					onOK.run();
-			} else if (dialogButton == ButtonType.CANCEL) {
+			else if (dialogButton == ButtonType.CANCEL)
 				consumer.eventHappened(new GenericActionEvent(this, GenericActionEvent.WHAT_CANCEL,0));
-				if (onCancel != null)
-					onCancel.run();
-			}
 			return null;
 		} );
 	}
@@ -86,14 +79,6 @@ public class FXDialog extends Dialog<String> implements GenericDialog {
 	public void showDialog() {
 		showAndWait();
 	}
-	
-	@Override
-	public void showDialog(Runnable onOK, Runnable onCancel) {
-		this.onOK = onOK;
-		this.onCancel = onCancel;
-		show();
-	}
-
 
 	@Override
 	public void disposeDialog() {
@@ -105,4 +90,8 @@ public class FXDialog extends Dialog<String> implements GenericDialog {
 		new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
 	}
 
+	@Override
+	public void showDialog(Runnable onOK, Runnable onCancel) {
+		// n/a to FXDialog
+	}
 }

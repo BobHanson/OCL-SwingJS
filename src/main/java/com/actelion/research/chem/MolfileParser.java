@@ -47,6 +47,7 @@ package com.actelion.research.chem;
 import com.actelion.research.io.BOMSkipper;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.TreeMap;
 
 public class MolfileParser
@@ -970,7 +971,7 @@ public class MolfileParser
 	{
 		mMol = mol;
 		try{
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
 			BOMSkipper.skip(reader);
 			return readMoleculeFromBuffer(reader);
 		} catch(IOException e){
@@ -1074,13 +1075,13 @@ public class MolfileParser
 		if(bondType > 4){
 			switch(bondType){
 				case 5:
-					queryFeatures |= Molecule.cBondQFSingle | Molecule.cBondQFDouble;
+					queryFeatures |= Molecule.cBondTypeSingle | Molecule.cBondTypeDouble;
 					break;
 				case 6:
-					queryFeatures |= Molecule.cBondQFSingle | Molecule.cBondQFDelocalized;
+					queryFeatures |= Molecule.cBondTypeSingle | Molecule.cBondTypeDelocalized;
 					break;
 				case 7:
-					queryFeatures |= Molecule.cBondQFDouble | Molecule.cBondQFDelocalized;
+					queryFeatures |= Molecule.cBondTypeDouble | Molecule.cBondTypeDelocalized;
 					break;
 				case 8:
 					if (realBondType != Molecule.cBondTypeMetalLigand)

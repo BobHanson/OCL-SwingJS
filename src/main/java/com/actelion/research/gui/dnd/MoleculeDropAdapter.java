@@ -102,50 +102,50 @@ public class MoleculeDropAdapter implements DropTargetListener
         DEBUG("dragExit");
     }
 
-	@Override
+    @Override
 	public void drop(DropTargetDropEvent e) {
-		if (active_) {
+        if (active_) {
 			// This is neccesary to make sure the correct classloader tries to load the
 			// Transferable
-			ClassLoader cl = this.getClass().getClassLoader();
-			DEBUG("MoleculeDropAdapter   ClassLoader " + cl);
-			DEBUG("MoleculeDropAdapter   Ignoring setContextclassloader!!!");
+            ClassLoader cl = this.getClass().getClassLoader();
+            DEBUG("MoleculeDropAdapter   ClassLoader " + cl);
+            DEBUG("MoleculeDropAdapter   Ignoring setContextclassloader!!!");
 //            Thread.currentThread().setContextClassLoader(cl);
-			DEBUG("MoleculeDropAdapter " + e);
-			try {
-				Transferable tr = e.getTransferable();
-				DEBUG("Transferable is " + tr);
-				DataFlavor chosen = chooseDropFlavor(e);
-				if (chosen != null) {
-					e.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
-					DEBUG("Chose is " + chosen);
-					Object o = tr.getTransferData(chosen);
-					DEBUG("Object is " + o);
+            DEBUG("MoleculeDropAdapter " + e);
+            try {
+                Transferable tr = e.getTransferable();
+                DEBUG("Transferable is " + tr);
+                DataFlavor chosen = chooseDropFlavor(e);
+                if (chosen != null) {
+                    e.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
+                    DEBUG("Chose is " + chosen);
+                    Object o = tr.getTransferData(chosen);
+                    DEBUG("Object is " + o);
 					e.dropComplete(true);
 					SwingUtilities.invokeLater(() -> {
 						try {
 							StereoMolecule mol = createFromDataFlavor(chosen, o);
-							if (mol != null) {
-								boolean isFile = (chosen.equals(DataFlavor.javaFileListFlavor));
-								onDropMolecule(mol, isFile ? null : e.getLocation());
-							} else {
-								System.err.println("Drop failed: " + e);
-							}
+		                    if (mol != null) {
+										boolean isFile = (chosen.equals(DataFlavor.javaFileListFlavor));
+										onDropMolecule(mol, isFile ? null : e.getLocation());
+		                    } else {
+		                        System.err.println("Drop failed: " + e);
+		                    }
 						} catch (Exception ex) {
 							ex.printStackTrace();
 						}
 
 					});
-					return;
-				} else {
-					System.err.println("Drop failed: " + e);
-					e.rejectDrop();
-				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-		} // active_
-	}
+                    return;
+                } else {
+                    System.err.println("Drop failed: " + e);
+                    e.rejectDrop();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }   // active_
+    }
 
     public DataFlavor[] getFlavors()
     {
@@ -206,7 +206,7 @@ public class MoleculeDropAdapter implements DropTargetListener
         return false;
     }
 
-	protected DataFlavor chooseDropFlavor(DropTargetDropEvent e)
+    protected DataFlavor chooseDropFlavor(DropTargetDropEvent e)
     {
     	Transferable t = e.getTransferable();
     	DataFlavor[] flavors = t.getTransferDataFlavors();
@@ -220,10 +220,7 @@ public class MoleculeDropAdapter implements DropTargetListener
         		if (f.equals(df)) {
         			return f;
         		}
-        	}
-//            if (e.isDataFlavorSupported(f)) {
-//                return ChemistryFlavors.MOLECULE_FLAVORS[i];
-//            }
+            }
         }
         return null;
     }

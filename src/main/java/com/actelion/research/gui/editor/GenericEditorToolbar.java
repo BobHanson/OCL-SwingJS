@@ -33,9 +33,13 @@
 
 package com.actelion.research.gui.editor;
 
-import com.actelion.research.gui.LookAndFeelHelper;
-import com.actelion.research.gui.generic.*;
+import com.actelion.research.gui.generic.GenericCanvas;
+import com.actelion.research.gui.generic.GenericDrawContext;
+import com.actelion.research.gui.generic.GenericEventListener;
+import com.actelion.research.gui.generic.GenericImage;
+import com.actelion.research.gui.generic.GenericMouseEvent;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
+import com.actelion.research.gui.hidpi.HiDPIIcon;
 import com.actelion.research.util.ColorHelper;
 
 public class GenericEditorToolbar implements GenericEventListener<GenericMouseEvent> {
@@ -107,8 +111,7 @@ public class GenericEditorToolbar implements GenericEventListener<GenericMouseEv
 
 	private void init() {
 		mImageNormal = mArea.getUIHelper().createImage("editorButtons.png");
-		if (LookAndFeelHelper.isDarkLookAndFeel())
-			HiDPIHelper.adaptForLookAndFeel(mImageNormal);
+		HiDPIIcon.adaptForLookAndFeel(mImageNormal);
 		mImageDisabled = mArea.getUIHelper().createImage("editorButtons.png");
 		HiDPIHelper.disableImage(mImageDisabled);
 
@@ -135,8 +138,8 @@ public class GenericEditorToolbar implements GenericEventListener<GenericMouseEv
 	public void paintContent(GenericDrawContext context) {
 		int background = mToolbarCanvas.getBackgroundRGB();
 		boolean isDark = (ColorHelper.perceivedBrightness(background) < 0.5);
-		int highlightBackground = isDark ? ColorHelper.brighter(background, 0.6f) : ColorHelper.darker(background, 0.6f);
-		int selectedBackground = isDark ? ColorHelper.brighter(background, 0.8f) : ColorHelper.darker(background, 0.8f);
+		int highlightBackground = isDark ? ColorHelper.brighter(background, 0.3f) : ColorHelper.darker(background, 0.6f);
+		int selectedBackground = isDark ? ColorHelper.brighter(background, 0.5f) : ColorHelper.darker(background, 0.8f);
 
 		int sw = mImageNormal.getWidth();
 		int sh = mImageNormal.getHeight();
@@ -206,9 +209,9 @@ public class GenericEditorToolbar implements GenericEventListener<GenericMouseEv
 						        : (mESRSelected == 1) ? cToolESRAnd : cToolESROr);
 	            }
 	        else if (mCurrentTool == cToolCustomAtom) {
-	        	mArea.showCustomAtomDialog(-1, ()-> {
-				        mArea.toolChanged(releasedButton);
-	        		}, null);
+		        		mArea.showCustomAtomDialog(-1, ()-> {
+		        			mArea.toolChanged(releasedButton);
+		        		}, null);
 	            }
 	        else {
 		        mArea.toolChanged(releasedButton);

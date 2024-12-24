@@ -37,8 +37,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
@@ -97,7 +99,7 @@ public abstract class CompoundFileHelper {
 	private static File sCurrentDirectory;
 	private int mRecordCount, mErrorCount;
 
-	protected abstract String selectOption(String message, String title, String[] option);
+	public abstract String selectOption(String message, String title, String[] option);
 
 	protected abstract void selectOptionAsync(String message, String title, String[] option, ActionListener listener);
 
@@ -124,7 +126,7 @@ public abstract class CompoundFileHelper {
 
 	public void readStructuresFromFileAsync(boolean readIdentifier, Consumer<ArrayList<?>> whenDone) {
 		selectFileToOpenAsync("Please select a compound file", cFileTypeCompoundFiles, (file) -> {
-			if (file == null) 
+			if (file == null)
 				whenDone.accept(null);
 			else if (readIdentifier)
 				readStructuresFromFileAsync(file, true, whenDone);
@@ -141,12 +143,12 @@ public abstract class CompoundFileHelper {
 		return moleculeList;
 	}
 
-	public void readStructuresFromFileAsync(File file, boolean readIdentifier,
-			Consumer<ArrayList<?>> whenDone) {
+	public void readStructuresFromFileAsync(File file, boolean readIdentifier, Consumer<ArrayList<?>> whenDone) {
 		if (file == null) {
 			readStructuresFromFileAsync(readIdentifier, whenDone);
 		} else {
-			readChemObjectsFromFileAsync(file, new ArrayList<StereoMolecule>(), null, null, readIdentifier, false, whenDone);
+			readChemObjectsFromFileAsync(file, new ArrayList<StereoMolecule>(), null, null, readIdentifier, false,
+					whenDone);
 		}
 	}
 
@@ -186,12 +188,11 @@ public abstract class CompoundFileHelper {
 		readChemObjectsFromFileAsync(file, null, new ArrayList<String>(), null, false, false, whenDone);
 	}
 
-		
 	public ArrayList<String[]> readIDCodesWithNamesFromFile(boolean readIDCoords) {
 		File file = selectFileToOpen("Please select substance file", CompoundFileHelper.cFileTypeMOL
 				| CompoundFileHelper.cFileTypeSD | CompoundFileHelper.cFileTypeDataWarrior);
 		return (file == null ? null : readIDCodesWithNamesFromFile(file, readIDCoords));
-	}	
+	}
 
 	public void readIDCodesWithNamesFromFileAsync(boolean readIDCoords, Consumer<ArrayList<?>> whenDone) {
 		selectFileToOpenAsync("Please select substance file", CompoundFileHelper.cFileTypeMOL
@@ -220,7 +221,7 @@ public abstract class CompoundFileHelper {
 		readChemObjectsFromFileAsync(file, null, null, idcodeWithIDList, false, readIDCoords, null);
 		return idcodeWithIDList;
 	}
-	
+
 	public void readIDCodesWithNamesFromFileAsync(File file, boolean readIDCoords, Consumer<ArrayList<?>> whenDone) {
 		if (file == null) {
 			readIDCodesWithNamesFromFileAsync(readIDCoords, whenDone);
@@ -229,7 +230,6 @@ public abstract class CompoundFileHelper {
 		readChemObjectsFromFileAsync(file, null, null, new ArrayList<String[]>(), false, readIDCoords, whenDone);
 	}
 
-	
 	/**
 	 * May or may not be called asynchronously
 	 * 
@@ -358,7 +358,7 @@ public abstract class CompoundFileHelper {
 		});
 	}
 
-	private void parseChemObjects(CompoundFileParser parser, ArrayList<StereoMolecule> moleculeList, 
+	private void parseChemObjects(CompoundFileParser parser, ArrayList<StereoMolecule> moleculeList,
 			ArrayList<String> idcodeList, ArrayList<String[]> idcodeWithIDList, int indexOfID, boolean readIDCoords) {
 		if (parser == null) {
 			mErrorCount++;
@@ -411,7 +411,6 @@ public abstract class CompoundFileHelper {
 			if (isError)
 				mErrorCount++;
 		}
-
 	}
 
 	public int getRecordCount() {
@@ -764,12 +763,13 @@ public abstract class CompoundFileHelper {
 			if (dotIndex == -1 || dotIndex < slashIndex)
 				fileName = fileName.concat(extension);
 			else if (!fileName.substring(dotIndex).equalsIgnoreCase(extension)) {
-				showMessage("uncompatible file name extension.");
+				showMessage("Incompatible file name extension.");
 				return;
 			}
 
 			try {
-				BufferedWriter theWriter = new BufferedWriter(new FileWriter(new File(fileName)));
+				BufferedWriter theWriter = new BufferedWriter(
+						new OutputStreamWriter(new FileOutputStream(fileName), StandardCharsets.UTF_8));
 				new RXNFileCreator(rxn).writeRXNfile(theWriter);
 				theWriter.close();
 			} catch (IOException e) {

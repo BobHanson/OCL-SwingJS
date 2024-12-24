@@ -3,9 +3,11 @@ package com.actelion.research.gui.editor;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.gui.clipboard.ClipboardHandler;
 import com.actelion.research.gui.dnd.MoleculeDropAdapter;
+import com.actelion.research.gui.editor.SwingEditorArea.SwingEditorDrawArea;
 import com.actelion.research.gui.generic.GenericCanvas;
 import com.actelion.research.gui.generic.GenericDrawContext;
 import com.actelion.research.gui.generic.GenericPoint;
+import com.actelion.research.gui.generic.GenericUIHelper;
 import com.actelion.research.gui.swing.SwingDrawContext;
 import com.actelion.research.gui.swing.SwingKeyHandler;
 import com.actelion.research.gui.swing.SwingMouseHandler;
@@ -18,6 +20,24 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 
 public class SwingEditorArea extends JPanel implements GenericCanvas {
+	public class SwingEditorDrawArea extends GenericEditorArea {
+
+		public SwingEditorDrawArea(StereoMolecule mol, int mode, GenericUIHelper helper, GenericCanvas canvas) {
+			super(mol, mode, helper, canvas);
+		}
+
+		@Override
+		protected void openReaction() {
+			((SwingUIHelper) mUIHelper).openChemistryFileAsync(true, (rxnFile) -> {
+				if (rxnFile != null) {
+					openReactionFile(rxnFile);
+				}
+
+			});
+		}
+
+	}
+
 	private static final int ALLOWED_DROP_ACTIONS = DnDConstants.ACTION_COPY_OR_MOVE;
 
 	private GenericEditorArea mDrawArea;
@@ -26,7 +46,7 @@ public class SwingEditorArea extends JPanel implements GenericCanvas {
 	public SwingEditorArea(StereoMolecule mol, int mode) {
 		setFocusable(true);
 
-		mDrawArea = new GenericEditorArea(mol, mode, new SwingUIHelper(this), this);
+		mDrawArea = new SwingEditorDrawArea(mol, mode, new SwingUIHelper(this), this);
 
 		initializeDragAndDrop(ALLOWED_DROP_ACTIONS);
 

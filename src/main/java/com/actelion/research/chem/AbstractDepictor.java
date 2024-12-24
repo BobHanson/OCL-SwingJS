@@ -156,7 +156,7 @@ public abstract class AbstractDepictor<T> {
 	private boolean[]				mAtomIsConnected;
 	private boolean[]				mAtomLabelDisplayed;
 	private double					mpBondSpacing,mpDotDiameter,mpLineWidth,mpQFDiameter,mpBondHiliteRadius,
-									mFactorTextSize,mpExcludeGroupRadius,mChiralTextSize;
+									mFactorTextSize,mpExcludeGroupRadius,mChiralTextSize,mAtomLabelAVBL;
 	private int						mpLabelSize,mStandardForegroundColor,mDisplayMode,mCurrentColor,mPreviousColor;
 	private boolean                 mIsValidatingView;
 	private ArrayList<GenericRectangle> mpTabuZone;
@@ -206,7 +206,7 @@ public abstract class AbstractDepictor<T> {
 
 	/**
 	 * If the foreground color is set (!=0), then molecule is drawn in the foreground
-	 * color except for non carbon atoms, which are drawn in atomicNo specific
+	 * color except for non-carbon atoms, which are drawn in atomicNo specific
 	 * colors. If a background color is given (!=0), then atom coloring and highlighting
 	 * is optimized to achieve good contrasts.
 	 * @param foreground null (black) or color to be used for molecule drawing
@@ -220,7 +220,7 @@ public abstract class AbstractDepictor<T> {
 
 	/**
 	 * If the foreground color is set (!=0), then molecule is drawn in the foreground
-	 * color except for non carbon atoms, which are drawn in atomicNo specific
+	 * color except for non-carbon atoms, which are drawn in atomicNo specific
 	 * colors. If a background color is given (!=0), then atom coloring and highlighting
 	 * is optimized to achieve good contrasts.
 	 * @param foreground 0 or ARGB values of color to be used for molecule drawing
@@ -274,6 +274,19 @@ public abstract class AbstractDepictor<T> {
 
 	public void setTransformation(DepictorTransformation t) {
 		mTransformation = t;
+		}
+
+
+	/**
+	 * Per default the size of the atom label font depends on the average bond length,
+	 * which usually is determined before a molecule is drawn.
+	 * This method allows to override the mechanism and to define an artificial
+	 * "average bond length" that is used instead if the real one to serve as basis
+	 * for the scale of atom labels, double bond distance, chiral text, etc...
+	 * @param avbl
+	 */
+	public void setAtomLabelAVBL(double avbl) {
+		mAtomLabelAVBL = avbl / mTransformation.getScaling();
 		}
 
 
@@ -373,7 +386,6 @@ public abstract class AbstractDepictor<T> {
 		
 		DepictorTransformation t1 = simpleValidateView(viewRect, mode);
 
-
 		markIsolatedAtoms();
 
 		mpDot.clear();
@@ -410,8 +422,12 @@ public abstract class AbstractDepictor<T> {
 		}
 
 
+	/**
+	 * @param viewRect
+	 * @param mode
+	 * @return incremental transformation that moves/scales already transformed molecule into viewRect
+	 */
 	public DepictorTransformation simpleValidateView(GenericRectangle viewRect, int mode) {
-	// returns incremental transformation that moves/scales already transformed molecule into viewRect
 		if (mMol.getAllAtoms() == 0)
 			return null;
 
@@ -446,12 +462,8 @@ public abstract class AbstractDepictor<T> {
     }
 
 
-	public GenericRectangle simpleCalculateBounds() {
+    public GenericRectangle simpleCalculateBounds() {
 		double minx = Double.NaN, maxx = 0, miny = 0, maxy = 0;
-
-		for (int i = 0; i < mMol.getAllAtoms(); i++) {
-
-		}
 
 		for (int i = 0; i < mMol.getAllAtoms(); i++) {
 			if (noSimpleH && isSimpleH(i, -1)) {
@@ -471,10 +483,10 @@ public abstract class AbstractDepictor<T> {
 				miny = getAtomY(i);
 			if (maxy < getAtomY(i))
 				maxy = getAtomY(i);
-		}
+			}
 
-		return new GenericRectangle(minx, miny, maxx - minx, maxy - miny);
-	}
+		return new GenericRectangle(minx, miny, maxx-minx, maxy-miny);
+		}
 
 
 	private void expandBoundsByTabuZones(double avbl) {
@@ -493,18 +505,17 @@ public abstract class AbstractDepictor<T> {
 
 	private void expandByHiliteBackgrounds(double avbl) {
 		boolean[] isAtomHilited = new boolean[mMol.getAllAtoms()];
-		for (int i = 0; i < mMol.getAllBonds(); i++) {
+		for (int i=0; i<mMol.getAllBonds(); i++) {
 			if (mMol.isBondBackgroundHilited(i)) {
 				isAtomHilited[mMol.getBondAtom(0, i)] = true;
 				isAtomHilited[mMol.getBondAtom(1, i)] = true;
+				}
 			}
-		}
 
 		GenericRectangle rect = new GenericRectangle();
-		for (int i = 0; i < mMol.getAllAtoms(); i++) {
-			double radius = (mMol.getAtomQueryFeatures(i) & Molecule.cAtomQFExcludeGroup) != 0
-					? avbl * cFactorExcludeGroupRadius
-					: isAtomHilited[i] ? avbl * cFactorBondHiliteRadius : 0;
+		for (int i=0; i<mMol.getAllAtoms(); i++) {
+			double radius = (mMol.getAtomQueryFeatures(i) & Molecule.cAtomQFExcludeGroup) != 0 ? avbl*cFactorExcludeGroupRadius
+					: isAtomHilited[i] ? avbl*cFactorBondHiliteRadius : 0;
 			if (noSimpleH && isSimpleH(i, -1)) {
 				return;
 			}
@@ -512,11 +523,11 @@ public abstract class AbstractDepictor<T> {
 			if (radius != 0) {
 				double x = mTransformation.transformX(mMol.getAtomX(i));
 				double y = mTransformation.transformY(mMol.getAtomY(i));
-				rect.set(x - radius, y - radius, radius * 2, radius * 2);
+				rect.set(x-radius, y-radius, radius*2, radius*2);
 				mBoundingRect = mBoundingRect.union(rect);
+				}
 			}
 		}
-	}
 
 	private void setChiralTextLocation(GenericRectangle viewRect, double avbl, int mode) {
 		double spacing = avbl / 2.0;
@@ -601,12 +612,12 @@ public abstract class AbstractDepictor<T> {
 
 
     private void calculateParameters() {
-	    double averageBondLength = mTransformation.getScaling() * mMol.getAverageBondLength();
+	    double averageBondLength = mTransformation.getScaling() * (mAtomLabelAVBL != 0 ? mAtomLabelAVBL : mMol.getAverageBondLength());
 		mpLineWidth = averageBondLength * cFactorLineWidth;
 		mpBondSpacing = averageBondLength * cFactorBondSpacing;
 		mpBondHiliteRadius = averageBondLength * cFactorBondHiliteRadius;
 		mpExcludeGroupRadius = averageBondLength * cFactorExcludeGroupRadius;
-		mpLabelSize    = (int)(averageBondLength * mFactorTextSize * cFactorTextSize + 0.5);
+		mpLabelSize = (int)(averageBondLength * mFactorTextSize * cFactorTextSize + 0.5);
 		mpDotDiameter = averageBondLength * cFactorDotDiameter;
 		mpQFDiameter = averageBondLength * cFactorQFDiameter;
 		mChiralTextSize = averageBondLength * cFactorChiralTextSize + 0.5f;
@@ -636,7 +647,7 @@ public abstract class AbstractDepictor<T> {
 				mAtomColor[atom] = Molecule.cAtomColorMagenta;
 			}
 
-		setColor_(COLOR_INITIALIZE);	// to initialize the color tracking mechanism
+		setColorCode(COLOR_INITIALIZE);	// to initialize the color tracking mechanism
 
 		if (mAtomHiliteColor != null && (mAtomHiliteColor.length >= mMol.getAtoms()))
 			hiliteAtomBackgrounds(mAtomHiliteColor, mAtomHiliteRadius);
@@ -649,7 +660,7 @@ public abstract class AbstractDepictor<T> {
 		mpSetNormalLabelSize();
 		setLineWidth(mpLineWidth);
 
-		setColor_(mStandardForegroundColor);
+		setColorCode(mStandardForegroundColor);
 		markIsolatedAtoms();
 
 		mpDot.clear();
@@ -664,14 +675,14 @@ public abstract class AbstractDepictor<T> {
 
 		for (int i=0; i<mMol.getAllAtoms(); i++) {
 			if (isHighlightedAtom(i)) {
-				setColor_(COLOR_HILITE_BOND_FG);
+				setColorCode(COLOR_HILITE_BOND_FG);
 	    		mpDrawAtom(i, esrGroupMemberCount);
-				setColor_(mStandardForegroundColor);
+				setColorCode(mStandardForegroundColor);
 				}
 			else if (mAtomColor[i] != 0) {
-				setColor_(mAtomColor[i]);
+				setColorCode(mAtomColor[i]);
 	    		mpDrawAtom(i, esrGroupMemberCount);
-				setColor_(mStandardForegroundColor);
+				setColorCode(mStandardForegroundColor);
 				}
 			else if (!explicitAtomColors
 				  && mMol.getMoleculeColor() != Molecule.cMoleculeColorNeutral
@@ -679,10 +690,12 @@ public abstract class AbstractDepictor<T> {
 				  && mMol.getAtomicNo(i) != 6
 				  && ((mDisplayMode & cDModeNoImplicitAtomLabelColors) == 0)
 				  && mMol.getAtomList(i) == null
-				  && mMol.getAtomicNo(i) < ATOM_LABEL_COLOR.length) {
-				setRGBColor(getContrastColor(ATOM_LABEL_COLOR[mMol.getAtomicNo(i)], i));
+				  && mMol.getAtomicNo(i) < ATOM_LABEL_COLOR.length
+				  && ATOM_LABEL_COLOR[mMol.getAtomicNo(i)] != 0) {
+				int rgb = ATOM_LABEL_COLOR[mMol.getAtomicNo(i)];
+				setRGBColor(getContrastColor(rgb, i));
 	    		mpDrawAtom(i, esrGroupMemberCount);
-				setColor_(mStandardForegroundColor);
+				setColorCode(mStandardForegroundColor);
 				}
 			else {
 	    		mpDrawAtom(i, esrGroupMemberCount);
@@ -759,7 +772,7 @@ public abstract class AbstractDepictor<T> {
 
 			setTextSize((int)mChiralTextSize);
 			if (mMol.getMoleculeColor() != Molecule.cMoleculeColorNeutral)
-				setColor_(COLOR_CHIRALITY_TEXT);
+				setColorCode(COLOR_CHIRALITY_TEXT);
 			drawString(chiralText, mChiralTextLocation.x, mChiralTextLocation.y+0.3f*mChiralTextSize);
 			}
 		}
@@ -800,7 +813,7 @@ public abstract class AbstractDepictor<T> {
 	        	line.y1 = getAtomY(atom1);
 	            line.x2 = getAtomX(atom2);
 	            line.y2 = getAtomY(atom2);
-				setColor_(COLOR_HILITE_BOND_BG);
+				setColorCode(COLOR_HILITE_BOND_BG);
 	            drawBlackLine(line);
         		}
         	}
@@ -810,7 +823,7 @@ public abstract class AbstractDepictor<T> {
 	private void hiliteExcludeGroups() {
 		if (mMol.isFragment()) {
 			double radius = mpExcludeGroupRadius;
-			setColor_(COLOR_EXCLUDE_GROUP_BG);
+			setColorCode(COLOR_EXCLUDE_GROUP_BG);
 			for (int atom = 0; atom < mMol.getAtoms(); atom++)
 				if ((mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFExcludeGroup) != 0)
 					fillCircle(getAtomX(atom)-radius, getAtomY(atom)-radius, 2*radius);
@@ -835,7 +848,7 @@ public abstract class AbstractDepictor<T> {
 
 	private void indicateQueryFeatures() {
 		if (mMol.isFragment()) {
-			setColor_(Molecule.cAtomColorOrange);
+			setColorCode(Molecule.cAtomColorOrange);
 			if (((mDisplayMode & cDModeHiliteAllQueryFeatures) != 0))
 				for (int atom=0; atom<mMol.getAtoms(); atom++)
 					if ((mMol.getAtomQueryFeatures(atom) & ~Molecule.cAtomQFExcludeGroup) != 0)
@@ -861,7 +874,7 @@ public abstract class AbstractDepictor<T> {
 		if ((mDisplayMode & cDModeDrawBondsInGray) != 0) {
 			mStandardForegroundColor = COLOR_CUSTOM_FOREGROUND;
 			mCustomForeground = 0xFF808080;
-			setColor_(cColorGray);
+			setColorCode(cColorGray);
 			}
 
 		mAlternativeCoords = new GenericPoint[mMol.getAllAtoms()];
@@ -902,7 +915,7 @@ public abstract class AbstractDepictor<T> {
 
 					if (cipStr != null) {
 						mpSetSmallLabelSize();
-						setColor_(mMol.isBondForegroundHilited(i) ? COLOR_HILITE_BOND_FG :
+						setColorCode(mMol.isBondForegroundHilited(i) ? COLOR_HILITE_BOND_FG :
 								(mMol.getMoleculeColor() == Molecule.cMoleculeColorNeutral || (mDisplayMode & cDModeNoColorOnESRAndCIP) != 0) ?
 										mStandardForegroundColor : COLOR_CIP_LETTER);
 						int atom1 = mMol.getBondAtom(0,i);
@@ -912,7 +925,7 @@ public abstract class AbstractDepictor<T> {
 						double dx = (getAtomX(atom1) - getAtomX(atom2)) / 3;
 						double dy = (getAtomY(atom1) - getAtomY(atom2)) / 3;
 						mpDrawString(x+dy,y-dx, cipStr,true);
-						setColor_(mStandardForegroundColor);
+						setColorCode(mStandardForegroundColor);
 						mpSetNormalLabelSize();
 						}
 					}
@@ -921,7 +934,7 @@ public abstract class AbstractDepictor<T> {
 
 		if ((mDisplayMode & cDModeBondNo) != 0) {
 			mpSetSmallLabelSize();
-			setColor_(Molecule.cAtomColorDarkGreen);
+			setColorCode(Molecule.cAtomColorDarkGreen);
 			for (int i=0; i<mMol.getAllBonds(); i++) {
 				int atom1 = mMol.getBondAtom(0,i);
 				int atom2 = mMol.getBondAtom(1,i);
@@ -931,7 +944,7 @@ public abstract class AbstractDepictor<T> {
 				double y = (getAtomY(atom1) + getAtomY(atom2)) / 2;
 				mpDrawString(x,y,type+String.valueOf(i),true);
 				}
-			setColor_(mStandardForegroundColor);
+			setColorCode(mStandardForegroundColor);
 			mpSetNormalLabelSize();
 			}
 
@@ -943,63 +956,71 @@ public abstract class AbstractDepictor<T> {
 
 
 	private void mpDrawBond(int bnd) {
-		GenericPoint piBondOffset;
-		DepictorLine aLine;
-		int atom1 = mMol.getBondAtom(0, bnd);
-		int atom2 = mMol.getBondAtom(1, bnd);
+		DepictorLine theLine = new DepictorLine();
+		DepictorLine aLine = new DepictorLine();
+		DepictorLine bLine = new DepictorLine();
+		GenericPoint piBondOffset = new GenericPoint();
+		GenericPoint nextBondOffset = new GenericPoint();
 
-		onDrawBond(bnd, getAtomX(atom1), getAtomY(atom1), getAtomX(atom2), getAtomY(atom2));
+		int atom1 = mMol.getBondAtom(0,bnd);
+		int atom2 = mMol.getBondAtom(1,bnd);
+
+        onDrawBond(bnd,getAtomX(atom1),getAtomY(atom1),getAtomX(atom2),getAtomY(atom2));
 
 		// if one of the bond atoms is part of an exclude group
-		if (!mMol.isSelectedAtom(atom1) && !mMol.isSelectedAtom(atom2)
-				&& ((mMol.getAtomQueryFeatures(atom1) | mMol.getAtomQueryFeatures(atom2))
-						& Molecule.cAtomQFExcludeGroup) != 0)
-			setColor_(COLOR_EXCLUDE_GROUP_FG);
+		if (!mMol.isSelectedAtom(atom1)
+		 && !mMol.isSelectedAtom(atom2)
+		 && ((mMol.getAtomQueryFeatures(atom1)
+			| mMol.getAtomQueryFeatures(atom2)) & Molecule.cAtomQFExcludeGroup) != 0)
+			setColorCode(COLOR_EXCLUDE_GROUP_FG);
 
-		DepictorLine theLine = new DepictorLine();
 		if (mAlternativeCoords[atom1] == null) {
 			theLine.x1 = getAtomX(atom1);
 			theLine.y1 = getAtomY(atom1);
-		} else {
+			}
+		else {
 			theLine.x1 = mAlternativeCoords[atom1].x;
 			theLine.y1 = mAlternativeCoords[atom1].y;
-		}
+			}
 
 		if (mAlternativeCoords[atom2] == null) {
 			theLine.x2 = getAtomX(atom2);
 			theLine.y2 = getAtomY(atom2);
-		} else {
+			}
+		else {
 			theLine.x2 = mAlternativeCoords[atom2].x;
 			theLine.y2 = mAlternativeCoords[atom2].y;
-		}
+			}
 
-		if ((mMol.getBondQueryFeatures(bnd) & Molecule.cBondQFBridge) != 0) {
-			mpHandleDottedLine(theLine, atom1, atom2);
-			setColor_(COLOR_RESTORE_PREVIOUS);
-			return;
-		}
+        if ((mMol.getBondQueryFeatures(bnd) & Molecule.cBondQFBridge) != 0) {
+            mpHandleDottedLine(theLine, atom1, atom2);
+			setColorCode(COLOR_RESTORE_PREVIOUS);
+            return;
+            }
 
-		int bondOrder = (mMol.getBondType(bnd) == Molecule.cBondTypeDelocalized) ? 0
-				: (mMol.getBondType(bnd) == Molecule.cBondTypeMetalLigand) ? 1 : mMol.getBondOrder(bnd);
+        int bondOrder = (mMol.getBondType(bnd) == Molecule.cBondTypeDelocalized) ? 0
+                      : (mMol.getBondType(bnd) == Molecule.cBondTypeMetalLigand) ? 1
+					  : mMol.getBondOrder(bnd);
 
 		switch (bondOrder) {
 		case 1:
 			int bondType = mMol.getBondType(bnd);
 			if ((mDisplayMode & cDModeSuppressESR) != 0
-					&& (bondType == Molecule.cBondTypeUp || bondType == Molecule.cBondTypeDown)) {
+			 && (bondType == Molecule.cBondTypeUp || bondType == Molecule.cBondTypeDown)) {
 				int stereoCenter = mMol.getBondAtom(0, bnd);
 				int esrType = mMol.getAtomESRType(stereoCenter);
 				if (esrType != Molecule.cESRTypeAbs) {
 					int esrGroup = mMol.getAtomESRGroup(stereoCenter);
 					int count = 0;
-					for (int atom = 0; atom < mMol.getAtoms(); atom++)
-						if (mMol.getAtomESRType(atom) == esrType && mMol.getAtomESRGroup(atom) == esrGroup)
+					for (int atom=0; atom<mMol.getAtoms(); atom++)
+						if (mMol.getAtomESRType(atom) == esrType
+						 && mMol.getAtomESRGroup(atom) == esrGroup)
 							count++;
 					if (count == 1)
 						bondType = Molecule.cBondTypeSingle;
+					}
 				}
-			}
-			switch (bondType) {
+            switch (bondType) {
 			case Molecule.cBondTypeSingle:
 				if (noSimpleH) {
 					if (mMol.getAtomicNo(atom1) == 1
@@ -1018,51 +1039,48 @@ public abstract class AbstractDepictor<T> {
 				double xdiff = theLine.x2 - theLine.x1;
 				double ydiff = theLine.y2 - theLine.y1;
 
-				int color1, color2;
-				if (mMol.isBondForegroundHilited(mMol.getBond(atom1, atom2))) {
-					color1 = COLOR_HILITE_BOND_FG;
-					color2 = COLOR_HILITE_BOND_FG;
-				} else {
-					color1 = mAtomColor[atom1];
-					color2 = getESRColor(atom1);
-					if (color1 == mMol.getAtomColor(atom1)) // if it is not selected or stereo error
-						color1 = color2;
-				}
+                int color1,color2;
+        		if (mMol.isBondForegroundHilited(mMol.getBond(atom1, atom2))) {
+        			color1 = COLOR_HILITE_BOND_FG;
+        			color2 = COLOR_HILITE_BOND_FG;
+        			}
+        		else {
+        			color1 = mAtomColor[atom1];
+        	        color2 = getESRColor(atom1);
+        	        if (color1 == mMol.getAtomColor(atom1))	// if it is not selected or stereo error
+        	            color1 = color2;
+        			}
 
-				aLine = new DepictorLine();
-				for (int i = 2; i < 17; i += 2) {
-					aLine.x1 = theLine.x1 + i * xdiff / 17 - i * ydiff / 128;
-					aLine.y1 = theLine.y1 + i * ydiff / 17 + i * xdiff / 128;
-					aLine.x2 = theLine.x1 + i * xdiff / 17 + i * ydiff / 128;
-					aLine.y2 = theLine.y1 + i * ydiff / 17 - i * xdiff / 128;
+                for (int i=2; i<17; i+=2) {
+					aLine.x1 = theLine.x1 + i*xdiff/17 - i*ydiff/128;
+					aLine.y1 = theLine.y1 + i*ydiff/17 + i*xdiff/128;
+					aLine.x2 = theLine.x1 + i*xdiff/17 + i*ydiff/128;
+					aLine.y2 = theLine.y1 + i*ydiff/17 - i*xdiff/128;
 					if (mpProperLine(aLine)) {
-						setColor_((i < 9) ? color1 : color2);
+						setColorCode((i<9) ? color1 : color2);
 						drawBlackLine(aLine);
-						setColor_(mStandardForegroundColor);
+						setColorCode(mStandardForegroundColor);
+						}
 					}
-				}
 				break;
-			case Molecule.cBondTypeMetalLigand:
-				mpHandleShortDashedLine(theLine, atom1, atom2);
-				break;
+            case Molecule.cBondTypeMetalLigand:
+                mpHandleShortDashedLine(theLine, atom1, atom2);
+                break;
 			}
 			break;
-		case 0: // bonds defined to be aromatic
+		case 0:	// bonds defined to be aromatic
 		case 2:
-			aLine = new DepictorLine();
-			DepictorLine bLine = new DepictorLine();
-			piBondOffset = new GenericPoint();
-			GenericPoint nextBondOffset = new GenericPoint();
-
 			if ((mAtomLabelDisplayed[atom1] || mMol.getAtomPi(atom1) == 2)
-					&& (mAtomLabelDisplayed[atom2] || mMol.getAtomPi(atom2) == 2) && !mMol.isRingBond(bnd)
-					&& bondOrder == 2) {
-				// double bond connecting two atoms both being either
-				// a hetero atom or the central atom of an allene
+		 	 && (mAtomLabelDisplayed[atom2] || mMol.getAtomPi(atom2) == 2)
+		 	 && !mMol.isRingBond(bnd)
+		 	 && bondOrder == 2) {
+											// double bond connecting two atoms both being either
+											// a hetero atom or the central atom of an allene
 				if (!mpProperLine(theLine))
 					break;
 
-				mpCalcPiBondOffset(theLine.x2 - theLine.x1, theLine.y2 - theLine.y1, piBondOffset);
+				mpCalcPiBondOffset(theLine.x2 - theLine.x1,
+								   theLine.y2 - theLine.y1,piBondOffset);
 				double xdiff = piBondOffset.x / 2;
 				double ydiff = piBondOffset.y / 2;
 
@@ -1076,33 +1094,38 @@ public abstract class AbstractDepictor<T> {
 				bLine.y2 = theLine.y2 - ydiff;
 
 				if (mMol.getBondType(bnd) == Molecule.cBondTypeCross)
-					mpMakeCrossBond(aLine, bLine);
+					mpMakeCrossBond(aLine,bLine);
 
 				drawLine(aLine, atom1, atom2);
 				if (bondOrder == 2)
 					drawLine(bLine, atom1, atom2);
 				else
 					drawDashedLine(bLine, atom1, atom2);
-			} else if ((mAtomLabelDisplayed[atom2] || mMol.getAtomPi(atom2) == 2) && bondOrder == 2) {
-				// C=X double bond with atm1 is the carbon
-				// or R2C=C=CR2 with atm2 is central atom
+				}
+			else if ((mAtomLabelDisplayed[atom2] || mMol.getAtomPi(atom2) == 2)
+			      && bondOrder == 2) {
+											// C=X double bond with atm1 is the carbon
+											// or R2C=C=CR2 with atm2 is central atom
 				mpDBFromNonLabelToLabel(theLine, bnd, false);
-			} else if ((mAtomLabelDisplayed[atom1] || mMol.getAtomPi(atom1) == 2) && bondOrder == 2) {
-				// C=X double bond with atm2 is the carbon
-				// or R2C=C=CR2 with atm1 is central atom
+				}
+			else if ((mAtomLabelDisplayed[atom1] || mMol.getAtomPi(atom1) == 2)
+		          && bondOrder == 2) {
+											// C=X double bond with atm2 is the carbon
+											// or R2C=C=CR2 with atm1 is central atom
 				mpDBFromNonLabelToLabel(theLine, bnd, true);
-			} else {
-				// standard carbon-carbon double bond. Thus,one bond
-				// connects the atom centers and the other lies aside.
-				int side = mMol.mpPreferredSide(bnd);
-				if (side == 0)
-					side = 1;
+				}
+			else {
+								// standard carbon-carbon double bond. Thus,one bond
+								// connects the atom centers and the other lies aside.
+				int side = mMol.getPreferredDoubleBondSide(bnd);
+				if (side == 0) side = 1;
 				aLine.x1 = theLine.x1;
 				aLine.y1 = theLine.y1;
 				aLine.x2 = theLine.x2;
 				aLine.y2 = theLine.y2;
 
-				mpCalcPiBondOffset(theLine.x2 - theLine.x1, theLine.y2 - theLine.y1, piBondOffset);
+				mpCalcPiBondOffset(theLine.x2 - theLine.x1,
+								   theLine.y2 - theLine.y1,piBondOffset);
 
 				if (side > 0) {
 					bLine.x1 = theLine.x1 + piBondOffset.x;
@@ -1110,82 +1133,82 @@ public abstract class AbstractDepictor<T> {
 					bLine.x2 = theLine.x2 + piBondOffset.x;
 					bLine.y2 = theLine.y2 + piBondOffset.y;
 
-					if (mpCalcNextBondOffset(atom1, atom2, 1, nextBondOffset) || (mMol.getConnAtoms(atom1) > 1)) {
+					if (mpCalcNextBondOffset(atom1, atom2, 1, nextBondOffset)
+					 || (mMol.getConnAtoms(atom1) > 1)) {
 						bLine.x1 += nextBondOffset.x + piBondOffset.y;
 						bLine.y1 += nextBondOffset.y - piBondOffset.x;
-					}
+						}
 
-					if (mpCalcNextBondOffset(atom2, atom1, -1, nextBondOffset) || (mMol.getConnAtoms(atom2) > 1)) {
+					if (mpCalcNextBondOffset(atom2, atom1, -1, nextBondOffset)
+					 || (mMol.getConnAtoms(atom2) > 1)) {
 						bLine.x2 += nextBondOffset.x - piBondOffset.y;
 						bLine.y2 += nextBondOffset.y + piBondOffset.x;
+						}
 					}
-				} else {
+				else {
 					bLine.x1 = theLine.x1 - piBondOffset.x;
 					bLine.y1 = theLine.y1 - piBondOffset.y;
 					bLine.x2 = theLine.x2 - piBondOffset.x;
 					bLine.y2 = theLine.y2 - piBondOffset.y;
 
-					if (mpCalcNextBondOffset(atom1, atom2, -1, nextBondOffset) || (mMol.getConnAtoms(atom1) > 1)) {
+					if (mpCalcNextBondOffset(atom1, atom2, -1, nextBondOffset)
+					 || (mMol.getConnAtoms(atom1) > 1)) {
 						bLine.x1 += nextBondOffset.x + piBondOffset.y;
 						bLine.y1 += nextBondOffset.y - piBondOffset.x;
-					}
+						}
 
-					if (mpCalcNextBondOffset(atom2, atom1, 1, nextBondOffset) || (mMol.getConnAtoms(atom2) > 1)) {
+					if (mpCalcNextBondOffset(atom2, atom1, 1, nextBondOffset)
+					 || (mMol.getConnAtoms(atom2) > 1)) {
 						bLine.x2 += nextBondOffset.x - piBondOffset.y;
 						bLine.y2 += nextBondOffset.y + piBondOffset.x;
+						}
 					}
-				}
 
 				if (mMol.getBondType(bnd) == Molecule.cBondTypeCross)
-					mpMakeCrossBond(aLine, bLine);
+					mpMakeCrossBond(aLine,bLine);
 
 				mpHandleLine(aLine, atom1, atom2);
 				if (bondOrder == 2)
 					mpHandleLine(bLine, atom1, atom2);
 				else
 					mpHandleDashedLine(bLine, atom1, atom2);
-			}
+				}
 			break;
 		case 3:
 			if (mpProperLine(theLine)) {
 				drawLine(theLine, atom1, atom2);
-				piBondOffset = new GenericPoint();
-				mpCalcPiBondOffset(theLine.x2 - theLine.x1, theLine.y2 - theLine.y1, piBondOffset);
-				aLine = new DepictorLine();
+				mpCalcPiBondOffset(theLine.x2 - theLine.x1,
+								   theLine.y2 - theLine.y1, piBondOffset);
 				drawOffsetLine(theLine, atom1, atom2, piBondOffset.x, piBondOffset.y, aLine);
 				drawOffsetLine(theLine, atom1, atom2, -piBondOffset.x, -piBondOffset.y, aLine);
-			}
+				}
 			break;
 		case 4:
 			if (mpProperLine(theLine)) {
-				drawLine(theLine, atom1, atom2);
-				piBondOffset = new GenericPoint();
-				mpCalcPiBondOffset(theLine.x2 - theLine.x1, theLine.y2 - theLine.y1, piBondOffset);
-				aLine = new DepictorLine();
-				drawOffsetLine(theLine, atom1, atom2, 1.5 * piBondOffset.x, 1.5 * piBondOffset.y, aLine);
-				drawOffsetLine(theLine, atom1, atom2, 0.5 * piBondOffset.x, 0.5 * piBondOffset.y, aLine);
-				drawOffsetLine(theLine, atom1, atom2, -0.5 * piBondOffset.x, -0.5 * piBondOffset.y, aLine);
-				drawOffsetLine(theLine, atom1, atom2, -1.5 * piBondOffset.x, -1.5 * piBondOffset.y, aLine);
-			}
+				mpCalcPiBondOffset(theLine.x2 - theLine.x1,
+						theLine.y2 - theLine.y1, piBondOffset);
+				drawOffsetLine(theLine, atom1, atom2, 1.5*piBondOffset.x, 1.5*piBondOffset.y, aLine);
+				drawOffsetLine(theLine, atom1, atom2, 0.5*piBondOffset.x, 0.5*piBondOffset.y, aLine);
+				drawOffsetLine(theLine, atom1, atom2, -0.5*piBondOffset.x, -0.5*piBondOffset.y, aLine);
+				drawOffsetLine(theLine, atom1, atom2, -1.5*piBondOffset.x, -1.5*piBondOffset.y, aLine);
+				}
 			break;
 		case 5:
 			if (mpProperLine(theLine)) {
 				drawLine(theLine, atom1, atom2);
-				drawLine(theLine, atom1, atom2);
-				piBondOffset = new GenericPoint();
-				mpCalcPiBondOffset(theLine.x2 - theLine.x1, theLine.y2 - theLine.y1, piBondOffset);
-				aLine = new DepictorLine();
-				drawOffsetLine(theLine, atom1, atom2, 2 * piBondOffset.x, 2 * piBondOffset.y, aLine);
+				mpCalcPiBondOffset(theLine.x2 - theLine.x1,
+						theLine.y2 - theLine.y1, piBondOffset);
+				drawOffsetLine(theLine, atom1, atom2, 2*piBondOffset.x, 2*piBondOffset.y, aLine);
 				drawOffsetLine(theLine, atom1, atom2, piBondOffset.x, piBondOffset.y, aLine);
 				drawOffsetLine(theLine, atom1, atom2, -piBondOffset.x, -piBondOffset.y, aLine);
-				drawOffsetLine(theLine, atom1, atom2, -2 * piBondOffset.x, -2 * piBondOffset.y, aLine);
-			}
+				drawOffsetLine(theLine, atom1, atom2, -2*piBondOffset.x, -2*piBondOffset.y, aLine);
+				}
 			break;
-		}
+            }
 
 		if (mCurrentColor == COLOR_EXCLUDE_GROUP_FG)
-			setColor_(COLOR_RESTORE_PREVIOUS);
-	}
+			setColorCode(COLOR_RESTORE_PREVIOUS);
+		}
 
 
 	private void drawOffsetLine(DepictorLine theLine, int atom1, int atom2, double dx, double dy, DepictorLine aLine) {
@@ -1228,7 +1251,7 @@ public abstract class AbstractDepictor<T> {
 			aLine.x2 = theLine.x2;
 			aLine.y2 = theLine.y2;
 
-			int side = (inverted) ? -mMol.mpPreferredSide(bnd) : mMol.mpPreferredSide(bnd);
+			int side = (inverted) ? -mMol.getPreferredDoubleBondSide(bnd) : mMol.getPreferredDoubleBondSide(bnd);
 			if (side == 0) side = 1;
 
 			mpCalcPiBondOffset(theLine.x2 - theLine.x1,
@@ -1737,6 +1760,8 @@ public abstract class AbstractDepictor<T> {
                     isoStr = append(isoStr, "h<3");
                 else if (hydrogens == Molecule.cAtomQFNot2Hydrogen+Molecule.cAtomQFNot3Hydrogen)
                     isoStr = append(isoStr, "h<2");
+			    else if (hydrogens == Molecule.cAtomQFNot0Hydrogen+Molecule.cAtomQFNot3Hydrogen)
+				    isoStr = append(isoStr, "h1-2");
                 }
             if ((queryFeatures & Molecule.cAtomQFCharge) != 0) {
                 long charge = (queryFeatures & Molecule.cAtomQFCharge);
@@ -1776,6 +1801,12 @@ public abstract class AbstractDepictor<T> {
                     isoStr = append(isoStr, "n>2");
                 else if (neighbours == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot4Neighbours))
                     isoStr = append(isoStr, "n>3");
+                else if (neighbours == (Molecule.cAtomQFNot0Neighbours | Molecule.cAtomQFNot3Neighbours | Molecule.cAtomQFNot4Neighbours))
+	                isoStr = append(isoStr, "n1-2");
+                else if (neighbours == (Molecule.cAtomQFNot0Neighbours | Molecule.cAtomQFNot4Neighbours))
+	                isoStr = append(isoStr, "n1-3");
+                else if (neighbours == (Molecule.cAtomQFNot0Neighbours | Molecule.cAtomQFNot1Neighbour | Molecule.cAtomQFNot4Neighbours))
+	                isoStr = append(isoStr, "n2-3");
                 }
 			if ((queryFeatures & Molecule.cAtomQFENeighbours) != 0) {
 				long eNegNeighbours = (queryFeatures & Molecule.cAtomQFENeighbours);
@@ -1801,7 +1832,7 @@ public abstract class AbstractDepictor<T> {
 					isoStr = append(isoStr, "e>2");
 				else if (eNegNeighbours == (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot4ENeighbours))
 					isoStr = append(isoStr, "e>3");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot3ENeighbours | Molecule.cAtomQFNot3ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot3ENeighbours | Molecule.cAtomQFNot4ENeighbours))
 					isoStr = append(isoStr, "e1-2");
 				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot4ENeighbours))
 					isoStr = append(isoStr, "e1-3");
@@ -1954,7 +1985,7 @@ public abstract class AbstractDepictor<T> {
 		double labelWidth = 0.0;
 
 		if (!mMol.isSelectedAtom(atom) & (mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFExcludeGroup) != 0)
-			setColor_(COLOR_EXCLUDE_GROUP_FG);
+			setColorCode(COLOR_EXCLUDE_GROUP_FG);
 
 		if (atomStr != null) {
 			labelWidth = getStringWidth(atomStr);
@@ -1992,9 +2023,9 @@ public abstract class AbstractDepictor<T> {
 			y = getAtomY(atom) + ((getTextSize()*4+4)/8);
 			int theColor = mCurrentColor;
 			if (mMol.getMoleculeColor() != Molecule.cMoleculeColorNeutral && (mDisplayMode & cDModeNoColorOnESRAndCIP) == 0)
-				setColor_(COLOR_CIP_LETTER);
+				setColorCode(COLOR_CIP_LETTER);
 			mpDrawString(x,y,cipStr,false);
-			setColor_(theColor);
+			setColorCode(theColor);
 			mpSetNormalLabelSize();
 			}
 
@@ -2003,9 +2034,9 @@ public abstract class AbstractDepictor<T> {
 			x = getAtomX(atom) + ((labelWidth + getStringWidth(mapStr)) / 2.0 + 1);
 			y = getAtomY(atom) + ((getTextSize()*4+4)/8);
 			int theColor = mCurrentColor;
-			setColor_(mMol.isAutoMappedAtom(atom) ? Molecule.cAtomColorDarkGreen : Molecule.cAtomColorDarkRed);
+			setColorCode(mMol.isAutoMappedAtom(atom) ? Molecule.cAtomColorDarkGreen : Molecule.cAtomColorDarkRed);
 			mpDrawString(x,y,mapStr,true);
-			setColor_(theColor);
+			setColorCode(theColor);
 			mpSetNormalLabelSize();
 			}
 
@@ -2016,15 +2047,15 @@ public abstract class AbstractDepictor<T> {
             y = getAtomY(atom) + 0.7*getTextSize()*Math.cos(angle);
             int theColor = mCurrentColor;
 			if (!mIsValidatingView && mMol.getMoleculeColor() != Molecule.cMoleculeColorNeutral)
-	            setColor_(getESRColor(atom));
+	            setColorCode(getESRColor(atom));
             mpDrawString(x,y,esrStr,false);
-            setColor_(theColor);
+            setColorCode(theColor);
 			mpSetNormalLabelSize();
             }
 
         if (hydrogensToAdd == 0 && unpairedElectrons == 0) {
 			if (mCurrentColor == COLOR_EXCLUDE_GROUP_FG)
-				setColor_(COLOR_RESTORE_PREVIOUS);
+				setColorCode(COLOR_RESTORE_PREVIOUS);
 			return;
 			}
 
@@ -2191,7 +2222,7 @@ public abstract class AbstractDepictor<T> {
 			}
 
 		if (mCurrentColor == COLOR_EXCLUDE_GROUP_FG)
-			setColor_(COLOR_RESTORE_PREVIOUS);
+			setColorCode(COLOR_RESTORE_PREVIOUS);
 		}
 
 	private boolean isSimpleH(int atom, int a2) {
@@ -2208,7 +2239,6 @@ public abstract class AbstractDepictor<T> {
 		}
 		return true;
 	}
-
 
 	private String createRingSizeText(long queryFeatures) {
 		queryFeatures &= Molecule.cAtomQFNewRingSize;
@@ -2325,10 +2355,10 @@ public abstract class AbstractDepictor<T> {
 
 	private void mpDrawAllDots() {
 		for (DepictorDot dot:mpDot) {
-			setColor_(dot.color);
+			setColorCode(dot.color);
 			drawDot(dot.x, dot.y);
 			}
-		setColor_(mStandardForegroundColor);
+		setColorCode(mStandardForegroundColor);
 		}
 
 
@@ -2393,17 +2423,17 @@ public abstract class AbstractDepictor<T> {
 
     private void drawLine(DepictorLine theLine, int atom1, int atom2) {
     	if (mMol.isBondForegroundHilited(mMol.getBond(atom1, atom2))) {
-			setColor_(COLOR_HILITE_BOND_FG);
+			setColorCode(COLOR_HILITE_BOND_FG);
 			drawBlackLine(theLine);
-			setColor_(mStandardForegroundColor);
+			setColorCode(mStandardForegroundColor);
     		}
     	else if (mAtomColor[atom1] != mAtomColor[atom2]) {
     		drawColorLine(theLine, atom1, atom2);
     		}
     	else if (mAtomColor[atom1] != Molecule.cAtomColorNone) {
-			setColor_(mAtomColor[atom1]);
+			setColorCode(mAtomColor[atom1]);
 			drawBlackLine(theLine);
-			setColor_(mStandardForegroundColor);
+			setColorCode(mStandardForegroundColor);
     		}
 		else {
 			drawBlackLine(theLine);
@@ -2423,14 +2453,14 @@ public abstract class AbstractDepictor<T> {
 		line2.x2 = theLine.x2;
 		line2.y2 = theLine.y2;
 		if (mpProperLine(line1)) {
-			setColor_(mAtomColor[atm1]);
+			setColorCode(mAtomColor[atm1]);
 			drawBlackLine(line1);
 			}
 		if (mpProperLine(line2)) {
-			setColor_(mAtomColor[atm2]);
+			setColorCode(mAtomColor[atm2]);
 			drawBlackLine(line2);
 			}
-		setColor_(mStandardForegroundColor);
+		setColorCode(mStandardForegroundColor);
 		}
 
 
@@ -2450,7 +2480,7 @@ public abstract class AbstractDepictor<T> {
 			color2 = mAtomColor[atom2];
 			}
 
-		setColor_(color1);
+		setColorCode(color1);
 		aLine.x1 = theLine.x1;
 		aLine.y1 = theLine.y1;
 		aLine.x2 = theLine.x1 + xinc * 2;
@@ -2462,7 +2492,7 @@ public abstract class AbstractDepictor<T> {
 		aLine.y2 = theLine.y1 + yinc * 5;
 		drawBlackLine(aLine);
 
-		setColor_(color2);
+		setColorCode(color2);
 		aLine.x1 = theLine.x1 + xinc * 5;
 		aLine.y1 = theLine.y1 + yinc * 5;
 		aLine.x2 = theLine.x1 + xinc * 6;
@@ -2474,7 +2504,7 @@ public abstract class AbstractDepictor<T> {
 		aLine.y2 = theLine.y2;
 		drawBlackLine(aLine);
 
-		setColor_(mStandardForegroundColor);
+		setColorCode(mStandardForegroundColor);
 		}
 
 
@@ -2500,21 +2530,21 @@ public abstract class AbstractDepictor<T> {
 		double x = theLine.x1 - mpLineWidth/2;
 		double y = theLine.y1 - mpLineWidth/2;
 
-		setColor_(color1);
+		setColorCode(color1);
 		for (int i=0; i<points/2; i++) {
 			fillCircle(x, y, mpLineWidth);
 			x += xinc;
 			y += yinc;
 			}
 
-		setColor_(color2);
+		setColorCode(color2);
 		for (int i=0; i<points/2; i++) {
 			fillCircle(x, y, mpLineWidth);
 			x += xinc;
 			y += yinc;
 			}
 
-		setColor_(mStandardForegroundColor);
+		setColorCode(mStandardForegroundColor);
 		}
 
 
@@ -2555,11 +2585,11 @@ public abstract class AbstractDepictor<T> {
 				}
 			}
 
-        setColor_(color1);
+        setColorCode(color1);
 		drawPolygon(p1);
-		setColor_(color2);
+		setColorCode(color2);
 		drawPolygon(p2);
-		setColor_(mStandardForegroundColor);
+		setColorCode(mStandardForegroundColor);
 		}
 
 
@@ -2583,7 +2613,7 @@ public abstract class AbstractDepictor<T> {
 		}
 
 
-	private void setColor_(int theColor) {
+	private void setColorCode(int theColor) {
 		if (mIsValidatingView)
 			return;
 

@@ -62,7 +62,7 @@ public class SolutionCompleteGraph extends AMemorizedObject implements Comparabl
 	private byte maxIndexNodeQuery;
 	
 	/**
-	 * The index is the index of the node in the query molecule.
+	 * The index is the index of the node in the query molecule. Not matched query nodes contain a -1.
 	 * The value at 'index' is the index of the node in the base molecule.
 	 * Contains the same information as heapIndexBase and heapIndexQuery. Used for fast lookup.
 	 */
@@ -97,30 +97,22 @@ public class SolutionCompleteGraph extends AMemorizedObject implements Comparabl
 	 * @param indexNodeQuery index of the query node in the complete query graph.
 	 */
 	public void add(byte indexNodeQuery, byte indexNodeBase) {
-		
 		arrSolution[indexNodeQuery]=indexNodeBase;
-
 		if(indexNodeQuery>maxIndexNodeQuery){
 			maxIndexNodeQuery=indexNodeQuery;
 		}
-
 		heapIndexBase[sizeHeap]=indexNodeBase;
-		
 		heapIndexQuery[sizeHeap]=indexNodeQuery;
-		
 		sizeHeap++;
-		
 		calcHashCode();
 	}
 	
 	public int compareTo(SolutionCompleteGraph s) {
-		
 		if(similarity > s.similarity){
 			return 1;
 		} else if(similarity < s.similarity){
 			return -1;
 		}
-		
 		return 0;
 	}
 
@@ -143,27 +135,22 @@ public class SolutionCompleteGraph extends AMemorizedObject implements Comparabl
 	/**
 	 * The index is the index of the node in the query molecule.
 	 * The value at 'index' is the index of the node in the base molecule.
+	 * Can contain -1 if a node is not mapping.
 	 */
 	public byte [] getSolution (){
 		return arrSolution;
 	}
-	
 
-	
 	public boolean equals(Object obj) {
 		
 		boolean eq = true;
-		
 		SolutionCompleteGraph s = (SolutionCompleteGraph)obj;
-		
 		if(sizeHeap != s.sizeHeap){
 			return false;
 		}
-
 		if(maxIndexNodeQuery != s.maxIndexNodeQuery){
 			return false;
 		}
-
 		for (int i = 0; i < maxIndexNodeQuery; i++) {
 			if(arrSolution[i]!=s.arrSolution[i]){
 				eq = false;
@@ -175,23 +162,15 @@ public class SolutionCompleteGraph extends AMemorizedObject implements Comparabl
 	} 
 		
 	public void copyIntoThis(AMemorizedObject a) {
-		
 		SolutionCompleteGraph solution = (SolutionCompleteGraph)a;
-		
 		System.arraycopy(solution.heapIndexBase, 0, heapIndexBase, 0, solution.sizeHeap);
-		
 		System.arraycopy(solution.heapIndexQuery, 0, heapIndexQuery, 0, solution.sizeHeap);
-		
 		System.arraycopy(solution.arrSolution, 0, arrSolution, 0, arrSolution.length);
-		
 		sizeHeap = solution.sizeHeap;
-		
 		hash = solution.hash;
-		
 		similarity = solution.similarity;
-		
 		nodes = solution.nodes;
-		
+		maxIndexNodeQuery = solution.maxIndexNodeQuery;
 	}
 	
     private void calcHashCode(){
@@ -203,23 +182,16 @@ public class SolutionCompleteGraph extends AMemorizedObject implements Comparabl
 	}
 	
 	public void reset() {
-		
 		for (int i = 0; i < arrSolution.length; i++) {
-			
 			arrSolution[i] = CompleteGraphMatcher.DEFAULT_VAL;
-			
 			heapIndexBase[i] = CompleteGraphMatcher.DEFAULT_VAL;
-			
 			heapIndexQuery[i] = CompleteGraphMatcher.DEFAULT_VAL;
 		}
-
 		sizeHeap = 0;
-		
 		hash = 0;
-		
 		similarity = 0;
-		
 		nodes = 0;
+		maxIndexNodeQuery = 0;
 	}
 
 	public double getSimilarity() {
@@ -245,12 +217,12 @@ public class SolutionCompleteGraph extends AMemorizedObject implements Comparabl
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		
-		if(nodes>-1) {
+		if(sizeHeap>0) {
 			
-			for (int i = 0; i < nodes; i++) {
-				sb.append(arrSolution[i]);
-				if(i < nodes -1)
+			for (int i = 0; i < maxIndexNodeQuery+1; i++) {
+				if(sb.length()>0)
 					sb.append(" ");
+				sb.append(arrSolution[i]);
 			}
 			
 		} else {

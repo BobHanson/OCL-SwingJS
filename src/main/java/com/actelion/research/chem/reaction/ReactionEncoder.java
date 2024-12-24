@@ -37,6 +37,7 @@ package com.actelion.research.chem.reaction;
 import com.actelion.research.chem.*;
 import com.actelion.research.util.ArrayUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -66,14 +67,17 @@ public class ReactionEncoder
     {}
 
 	/**
-	 * Creates a String containing a unique reaction code by
+	 * Creates a String containing a canonical reaction code by
 	 * creating idcodes of every reactant and product and
-	 * concatenating them in lexical order.
+	 * concatenating them in lexically sorted order. This creates
+	 * a canonical reaction code. The drawback is, however, that
+	 * the original order of reactants and products may be changed.
 	 * If mapping information is available this will be encoded
-	 * in a 2nd string. Otherwise this will be null.
+	 * in a 2nd string. Otherwise, this will be an empty string.
 	 * Coordinates, if available, will be encoded in a 3rd string.
 	 * If there are drawing objects assigned to this reaction
 	 * then these are encoded in a 4th string.
+	 * If the reaction contains catalysts, they are encoded as 5th string.
 	 *
 	 * @return String[5] with reaction code, mapping, coordinates, drawing objects, catalysts
 	 */
@@ -82,11 +86,11 @@ public class ReactionEncoder
 	}
 
 	/**
-	 * Creates a non-unique String containing a reaction code by
-	 * creating idcodes of every reactant and product and
-	 * concatenating them in original order.
+	 * Creates a canonical or non-canonical String containing a reaction
+	 * code by creating idcodes of every reactant and product and
+	 * concatenating them in original or canonical order.
 	 * If mapping information is available this will be encoded
-	 * in a 2nd string. Otherwise this will be null.
+	 * in a 2nd string. Otherwise, this will be null.
 	 * Coordinates, if available, will be encoded in a 3rd string.
 	 * If there are drawing objects assigned to this reaction
 	 * then these are encoded in a 4th string.
@@ -94,10 +98,10 @@ public class ReactionEncoder
 	 *
 	 * @param reaction
 	 * @param keepAbsoluteCoordinates
-	 * @param sortByIDCode
+	 * @param sortByIDCode whether to sort reactant and product idcodes to produce a canonical reaction code
 	 * @return String[5] with reaction code, mapping, coordinates, drawing objects, catalysts
 	 */
-	private static String[] encode(Reaction reaction, boolean keepAbsoluteCoordinates, boolean sortByIDCode) {
+	public static String[] encode(Reaction reaction, boolean keepAbsoluteCoordinates, boolean sortByIDCode) {
 		if (reaction == null
 			|| reaction.getReactants() == 0
 			|| reaction.getProducts() == 0) {
@@ -352,7 +356,7 @@ public class ReactionEncoder
 			StereoMolecule mol = parser.getCompactMolecule(idcode, coords);
 
 			if (mapping != null) {
-				parser.parseMapping(mapping.getBytes());
+				parser.parseMapping(mapping.getBytes(StandardCharsets.UTF_8));
 			}
 
 			if (isProduct) {
@@ -607,23 +611,23 @@ public class ReactionEncoder
 		byte[] rxnCoords = null;
 		int index1 = s.indexOf(OBJECT_DELIMITER);
 		if (index1 == -1) {
-			rxnCode = s.getBytes();
+			rxnCode = s.getBytes(StandardCharsets.UTF_8);
 		} else {
-			rxnCode = s.substring(0, index1).getBytes();
+			rxnCode = s.substring(0, index1).getBytes(StandardCharsets.UTF_8);
 			if (includeMapping || includeCoords) {
 				int index2 = s.indexOf(OBJECT_DELIMITER, index1 + 1);
 				if (index2 == -1) {
 					if (includeMapping)
-						rxnMapping = s.substring(index1 + 1).getBytes();
+						rxnMapping = s.substring(index1 + 1).getBytes(StandardCharsets.UTF_8);
 				} else {
 					if (includeMapping)
-						rxnMapping = s.substring(index1 + 1, index2).getBytes();
+						rxnMapping = s.substring(index1 + 1, index2).getBytes(StandardCharsets.UTF_8);
 					if (includeCoords) {
 						int index3 = s.indexOf(OBJECT_DELIMITER, index2 + 1);
 						if (index3 == -1) {
-							rxnCoords = s.substring(index2 + 1).getBytes();
+							rxnCoords = s.substring(index2 + 1).getBytes(StandardCharsets.UTF_8);
 						} else {
-							rxnCoords = s.substring(index2 + 1, index3).getBytes();
+							rxnCoords = s.substring(index2 + 1, index3).getBytes(StandardCharsets.UTF_8);
 							}
 						}
 					}

@@ -39,54 +39,54 @@ import com.actelion.research.gui.generic.*;
 import java.awt.*;
 
 public class TextDrawingObjectDialogBuilder extends AsynchronousQueryBuilder {
-	static final long serialVersionUID = 0x20110325;
+    static final long serialVersionUID = 0x20110325;
 
-	private static final int[] TEXT_STYLE = { Font.PLAIN, Font.ITALIC, Font.BOLD, Font.ITALIC | Font.BOLD };
+    private static final int[] TEXT_STYLE = { Font.PLAIN, Font.ITALIC, Font.BOLD, Font.ITALIC | Font.BOLD};
 	private static final String[] TEXT_STYLE_LIST = { "plain", "italic", "bold", "italics & bold" };
 	private static final String[] TEXT_SIZE_LIST = { "8", "9", "10", "12", "14", "18", "24", "32" };
 
-	private GenericTextField mTextArea;
-	private TextDrawingObject mTextObject;
-	private GenericComboBox mComboBoxTextSize, mComboBoxStyle;
+	private GenericTextField    mTextArea;
+	private TextDrawingObject	mTextObject;
+	private GenericComboBox     mComboBoxTextSize,mComboBoxStyle;
 
 	public TextDrawingObjectDialogBuilder(GenericUIHelper dialogHelper, TextDrawingObject textObject) {
 		mDialog = dialogHelper.createDialog("Edit Text", this);
 		mTextObject = textObject;
 		build();
-	}
+		}
 
 	private void build() {
-		mComboBoxTextSize = mDialog.createComboBox();
-		for (String item : TEXT_SIZE_LIST)
-			mComboBoxTextSize.addItem(item);
+        mComboBoxTextSize = mDialog.createComboBox();
+        for (String item:TEXT_SIZE_LIST)
+        	mComboBoxTextSize.addItem(item);
 		mComboBoxTextSize.setEditable(true);
-		mComboBoxTextSize.setSelectedItem("" + (int) mTextObject.getSize());
+		mComboBoxTextSize.setSelectedItem(""+(int)mTextObject.getSize());
 
-		mComboBoxStyle = mDialog.createComboBox();
-		for (String item : TEXT_STYLE_LIST)
-			mComboBoxStyle.addItem(item);
+        mComboBoxStyle = mDialog.createComboBox();
+        for (String item:TEXT_STYLE_LIST)
+        	mComboBoxStyle.addItem(item);
 		int styleIndex = 0;
-		for (int i = 0; i < TEXT_STYLE.length; i++) {
+		for (int i=0; i<TEXT_STYLE.length; i++) {
 			if (mTextObject.getStyle() == TEXT_STYLE[i]) {
 				styleIndex = i;
 				break;
+				}
 			}
-		}
 		mComboBoxStyle.setSelectedIndex(styleIndex);
 
 		int[] hLayout = { 8, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED, 8 };
 		int[] vLayout = { 8, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED, 8, GenericDialog.PREFERRED, 8 };
 		mDialog.setLayout(hLayout, vLayout);
 
-		mDialog.add(mDialog.createLabel("Text size:"), 1, 1);
-		mDialog.add(mComboBoxTextSize, 3, 1);
-		mDialog.add(mDialog.createLabel("Text style:"), 1, 3);
-		mDialog.add(mComboBoxStyle, 3, 3);
+		mDialog.add(mDialog.createLabel("Text size:"), 1,1);
+		mDialog.add(mComboBoxTextSize, 3,1);
+		mDialog.add(mDialog.createLabel("Text style:"), 1,3);
+		mDialog.add(mComboBoxStyle, 3,3);
 
 		mTextArea = mDialog.createTextField(20, 3);
 		mTextArea.setText(mTextObject.getText());
-		mDialog.add(mTextArea, 1, 5, 3, 5);
-	}
+		mDialog.add(mTextArea, 1,5,3,5);
+		}
 
 	@Override
 	public void eventHappened(GenericActionEvent e) {
@@ -104,7 +104,6 @@ public class TextDrawingObjectDialogBuilder extends AsynchronousQueryBuilder {
 		}
 		int textStyle = TEXT_STYLE[mComboBoxStyle.getSelectedIndex()];
 		mTextObject.setValues(mTextArea.getText(), textSize, textStyle);
-	}
+		}
 
-}
-	
+	}

@@ -38,6 +38,7 @@ import com.actelion.research.calc.ArrayUtilsCalc;
 import com.actelion.research.chem.*;
 import com.actelion.research.chem.descriptor.DescriptorEncoder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -141,7 +142,7 @@ public class MolDistHistVizEncoder {
 			byte [] arrIndexInevitablePPPoints = de.decodeCounts(strInevitablePPPoints);
 			
 			for (int i = 0; i < arrIndexInevitablePPPoints.length; i++) {
-				mdhv.addInevitablePharmacophorePoint(arrIndexInevitablePPPoints[i]);
+				mdhv.addMandatoryPharmacophorePoint(arrIndexInevitablePPPoints[i]);
 			}
 			
 		}
@@ -232,7 +233,7 @@ public class MolDistHistVizEncoder {
 				a[cc++]=(byte)index;
 			}
 			
-			String strEncodedInevitablePPPoints = new String(de.encodeCounts(a));
+			String strEncodedInevitablePPPoints = new String(de.encodeCounts(a), StandardCharsets.UTF_8);
 			
 			sb.append(strEncodedInevitablePPPoints);
 		}

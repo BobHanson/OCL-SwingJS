@@ -32,6 +32,8 @@
 
 package com.actelion.research.util.graph.complete;
 
+import com.actelion.research.chem.descriptor.flexophore.completegraphmatcher.ObjectiveBlurFlexophoreHardMatchUncovered;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -50,6 +52,7 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 	public static final boolean DEBUG = false;
 
 	// We need at least two pharmacophore points.
+	public static final double TINY_SIM = 0.000001;
 	public static final int MIN_NUM_NODES_SIM = 2;
 
 	public static final int MAX_NUM_NODES = 127;
@@ -80,7 +83,8 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 	private byte [] arrIndexQueryTmp;
 	
 	private SolutionCompleteGraph solutionBest;
-	
+	private List<SolutionCompleteGraph> solutionsTop;
+
 	private long validSolutions;
 	
 	private long createdSolutions;
@@ -127,7 +131,7 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 		arrIndexQueryTmp = new byte [MAX_NUM_NODES];
 		
 		solutionBest = new SolutionCompleteGraph();
-
+		solutionsTop = new ArrayList<>();
 		nodeSimilarityWithoutSizeDifference = false;
 	}
 
@@ -143,21 +147,14 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 	
 	
 	private void initSearch(){
-		
 		cm.reset();
-		
 		nodesBase = objectiveCompleteGraph.getBase().getNumPPNodes();
-		
 		nodesQuery = objectiveCompleteGraph.getQuery().getNumPPNodes();
-		
 		for (List<SolutionCompleteGraph> liSolution : liliSolution) {
 			liSolution.clear();
 		}
-		
 		hsSolution.clear();
-		
 		int nodesInSolution = 1;
-
 
 		// Creates indices for all one node mappings from base and query.
 		// This is the start of the mapping process for the complete graph of the Flexophore.
@@ -176,13 +173,14 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 			}
 		}
 
+		solutionBest = new SolutionCompleteGraph();
+		solutionsTop.clear();
+
 		// System.out.println(liSolution.size());
 	}
 	
 	public double calculateSimilarity () {
-		
 		initSearch();
-
 		if(nodesBase==1 && nodesQuery==1) {
 			double sim = objectiveCompleteGraph.getSimilarityNodes(0,0);
 			return sim;
@@ -197,30 +195,35 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 //					simMax=sim;
 //				}
 //			}
-//
 
 			List<SolutionCompleteGraph> liSolution = liliSolution.get(1);
 			double simMax=0;
 			for (SolutionCompleteGraph solutionCompleteGraph : liSolution) {
 				double sim = objectiveCompleteGraph.getSimilarity(solutionCompleteGraph);
+				solutionCompleteGraph.setSimilarity(sim);
 				if(sim>simMax){
 					simMax=sim;
 					solutionBest=solutionCompleteGraph;
 				}
 			}
+
+			solutionsTop.clear();
+			double simMaxMargin=simMax-TINY_SIM;
+			for (SolutionCompleteGraph scg : liSolution) {
+				if(scg.getSimilarity()>simMaxMargin){
+					solutionsTop.add(scg);
+				}
+			}
+
 			return simMax;
 		}
 
 
 		int maxNumNodesWithSolution = 0;
 		for (int nodesInSolution = 1; nodesInSolution < nodesBase+1; nodesInSolution++) {
-			
 			List<SolutionCompleteGraph> liSolution = liliSolution.get(nodesInSolution);
-
 			boolean validSolutionFound = false;
-			
 			hsSolution.clear();
-			
 			for (SolutionCompleteGraph solution : liSolution) {
 				if(getNeighbourSolutions(solution)){
 					validSolutionFound = true;
@@ -232,7 +235,6 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 			
 			if(validSolutionFound){
 				maxNumNodesWithSolution = nodesInSolution+1;
-				
 				liliSolution.get(maxNumNodesWithSolution).addAll(hsSolution);
 				
 				// System.out.println("Found " + hsSolution.size() + " valid solutions for " + maxNumNodesWithSolution + " nodes.");
@@ -278,12 +280,34 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 		}
 
 		double similarity = solutionBest.getSimilarity();
-		
+
+		solutionsTop.clear();
+		double simMaxMargin=similarity-TINY_SIM;
+		for (SolutionCompleteGraph scg : li) {
+			if(scg.getSimilarity()>simMaxMargin){
+				solutionsTop.add(scg);
+			}
+		}
+
 		return similarity;
 	}
+
+	public List<SolutionCompleteGraph> getSolutionsTop() {
+		return solutionsTop;
+	}
+
+	/**
+	 * Be careful! The histogram similarity is still considered if not explicitly set to false in the objective.
+	 * @return
+	 */
 	public double calculateNodeSimilarity () {
 
+		if(!((ObjectiveBlurFlexophoreHardMatchUncovered)objectiveCompleteGraph).isExcludeHistogramSimilarity()){
+			throw new RuntimeException("Histogram similarity was not excluded from objective!");
+		}
+
 		initSearch();
+
 
 		if(nodesBase==1 && nodesQuery==1) {
 			double sim = objectiveCompleteGraph.getSimilarityNodes(0,0);
@@ -334,7 +358,6 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 			} else {
 				break;
 			}
-
 		}
 
 		if(maxNumNodesWithSolution==0){
@@ -374,9 +397,7 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 
 	public SolutionCompleteGraph getBestMatchingSolution(){
 		SolutionCompleteGraph solution = new SolutionCompleteGraph();
-		
 		solution.copyIntoThis(solutionBest);
-		
 		return solution;
 	}
 	
@@ -405,8 +426,9 @@ public class CompleteGraphMatcher<T extends ICompleteGraph> {
 						if(objectiveCompleteGraph.areNodesMapping(indexNodeQuery, indexNodeBase)){
 						
 							SolutionCompleteGraph solutionNew = cm.getWithCopy(solution);
-							
-							solutionNew.copyIntoThis(solution);
+
+							// to do: is this necessary?, no 21.08.2024
+							// solutionNew.copyIntoThis(solution);
 							
 							solutionNew.setNodesQuery(nodesQuery);
 							

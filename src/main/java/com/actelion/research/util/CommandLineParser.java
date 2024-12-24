@@ -49,11 +49,11 @@ import java.util.List;
  */
 public class CommandLineParser {
 
-    public static final String SEP_TAG = ";";
+    public static final String SEP_TAG = ",";
 
     public static final String HELP = "-h";
 
-    private HashMap<String,String> hmCommandValue;
+    private final HashMap<String,String> hmCommandValue;
 
     public CommandLineParser() {
         hmCommandValue=new HashMap<>();
@@ -73,8 +73,8 @@ public class CommandLineParser {
     public CommandLineParser(String parameterLine, String separatorRegEx) {
         hmCommandValue=new HashMap<>();
 
-        if(parameterLine!=null && parameterLine.length()>0) {
-            String args[] = parameterLine.split(separatorRegEx);
+        if(parameterLine!=null && !parameterLine.isEmpty()) {
+            String[] args = parameterLine.split(separatorRegEx);
             for (String command : args) {
                 String[] a = command.split("=");
                 hmCommandValue.put(a[0].trim(), a[1].trim().replace("\"", ""));
@@ -115,6 +115,21 @@ public class CommandLineParser {
         return s;
     }
 
+    public File getFileOrDefault(String command, File defaultVal){
+        File f=defaultVal;
+        if(contains(command)){
+            f=getAsFile(command);
+        }
+        return f;
+    }
+    public File getAsDirOrDefault(String command, File defaultVal) throws NotDirectoryException {
+        File f=defaultVal;
+        if(contains(command)){
+            f=getAsDir(command);
+        }
+        return f;
+    }
+
     public List<String> getAsList(String command) {
         String s = hmCommandValue.get(command);
         String [] a = s.split(SEP_TAG);
@@ -124,19 +139,33 @@ public class CommandLineParser {
         }
         return l;
     }
+    public int [] getAsIntegerArray(String command) {
+        String s = hmCommandValue.get(command);
+        String [] a = s.split(SEP_TAG);
+        int [] b = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            b[i]=Integer.parseInt(a[i]);
+        }
+
+        return b;
+    }
 
     public File getAsFile(String command) {
         return new File(get(command));
     }
 
     public File getAsDir(String command) throws NotDirectoryException {
-
         File d = getAsFile(command);
-
         if(!d.isDirectory()){
             throw new NotDirectoryException("Not a dir " + d.getAbsolutePath());
         }
-
+        return d;
+    }
+    public File getAsDirOrFile(String command) throws NotDirectoryException {
+        File d = getAsFile(command);
+        if(!d.isDirectory() && !d.isFile()){
+            throw new NotDirectoryException("Not a file or dir " + d.getAbsolutePath());
+        }
         return d;
     }
 
@@ -188,13 +217,10 @@ public class CommandLineParser {
         int index=0;
 
         while (index<args.length){
-
             String s0 = args[index];
-
             if(!s0.startsWith("-")){
                 throw new RuntimeException("Wrong command line argument '" + s0 + "'");
             }
-
             String s1 = null;
             if(index<args.length-1){
                 if(!args[index+1].startsWith("-")){
@@ -202,13 +228,9 @@ public class CommandLineParser {
                     index++;
                 }
             }
-
             index++;
-
             hmCommandValue.put(s0, s1);
-
         }
-
         return hmCommandValue.size();
     }
 
@@ -219,18 +241,14 @@ public class CommandLineParser {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-
         List<String> li = new ArrayList<String>(hmCommandValue.keySet());
-
         Collections.sort(li);
-
         for (String k : li) {
             sb.append(k);
             sb.append("\t");
             sb.append(hmCommandValue.get(k));
             sb.append("\n");
         }
-
         return sb.toString();
     }
 

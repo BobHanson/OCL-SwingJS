@@ -50,8 +50,8 @@ public class Canonizer {
 
 	// The following options CONSIDER_DIASTEREOTOPICITY, CONSIDER_ENANTIOTOPICITY
 	// and CONSIDER_STEREOHETEROTOPICITY have no influence on the idcode,
-	// i.e. the idcode is the same whether or not one of these options is
-	// used. However, if you require e.g. a pro-E atom always to appear
+	// i.e. the idcode is the same whether one of these options is used.
+	// However, if you require e.g. a pro-E atom always to appear
 	// before the pro-Z, e.g. because you can distinguish them from the
 	// encoded coordinates, then you need to use one of these options.
 	// Of course, pro-R or pro-S can only be assigned, if one of the bonds
@@ -194,12 +194,12 @@ public class Canonizer {
 	private boolean[] mNitrogenQualifiesForParity;
 	private ArrayList<CanonizerFragment> mFragmentList;
 	private ArrayList<int[]> mTHParityNormalizationGroupList;
-	private int mMode, mNoOfRanks, mNoOfPseudoGroups;
+	private final int mMode;
+	private int mNoOfRanks, mNoOfPseudoGroups;
 	private boolean mIsOddParityRound;
-	private boolean mZCoordinatesAvailable;
+	private final boolean mZCoordinatesAvailable, mAllHydrogensAreExplicit;
 	private boolean mCIPParityNoDistinctionProblem;
 	private boolean mEncodeAvoid127;
-
 	private boolean mGraphGenerated;
 	private int mGraphRings, mFeatureBlock;
 	private int[] mGraphAtom;
@@ -210,7 +210,8 @@ public class Canonizer {
 
 	private String mIDCode, mEncodedCoords, mMapping;
 	private StringBuilder mEncodingBuffer;
-	private int mEncodingBitsAvail, mEncodingTempData, mAtomBits, mMaxConnAtoms;
+	private int mEncodingBitsAvail, mEncodingTempData, mMaxConnAtoms;
+	private final int mAtomBits;
 
 	/**
 	 * Runs a canonicalization procedure for the given molecule that creates unique
@@ -229,7 +230,7 @@ public class Canonizer {
 	 * account. If mode includes ENCODE_ATOM_CUSTOM_LABELS, than custom atom labels
 	 * are considered for the atom ranking and are encoded into the idcode.<br>
 	 * If mode includes COORDS_ARE_3D, then getEncodedCoordinates() always returns a
-	 * 3D-encoding even if all z-coordinates are 0.0. Otherwise coordinates are
+	 * 3D-encoding even if all z-coordinates are 0.0. Otherwise, coordinates are
 	 * encoded in 3D only, if at least one of the z-coords is not 0.0.
 	 * 
 	 * @param mol
@@ -253,7 +254,9 @@ public class Canonizer {
 			canFindNitrogenQualifyingForParity();
 
 		mZCoordinatesAvailable = ((mode & COORDS_ARE_3D) != 0) || mMol.is3D();
-		
+
+		mAllHydrogensAreExplicit = (mMol.getImplicitHydrogens() == 0);
+
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0) {
 			mTHParity = new byte[mMol.getAtoms()];
 			mTHParityIsPseudo = new boolean[mMol.getAtoms()];
@@ -312,136 +315,9 @@ public class Canonizer {
 						continue;
 					}
 
-					if (mMol.getAtomRingBondCount(atom) != 3)
+					if (mMol.isPyramidalBridgeHead(atom)) {
+						mNitrogenQualifiesForParity[atom] = true;
 						continue;
-
-					// For any neutral nitrogen with three ring bonds
-					// we find the smallest ring. If this is not larger than 7 members
-					// then we find that connBond, which does not belong to that ring.
-					// The we find the bridge size (atom count) to where it touches the smallest
-					// ring.
-					// We also find the path length from the touch point on the smallest ring back
-					// to the nitrogen atom.
-					int smallRingSize = mMol.getAtomRingSize(atom);
-					if (smallRingSize > 7)
-						continue;
-
-					RingCollection ringSet = mMol.getRingSet();
-					int smallRingNo = 0;
-					while (smallRingNo < ringSet.getSize()) {
-						if (ringSet.getRingSize(smallRingNo) == smallRingSize
-								&& ringSet.isAtomMember(smallRingNo, atom))
-							break;
-
-						smallRingNo++;
-					}
-
-					if (smallRingNo >= RingCollection.MAX_SMALL_RING_COUNT && smallRingNo == ringSet.getSize())
-						continue; // very rare case, but found with wrongly highly bridged CSD entry JORFAZ
-
-					int firstBridgeAtom = -1;
-					int firstBridgeBond = -1;
-					for (int i = 0; i < 3; i++) {
-						int connBond = mMol.getConnBond(atom, i);
-						if (!ringSet.isBondMember(smallRingNo, connBond)) {
-							firstBridgeAtom = mMol.getConnAtom(atom, i);
-							firstBridgeBond = connBond;
-							break;
-						}
-					}
-
-					boolean[] neglectBond = new boolean[mMol.getBonds()];
-					neglectBond[firstBridgeBond] = true;
-					int[] pathAtom = new int[11];
-					int pathLength = mMol.getPath(pathAtom, firstBridgeAtom, atom, 10, neglectBond);
-					if (pathLength == -1)
-						continue;
-
-					int bridgeAtomCount = 1;
-					while (!ringSet.isAtomMember(smallRingNo, pathAtom[bridgeAtomCount]))
-						bridgeAtomCount++;
-
-					int bondCountToBridgeHead = pathLength - bridgeAtomCount;
-
-					int bridgeHead = pathAtom[bridgeAtomCount];
-
-					if (smallRingSize == 6 && bondCountToBridgeHead == 2 && bridgeAtomCount == 3) {
-						if (mMol.getAtomRingBondCount(pathAtom[1]) >= 3) {
-							boolean isAdamantane = false;
-							int[] ringAtom = ringSet.getRingAtoms(smallRingNo);
-							for (int i = 0; i < 6; i++) {
-								if (atom == ringAtom[i]) {
-									int potentialOtherBridgeHeadIndex = ringSet.validateMemberIndex(smallRingNo,
-											(bridgeHead == ringAtom[ringSet.validateMemberIndex(smallRingNo, i + 2)])
-													? i - 2
-													: i + 2);
-									int potentialOtherBridgeHead = ringAtom[potentialOtherBridgeHeadIndex];
-									if (mMol.getAtomRingBondCount(potentialOtherBridgeHead) >= 3
-											&& mMol.getPathLength(pathAtom[1], potentialOtherBridgeHead, 2, null) == 2)
-										isAdamantane = true;
-									break;
-								}
-							}
-							if (isAdamantane) {
-								mNitrogenQualifiesForParity[atom] = true;
-								continue;
-							}
-						}
-					}
-
-					boolean bridgeHeadIsFlat = (mMol.getAtomPi(bridgeHead) == 1 || mMol.isAromaticAtom(bridgeHead)
-							|| mMol.isFlatNitrogen(bridgeHead));
-					boolean bridgeHeadMayInvert = !bridgeHeadIsFlat && mMol.getAtomicNo(bridgeHead) == 7
-							&& mMol.getAtomCharge(bridgeHead) != 1;
-
-					if (bondCountToBridgeHead == 1) {
-						if (!bridgeHeadIsFlat && !bridgeHeadMayInvert && smallRingSize <= 4 && bridgeAtomCount <= 3)
-							mNitrogenQualifiesForParity[atom] = true;
-						continue;
-					}
-
-					switch (smallRingSize) {
-					// case 3 is fully handled
-					case 4: // must be bondCountToBridgeHead == 2
-						if (!bridgeHeadIsFlat && !bridgeHeadMayInvert) {
-							if (bridgeAtomCount <= 4)
-								mNitrogenQualifiesForParity[atom] = true;
-						}
-						break;
-					case 5: // must be bondCountToBridgeHead == 2
-						if (bridgeHeadMayInvert) {
-							if (bridgeAtomCount <= 3)
-								mNitrogenQualifiesForParity[atom] = true;
-						} else if (!bridgeHeadIsFlat) {
-							if (bridgeAtomCount <= 4)
-								mNitrogenQualifiesForParity[atom] = true;
-						}
-						break;
-					case 6:
-						if (bondCountToBridgeHead == 2) {
-							if (bridgeHeadIsFlat) {
-								if (bridgeAtomCount <= 4)
-									mNitrogenQualifiesForParity[atom] = true;
-							} else if (!bridgeHeadMayInvert) {
-								if (bridgeAtomCount <= 3)
-									mNitrogenQualifiesForParity[atom] = true;
-							}
-						} else if (bondCountToBridgeHead == 3) {
-							if (bridgeHeadIsFlat) {
-								if (bridgeAtomCount <= 6)
-									mNitrogenQualifiesForParity[atom] = true;
-							} else {
-								if (bridgeAtomCount <= 4)
-									mNitrogenQualifiesForParity[atom] = true;
-							}
-						}
-						break;
-					case 7:
-						if (bondCountToBridgeHead == 3) {
-							if (bridgeAtomCount <= 3)
-								mNitrogenQualifiesForParity[atom] = true;
-						}
-						break;
 					}
 				}
 			}
@@ -766,7 +642,7 @@ public class Canonizer {
 	private void canBreakTiesRandomly() {
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			mCanBase[atom].init(atom);
-			mCanBase[atom].add(mAtomBits + 1, 2 * mCanRank[atom]);
+			mCanBase[atom].add(mAtomBits + 1, (long) 2 * mCanRank[atom]);
 		}
 
 		// promote randomly one atom of lowest shared rank.
@@ -1017,8 +893,8 @@ public class Canonizer {
 					thParityInfo |= mTHESRGroup[atom];
 				}
 
-				mCanBase[atom].add(2 * parityInfoBits, thParityInfo << parityInfoBits); // generate space for bond
-																						// parity
+				mCanBase[atom].add(2 * parityInfoBits, (long) thParityInfo << parityInfoBits); // generate space for
+																								// bond parity
 			}
 
 			for (int bond = 0; bond < mMol.getBonds(); bond++) {
@@ -1061,7 +937,7 @@ public class Canonizer {
 		while ((mNoOfRanks < mMol.getAtoms()) && paritiesFound) {
 			for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 				mCanBase[atom].init(atom);
-				mCanBase[atom].add(mAtomBits + 4, (mCanRank[atom] << 4) | (mTHParity[atom] << 2));
+				mCanBase[atom].add(mAtomBits + 4, ((long) mCanRank[atom] << 4) | (mTHParity[atom] << 2));
 			}
 
 			for (int bond = 0; bond < mMol.getBonds(); bond++) {
@@ -1117,8 +993,9 @@ public class Canonizer {
 				// then only consider the ESR type and the rank of the group.
 
 				if (!mTHESRTypeNeedsNormalization[atom] && mTHESRType[atom] != Molecule.cESRTypeAbs)
-					mCanBase[atom].add((mTHESRType[atom] << 18)
-							+ (groupRank[(mTHESRType[atom] == Molecule.cESRTypeAnd) ? 0 : 1][mTHESRGroup[atom]] << 8));
+					mCanBase[atom].add(
+							(mTHESRType[atom] << 18) + ((long) groupRank[(mTHESRType[atom] == Molecule.cESRTypeAnd) ? 0
+									: 1][mTHESRGroup[atom]] << 8));
 
 //				if (!mTHParityNeedsNormalization[atom]) {
 				int parity = mTHParity[atom];
@@ -1754,6 +1631,14 @@ public class Canonizer {
 		if (mMol.getAtomicNo(atom) == 5 && mMol.getAllConnAtoms(atom) != 4)
 			return false;
 
+		if (mMol.isFragment()) { // don't calculate parities if atom or some neighbours are exclude groups
+			if ((mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFExcludeGroup) != 0)
+				return false;
+			for (int i = 0; i < mMol.getAllConnAtoms(atom); i++)
+				if ((mMol.getAtomQueryFeatures(mMol.getConnAtom(atom, i)) & Molecule.cAtomQFExcludeGroup) != 0)
+					return false;
+		}
+
 		// don't consider tetrahedral nitrogen, unless found to qualify for parity
 		// calculation
 		if (mMol.getAtomicNo(atom) == 7 && !mNitrogenQualifiesForParity[atom])
@@ -1921,6 +1806,7 @@ public class Canonizer {
 			atomList[i] = mMol.getConnAtom(atom, remappedConn[i]);
 		if (mMol.getAllConnAtoms(atom) == 3)
 			atomList[3] = atom;
+
 		double[][] coords = new double[3][3];
 		double cosa;
 		int parity = mMol.getAtomParity(atom);
@@ -1932,10 +1818,10 @@ public class Canonizer {
 			n[1] = coords[0][2] * coords[1][0] - coords[0][0] * coords[1][2];
 			n[2] = coords[0][0] * coords[1][1] - coords[0][1] * coords[1][0];
 
-			// calculate cos(angle) of coords[2] to normal vector
+		// calculate cos(angle) of coords[2] to normal vector
 			cosa = (coords[2][0] * n[0] + coords[2][1] * n[1] + coords[2][2] * n[2]) / (Math
 					.sqrt(coords[2][0] * coords[2][0] + coords[2][1] * coords[2][1] + coords[2][2] * coords[2][2])
-					* Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]));
+						* Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]));
 		} else {
 			cosa = (parity == Molecule.cAtomParity1 ? 1 : -1);
 		}
@@ -2154,6 +2040,16 @@ public class Canonizer {
 		// or - calculates EZ-pro-parities of allylic atoms
 		if (mEZParity[bond] != 0)
 			return false;
+
+		if (mMol.isFragment()) { // don't calculate parities if some bond atoms or their neighbours are exclude
+									// groups
+			for (int i = 0; i < 2; i++) {
+				int atom = mMol.getBondAtom(i, bond);
+				for (int j = 0; j < mMol.getAllConnAtoms(atom); j++)
+					if ((mMol.getAtomQueryFeatures(mMol.getConnAtom(atom, j)) & Molecule.cAtomQFExcludeGroup) != 0)
+						return false;
+			}
+		}
 
 		if (mMol.getBondOrder(bond) == 1)
 			return canCalcBINAPParity(bond, mode);
@@ -2479,6 +2375,10 @@ public class Canonizer {
 		return getCanMolecule(false);
 	}
 
+	/**
+	 * @param includeExplicitHydrogen
+	 * @return canonical copy of this molecule
+	 */
 	public StereoMolecule getCanMolecule(boolean includeExplicitHydrogen) {
 		generateGraph();
 
@@ -2522,7 +2422,7 @@ public class Canonizer {
 		}
 
 		mMol.copyMoleculeProperties(mol);
-		mMol.invalidateHelperArrays(Molecule.cHelperBitParities);
+		mol.invalidateHelperArrays(Molecule.cHelperBitParities);
 
 		return mol;
 	}
@@ -2551,8 +2451,8 @@ public class Canonizer {
 
 	/**
 	 * If the molecule contains exactly one stereo center and if that has unknown
-	 * configuration, than assume that the configuration is meant to be racemic and
-	 * update molecule accordingly. If stereo configuration is ill defined with a
+	 * configuration, then assume that the configuration is meant to be racemic and
+	 * update molecule accordingly. If stereo configuration is ill-defined with a
 	 * stereo bond whose pointed tip is not at the stereo center, then the molecule
 	 * is not touched and the stereo center kept as undefined.
 	 * 
@@ -3151,6 +3051,43 @@ public class Canonizer {
 			}
 		}
 
+		if (mAllHydrogensAreExplicit && (mMode & ENCODE_ATOM_SELECTION) != 0) {
+			count = 0;
+			int connBits = 0;
+			for (int i = 0; i < mMol.getAtoms(); i++) {
+				int atom = mGraphAtom[i];
+				int conns = 0;
+				for (int j = mMol.getConnAtoms(atom); j < mMol.getAllConnAtoms(atom); j++) {
+					if (mMol.isSelectedAtom(mMol.getConnAtom(atom, j))) {
+						int hIndex = j - mMol.getConnAtoms(atom);
+						conns |= (1 << hIndex);
+						connBits = Math.max(connBits, hIndex + 1);
+					}
+				}
+				if (conns != 0)
+					count++;
+			}
+			if (count != 0) {
+				encodeFeatureNo(38); // 38 = datatype 'selected hydrogens'
+				encodeBits(count, nbits);
+				encodeBits(connBits, 3);
+				for (int i = 0; i < mMol.getAtoms(); i++) {
+					int atom = mGraphAtom[i];
+					int conns = 0;
+					for (int j = mMol.getConnAtoms(atom); j < mMol.getAllConnAtoms(atom); j++) {
+						if (mMol.isSelectedAtom(mMol.getConnAtom(atom, j))) {
+							int hIndex = j - mMol.getConnAtoms(atom);
+							conns |= (1 << hIndex);
+						}
+					}
+					if (conns != 0) {
+						encodeBits(atom, nbits);
+						encodeBits(conns, connBits);
+					}
+				}
+			}
+		}
+
 		encodeBits(0, 1);
 		mIDCode = encodeBitsEnd();
 	}
@@ -3294,8 +3231,8 @@ public class Canonizer {
 	 * the idcode the coordinate string can be passed to the IDCodeParser to
 	 * recreate the original molecule including coordinates.<br>
 	 * If keepPositionAndScale==false, then coordinate encoding will be relative,
-	 * i.e. scale and absolute positions get lost during the encoding. Otherwise the
-	 * encoding retains scale and absolute positions.<br>
+	 * i.e. scale and absolute positions get lost during the encoding. Otherwise,
+	 * the encoding retains scale and absolute positions.<br>
 	 * If the molecule has 3D-coordinates and if there are no implicit hydrogen
 	 * atoms, i.e. all hydrogen atoms are explicitly available with their
 	 * coordinates, then hydrogen 3D-coordinates are also encoded despite the fact
@@ -3351,23 +3288,14 @@ public class Canonizer {
 
 		// if we have 3D-coords and explicit hydrogens and if all hydrogens are explicit
 		// then encode hydrogen coordinates
-		boolean includeHydrogenCoordinates = false;
-		if (mZCoordinatesAvailable && mMol.getAllAtoms() > mMol.getAtoms() && !mMol.isFragment()) {
-			includeHydrogenCoordinates = true;
-			for (int i = 0; i < mMol.getAtoms(); i++) {
-				if (mMol.getImplicitHydrogens(i) != 0) {
-					includeHydrogenCoordinates = false;
-					break;
-				}
-			}
-		}
+		boolean includeHydrogenCoordinates = mZCoordinatesAvailable & mAllHydrogensAreExplicit;
 
 		int resolutionBits = mZCoordinatesAvailable ? 16 : 8; // must be an even number
 		encodeBitsStart(true);
 		mEncodingBuffer.append(includeHydrogenCoordinates ? '#' : '!');
 		encodeBits(mZCoordinatesAvailable ? 1 : 0, 1);
 		encodeBits(keepPositionAndScale ? 1 : 0, 1);
-		encodeBits(resolutionBits / 2, 4); // resolution bits devided by 2
+		encodeBits(resolutionBits >> 1, 4); // resolution bits divided by 2
 
 		double maxDelta = 0.0;
 		for (int i = 1; i < mMol.getAtoms(); i++)
@@ -3387,8 +3315,8 @@ public class Canonizer {
 		}
 
 		int binCount = (1 << resolutionBits);
-		double increment = maxDelta / (binCount / 2.0 - 1);
-		double maxDeltaPlusHalfIncrement = maxDelta + increment / 2.0;
+		double increment = maxDelta / ((binCount >> 1) - 1);
+		double maxDeltaPlusHalfIncrement = maxDelta + 0.5 * increment;
 
 		for (int i = 1; i < mMol.getAtoms(); i++)
 			encodeCoords(mGraphAtom[i], (mGraphFrom[i] == -1) ? -1 : mGraphAtom[mGraphFrom[i]],
@@ -3733,6 +3661,24 @@ public class Canonizer {
 	}
 
 	/**
+	 * Returns the atom's enhanced stereo representation type.
+	 * 
+	 * @param atom
+	 * @return one of the Molecule.cESRTypeXXX constants
+	 */
+	public int getTHESRType(int atom) {
+		return mTHESRType[atom];
+	}
+
+	/**
+	 * @param atom
+	 * @return whether this atom's TH-parity is pseudo
+	 */
+	public boolean isPseudoTHParity(int atom) {
+		return mTHParityIsPseudo[atom];
+	}
+
+	/**
 	 * Returns the absolute bond parity, which is based on priority ranks.
 	 * 
 	 * @param bond
@@ -3740,6 +3686,24 @@ public class Canonizer {
 	 */
 	public int getEZParity(int bond) {
 		return mEZParity[bond];
+	}
+
+	/**
+	 * Returns the bond's enhanced stereo representation type.
+	 * 
+	 * @param bond
+	 * @return one of the Molecule.cESRTypeXXX constants
+	 */
+	public int getEZESRType(int bond) {
+		return mEZESRType[bond];
+	}
+
+	/**
+	 * @param bond
+	 * @return whether this bond's EZ-parity is pseudo
+	 */
+	public boolean isPseudoEZParity(int bond) {
+		return mEZParityIsPseudo[bond];
 	}
 
 	/**
@@ -3937,7 +3901,7 @@ public class Canonizer {
 		if ((mTHParity[atom] == Molecule.cAtomParity1 || mTHParity[atom] == Molecule.cAtomParity2)) {
 			boolean invertedOrder = false;
 
-			if (mMol.getAtomPi(atom) == 2) { // allene
+			if (mMol.getAtomPi(atom) == 2 && mMol.getConnAtoms(atom) == 2) { // allene
 				try {
 					for (int i = 0; i < 2; i++) {
 						int alleneAtom = mMol.getConnAtom(atom, i);
@@ -4103,7 +4067,8 @@ public class Canonizer {
 							// one pseudo atom with mean atomic no between all delocalized neighbors
 							delocalizedBondCount++;
 							delocalizedMeanAtomicNo += mMol.getAtomicNo(candidate);
-						} else {
+						} else if (candidate != rootAtom) { // treat double bond at rootAtom stereo center as single
+															// bond
 							// add pseudo atoms for double and triple bonds
 							for (int j = 1; j < mMol.getConnBondOrder(currentAtom, i); j++) {
 								highest++;

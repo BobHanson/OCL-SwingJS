@@ -43,7 +43,7 @@ public class CoordinateInventor {
 	public static final int MODE_REMOVE_HYDROGEN = 2;
 	public static final int MODE_KEEP_MARKED_ATOM_COORDS = 4;
 	public static final int MODE_PREFER_MARKED_ATOM_COORDS = 8;
-	protected static final int MODE_CONSIDER_MARKED_ATOMS = MODE_KEEP_MARKED_ATOM_COORDS | MODE_PREFER_MARKED_ATOM_COORDS;
+	private static final int MODE_CONSIDER_MARKED_ATOMS = MODE_KEEP_MARKED_ATOM_COORDS | MODE_PREFER_MARKED_ATOM_COORDS;
 	public static final int MODE_DEFAULT = MODE_REMOVE_HYDROGEN;
 
 	private static final byte FLIP_AS_LAST_RESORT = 1;
@@ -53,6 +53,9 @@ public class CoordinateInventor {
 	private static final int  POSSIBLE_FLIPS = 64;
 	private static final int  LAST_RESORT_FLIPS = 128;
 	private static final int  TOTAL_FLIPS = PREFERRED_FLIPS + POSSIBLE_FLIPS + LAST_RESORT_FLIPS;
+	private static final float JOIN_DISTANCE_METAL_BONDS = 1.2f;
+	private static final float JOIN_DISTANCE_CHARGED_ATOMS = 1.4f;
+	public static final float JOIN_DISTANCE_UNCHARGED_FRAGMENTS = 1.6f;
 
 	private static volatile List<InventorTemplate> sDefaultTemplateList;
 
@@ -64,7 +67,7 @@ public class CoordinateInventor {
 	private boolean[]	mAtomIsPartOfCustomTemplate;
 	private boolean     mAbsoluteOrientationTemplateFound;  // we just use the first matching template, which is set to define absolute orientation
 	private int[]		mUnPairedCharge;
-	private int			mMode;
+	private final int   mMode;
 	private List<InventorFragment> mFragmentList;
 	private List<InventorTemplate> mCustomTemplateList;
 
@@ -126,7 +129,10 @@ public class CoordinateInventor {
 
 	/**
 	 * Creates new atom 2D-coordinates for a molecule or a part of a molecule.
-	 * Coordinates will correctly reflect E/Z double bond parities, unless the double bond is in a small ring.
+	 * Typically, the molecule has defined TH- and EZ-parities (even if unknown or none), which were not
+	 * calculated, but taken from a SMILES or from an IDCode. In these cases setParitiesValid() should have
+	 * been called to indicate that a parity calculation is not needed and even would destroy given parities.
+	 * New coordinates will correctly reflect E/Z double bond parities, unless the double bond is in a small ring.
 	 * If atom parities are available, this call is typically followed by calling mol.setStereoBondsFromParity();
 	 * Unneeded explicit hydrogens are removed, if mode includes MODE_REMOVE_HYDROGEN.
 	 * The relative orientation of all marked atoms is retained, if mode includes MODE_KEEP_MARKED_ATOM_COORDS.
@@ -219,14 +225,13 @@ public class CoordinateInventor {
 		// using one-by-one rotate and approximate strategy
 		joinRemainingFragments();
 
-		for (int i=0; i<mFragmentList.size(); i++) {
-			InventorFragment f = mFragmentList.get(i);
-			for (int j=0; j<f.size(); j++) {
+		for (InventorFragment f : mFragmentList) {
+			for (int j = 0; j<f.size(); j++) {
 				mMol.setAtomX(f.mGlobalAtom[j], f.mAtomX[j]);
 				mMol.setAtomY(f.mGlobalAtom[j], f.mAtomY[j]);
 				mMol.setAtomZ(f.mGlobalAtom[j], 0.0);
-				}
 			}
+		}
 
 		if (paritiesPresent) {
 			mMol.setParitiesValid(parityState);
@@ -244,7 +249,7 @@ public class CoordinateInventor {
 
 
 	private boolean[] locateTemplateFragments(List<InventorTemplate> templateList, int priority) {
-		boolean useFFP = (mFFP != null && templateList.size() != 0 && templateList.get(0).getFFP() != null);
+		boolean useFFP = (mFFP != null && !templateList.isEmpty() && templateList.get(0).getFFP() != null);
 
 		SSSearcher searcher = null;
 		SSSearcherWithIndex searcherWithIndex = null;
@@ -902,7 +907,7 @@ public class CoordinateInventor {
 		final int FIRST_RING_SIZE = 9;
 		final int LAST_RING_SIZE = 25;
 		final double[][] cAngleCorrection = { {20}, null, null, {0,10}, null, null, {-4,12},
-				{0,0,-7.5}, null, null, null, null, {60/7, -60/7}, null, null, null, {-2.4} };
+				{0,0,-7.5}, null, null, null, null, {60.0/7, -60.0/7}, null, null, null, {-2.4} };
 		final int[][] cBondZList = { // sequence of E/Z parities in rings (E=0, Z=1)
 				{   // 9-membered ring
 					0x00000092,  // 010010010 sym
@@ -1196,14 +1201,18 @@ public class CoordinateInventor {
 		}*/
 
 
+	/**
+	 * Find the smallest ring of given bond
+	 * @param bond
+	 * @return
+	 */
 	private InventorChain getSmallestRingFromBond(int bond) {
-			// find smallest ring of given bond
 		int atom1 = mMol.getBondAtom(0, bond);
 		int atom2 = mMol.getBondAtom(1, bond);
-		int graphAtom[] = new int[mMol.getAllAtoms()];
-		int graphBond[] = new int[mMol.getAllAtoms()];
-		int graphLevel[] = new int[mMol.getAllAtoms()];
-		int graphParent[] = new int[mMol.getAllAtoms()];
+		int[] graphAtom = new int[mMol.getAllAtoms()];
+		int[] graphBond = new int[mMol.getAllAtoms()];
+		int[] graphLevel = new int[mMol.getAllAtoms()];
+		int[] graphParent = new int[mMol.getAllAtoms()];
 		graphAtom[0] = atom1;
 		graphAtom[1] = atom2;
 		graphBond[1] = bond;
@@ -1242,8 +1251,8 @@ public class CoordinateInventor {
 
 	private int getSmallestRingSize(int atom1, int atom2, int atom3) {
 			// return size of smallest ring where atom1, atom2 and atom3 occurr in this order
-		int graphAtom[] = new int[mMol.getAllAtoms()];
-		int graphLevel[] = new int[mMol.getAllAtoms()];
+		int[] graphAtom = new int[mMol.getAllAtoms()];
+		int[] graphLevel = new int[mMol.getAllAtoms()];
 		graphAtom[0] = atom2;
 		graphAtom[1] = atom1;
 		graphLevel[atom2] = 1;
@@ -1526,10 +1535,10 @@ public class CoordinateInventor {
 
 
 	private InventorChain getLongestUnhandledChain(int atom) {
-		int graphAtom[] = new int[mMol.getAllAtoms()];
-		int graphBond[] = new int[mMol.getAllAtoms()];
-		int graphLevel[] = new int[mMol.getAllAtoms()];
-		int graphParent[] = new int[mMol.getAllAtoms()];
+		int[] graphAtom = new int[mMol.getAllAtoms()];
+		int[] graphBond = new int[mMol.getAllAtoms()];
+		int[] graphLevel = new int[mMol.getAllAtoms()];
+		int[] graphParent = new int[mMol.getAllAtoms()];
 		graphAtom[0] = atom;
 		graphLevel[atom] = 1;
 		graphParent[0] = -1;
@@ -1673,51 +1682,50 @@ public class CoordinateInventor {
 
 
 	private void correctChainEZParities() {
-		for (int fragmentNo=0; fragmentNo<mFragmentList.size(); fragmentNo++) {
-			InventorFragment f = mFragmentList.get(fragmentNo);
+		for (InventorFragment f : mFragmentList) {
 			for (int i = 0; i<f.mGlobalBond.length; i++) {
 				int bond = f.mGlobalBond[i];
 
 				if (mMol.getBondOrder(bond) == 2) {
 					if (!mMol.isSmallRingBond(bond)
-					 &&	(mMol.getBondParity(bond) == Molecule.cBondParityUnknown
-					  || mMol.getBondParity(bond) == Molecule.cBondParityNone))
+							&& (mMol.getBondParity(bond) == Molecule.cBondParityUnknown
+							|| mMol.getBondParity(bond) == Molecule.cBondParityNone))
 						mMol.setBondParityUnknownOrNone(bond);
-	
+
 					if (!mMol.isRingBond(bond)
-					 && (mMol.getConnAtoms(mMol.getBondAtom(0, bond)) > 1)
-					 && (mMol.getConnAtoms(mMol.getBondAtom(1, bond)) > 1)
-					 && (mMol.getBondParity(bond) == Molecule.cBondParityEor1
-					  || mMol.getBondParity(bond) == Molecule.cBondParityZor2)) {
+							&& (mMol.getConnAtoms(mMol.getBondAtom(0, bond))>1)
+							&& (mMol.getConnAtoms(mMol.getBondAtom(1, bond))>1)
+							&& (mMol.getBondParity(bond) == Molecule.cBondParityEor1
+							|| mMol.getBondParity(bond) == Molecule.cBondParityZor2)) {
 						int[] minConnAtom = new int[2];
 						int[] bondAtom = new int[2];
-						for (int j=0; j<2; j++) {
+						for (int j = 0; j<2; j++) {
 							minConnAtom[j] = mMol.getMaxAtoms();
 							bondAtom[j] = mMol.getBondAtom(j, bond);
-							for (int k=0; k<mMol.getAllConnAtoms(bondAtom[j]); k++) {
+							for (int k = 0; k<mMol.getAllConnAtoms(bondAtom[j]); k++) {
 								int connAtom = mMol.getConnAtom(bondAtom[j], k);
-								if (connAtom != mMol.getBondAtom(1-j, bond)
-								 && minConnAtom[j] > connAtom)
+								if (connAtom != mMol.getBondAtom(1 - j, bond)
+										&& minConnAtom[j]>connAtom)
 									minConnAtom[j] = connAtom;
 								}
 							}
-	
+
 						double dbAngle = InventorAngle.getAngle(f.mAtomX[f.mGlobalToLocalAtom[bondAtom[0]]],
-																f.mAtomY[f.mGlobalToLocalAtom[bondAtom[0]]],
-																f.mAtomX[f.mGlobalToLocalAtom[bondAtom[1]]],
-																f.mAtomY[f.mGlobalToLocalAtom[bondAtom[1]]]);
-						double angle1  = InventorAngle.getAngle(f.mAtomX[f.mGlobalToLocalAtom[minConnAtom[0]]],
-																f.mAtomY[f.mGlobalToLocalAtom[minConnAtom[0]]],
-																f.mAtomX[f.mGlobalToLocalAtom[bondAtom[0]]],
-																f.mAtomY[f.mGlobalToLocalAtom[bondAtom[0]]]);
-						double angle2  = InventorAngle.getAngle(f.mAtomX[f.mGlobalToLocalAtom[bondAtom[1]]],
-																f.mAtomY[f.mGlobalToLocalAtom[bondAtom[1]]],
-																f.mAtomX[f.mGlobalToLocalAtom[minConnAtom[1]]],
-																f.mAtomY[f.mGlobalToLocalAtom[minConnAtom[1]]]);
-	
-						if (((getAngleDif(dbAngle, angle1) < 0)
-						   ^ (getAngleDif(dbAngle, angle2) < 0))
-						  ^ (mMol.getBondParity(bond) == Molecule.cBondParityZor2)) {
+								f.mAtomY[f.mGlobalToLocalAtom[bondAtom[0]]],
+								f.mAtomX[f.mGlobalToLocalAtom[bondAtom[1]]],
+								f.mAtomY[f.mGlobalToLocalAtom[bondAtom[1]]]);
+						double angle1 = InventorAngle.getAngle(f.mAtomX[f.mGlobalToLocalAtom[minConnAtom[0]]],
+								f.mAtomY[f.mGlobalToLocalAtom[minConnAtom[0]]],
+								f.mAtomX[f.mGlobalToLocalAtom[bondAtom[0]]],
+								f.mAtomY[f.mGlobalToLocalAtom[bondAtom[0]]]);
+						double angle2 = InventorAngle.getAngle(f.mAtomX[f.mGlobalToLocalAtom[bondAtom[1]]],
+								f.mAtomY[f.mGlobalToLocalAtom[bondAtom[1]]],
+								f.mAtomX[f.mGlobalToLocalAtom[minConnAtom[1]]],
+								f.mAtomY[f.mGlobalToLocalAtom[minConnAtom[1]]]);
+
+						if (((getAngleDif(dbAngle, angle1)<0)
+								^ (getAngleDif(dbAngle, angle2)<0))
+								^ (mMol.getBondParity(bond) == Molecule.cBondParityZor2)) {
 							f.flipOneSide(bond);
 							}
 						}
@@ -1745,7 +1753,7 @@ public class CoordinateInventor {
 			InventorFragment minCollisionFragment = new InventorFragment(f);
 
 			int lastBond = -1;
-			for (int flip=0; flip<TOTAL_FLIPS && collisionList.size()!=0; flip++) {
+			for (int flip = 0; flip<TOTAL_FLIPS && !collisionList.isEmpty(); flip++) {
 				int collisionNo = mRandom.nextInt(collisionList.size());
 				int[] collidingAtom = collisionList.get(collisionNo);
 				int[] bondSequence = getShortestConnection(collidingAtom[0], collidingAtom[1]);
@@ -1820,17 +1828,17 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 
 
 	private int[] getShortestConnection(int atom1, int atom2) {
-		int graphAtom[] = new int[mMol.getAllAtoms()];
-		int graphBond[] = new int[mMol.getAllAtoms()];
-		int graphLevel[] = new int[mMol.getAllAtoms()];
-		int graphParent[] = new int[mMol.getAllAtoms()];
+		int[] graphAtom = new int[mMol.getAllAtoms()];
+		int[] graphBond = new int[mMol.getAllAtoms()];
+		int[] graphLevel = new int[mMol.getAllAtoms()];
+		int[] graphParent = new int[mMol.getAllAtoms()];
 		graphAtom[0] = atom2;
 		graphLevel[atom2] = 1;
 		graphParent[0] = -1;
 		int current = 0;
 		int highest = 0;
 		while (current <= highest) {
-			for (int i=0; i<mMol.getAllConnAtomsPlusMetalBonds(graphAtom[current]); i++) {
+			for (int i=0; i<mMol.getAllConnAtoms(graphAtom[current]); i++) {
 				int candidate = mMol.getConnAtom(graphAtom[current], i);
 				int theBond = mMol.getConnBond(graphAtom[current], i);
 
@@ -1952,7 +1960,7 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 
 
 	private void calcNextBaseValues(CanonizerBaseValue[] baseValue, int[] symRank, int atomBits, int maxConnAtoms) {
-		int	connRank[] = new int[maxConnAtoms];
+		int[] connRank = new int[maxConnAtoms];
 		for (int atom=0; atom<mMol.getAllAtoms(); atom++) {
 								// generate sorted list of ranks of neighbours
 			for (int i=0; i<mMol.getAllConnAtoms(atom); i++) {
@@ -1993,7 +2001,7 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 		ArrayList<FragmentAssociation> associationList = createMetalBondAssociations();
 		while (associationList != null) {
 			FragmentAssociation association = getMaxPriorityAssociation(associationList);
-			joinAssociatedFragments(association, 1.2);
+			joinAssociatedFragments(association, JOIN_DISTANCE_METAL_BONDS);
 			associationList = createMetalBondAssociations();
 			}
 		}
@@ -2001,7 +2009,7 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 	private void joinChargedFragments() {
 		FragmentAssociation association = createChargeAssociation();
 		while (association != null) {
-			joinAssociatedFragments(association, 1.5);
+			joinAssociatedFragments(association, JOIN_DISTANCE_CHARGED_ATOMS);
 			association = createChargeAssociation();
 			}
 		}
@@ -2009,7 +2017,7 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 	private void joinRemainingFragments() {
 		FragmentAssociation association = createDisconnectedAssociation();
 		while (association != null) {
-			joinAssociatedFragments(association, 1.8);
+			joinAssociatedFragments(association, JOIN_DISTANCE_UNCHARGED_FRAGMENTS);
 			association = createDisconnectedAssociation();
 			}
 		}
@@ -2099,14 +2107,12 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 					}
 				}
 			if (fragmentCharge != 0) {
-				Collections.sort(chargeList, new Comparator<InventorCharge>() {
-					//@Override Annotation incompatible with 1.5
-					public int compare(InventorCharge o1, InventorCharge o2) {
-						int c1 = Math.abs(o1.charge);
-						int c2 = Math.abs(o2.charge);
-						return c1 < c2 ? -1 : c1 == c2 ? 0 : 1;
-						}
-					});
+				//@Override Annotation incompatible with 1.5
+				chargeList.sort((o1, o2) -> {
+					int c1 = Math.abs(o1.charge);
+					int c2 = Math.abs(o2.charge);
+					return Integer.compare(c1, c2);
+				});
 				for (InventorCharge ic:chargeList) {
 					if (fragmentCharge * ic.charge > 0) {	// charges have same sign
 						int charge = (Math.abs(fragmentCharge) >= Math.abs(ic.charge)) ? ic.charge : fragmentCharge;
@@ -2119,26 +2125,26 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 				}
 			}
 
-		if (negChargeList.size() == 0 || posChargeList.size() == 0)
+		if (negChargeList.isEmpty() || posChargeList.isEmpty())
 			return null;
 
 		// with positive charges we have the large fragments first
-		Collections.sort(posChargeList, new Comparator<InventorCharge>() {
+		posChargeList.sort(new Comparator<InventorCharge>() {
 			//@Override Annotation incompatible with 1.5
 			public int compare(InventorCharge o1, InventorCharge o2) {
 				int c1 = o1.fragment.size();
 				int c2 = o1.fragment.size();
-				return c1 < c2 ? 1 : c1 == c2 ? 0 : -1;
+				return Integer.compare(c2, c1);
 			}
 		});
 
 		// with negative charges we have the small o1.fragments first
-		Collections.sort(negChargeList, new Comparator<InventorCharge>() {
+		negChargeList.sort(new Comparator<InventorCharge>() {
 			//@Override Annotation incompatible with 1.5
 			public int compare(InventorCharge o1, InventorCharge o2) {
 				int c1 = o1.fragment.size();
 				int c2 = o1.fragment.size();
-				return c1 < c2 ? -1 : c1 == c2 ? 0 : 1;
+				return Integer.compare(c1, c2);
 			}
 		});
 

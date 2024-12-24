@@ -152,6 +152,16 @@ public class ArrayUtils {
 		return res;
 	}
 
+	public final static byte [] toByteArray(List<Byte> li) {
+		byte[] res = new byte[li.size()];
+		int index = 0;
+		Iterator<Byte> iter = li.iterator();
+		while(iter.hasNext()) {
+			res[index++] = iter.next();
+		}
+		return res;
+	}
+
 	public final static int indexOf(Object[] array, Object obj) {
 		for (int i = 0; i < array.length; i++) {
 			if(array[i].equals(obj)) return i;
@@ -220,6 +230,28 @@ public class ArrayUtils {
 		int res = array[0];
 		for(int i=1; i<array.length; i++) {
 			res = Math.max(res, array[i]);
+		}
+		return res;
+	}
+	public final static int max(int[] [] array) {
+		if(array.length==0) return 0;
+
+		int r = array.length;
+		int c = array[0].length;
+
+		int res = array[0][0];
+		for(int i=0; i<r; i++) {
+			for(int j=0; j<c; j++) {
+				res = Math.max(res, array[i][j]);
+			}
+		}
+		return res;
+	}
+	public final static int min(int[] array) {
+		if(array.length==0) return 0;
+		int res = array[0];
+		for(int i=1; i<array.length; i++) {
+			res = Math.min(res, array[i]);
 		}
 		return res;
 	}
@@ -384,5 +416,33 @@ public class ArrayUtils {
 		}
 	}
 
+	public final static boolean isOverlap(int[] a1, int[] a2) {
+		boolean ov = false;
+		all:
+		for (int v1 : a1) {
+			for (int v2 : a2) {
+				if(v1==v2){
+					ov=true;
+					break all;
+				}
+			}
+		}
+		return ov;
+	}
 
+	/**
+	 *
+	 * @param s string with single digits '123456789'.
+	 * @return
+	 */
+	public static int [] parseSingleDigitString(String s) {
+		if (s == null)
+			return null;
+		int[] arr = new int[s.length()];
+		for (int i = 0; i < s.length(); i++) {
+			int c = Integer.parseInt(Character.toString(s.charAt(i)));
+			arr[i] = c;
+		}
+		return arr;
+	}
 }

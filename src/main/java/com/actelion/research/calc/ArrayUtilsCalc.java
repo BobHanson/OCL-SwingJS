@@ -57,15 +57,12 @@ public class ArrayUtilsCalc {
 
 	public final static int [] cat(int [] a, int [] b) {
 		int [] c = new int [a.length + b.length];
-
 		for (int i = 0; i < a.length; i++) {
 			c[i]=a[i];
 		}
-
 		for (int i = 0; i < b.length; i++) {
 			c[a.length+i]=b[i];
 		}
-
 		return c;
 	}
 
@@ -75,6 +72,16 @@ public class ArrayUtilsCalc {
 		for (int i = 0; i < a.length; i++) {
 			if(a[i]==b){
 				bFound=true;
+				break;
+			}
+		}
+		return bFound;
+	}
+	public final static boolean containsAll(int [] a, int [] b) {
+		boolean bFound = true;
+		for (int i = 0; i < b.length; i++) {
+			if(!contains(a, b[i])){
+				bFound=false;
 				break;
 			}
 		}
@@ -195,6 +202,8 @@ public class ArrayUtilsCalc {
 
 		return bFound;
 	}
+
+
     public static final double getCorrPearson(List<PointDouble> li) {
 
     	final double [] a = new double [li.size()];
@@ -206,7 +215,7 @@ public class ArrayUtilsCalc {
         
         return getCorrPearson(a, b);
     }
-    
+
     public static final double getCorrPearson(Matrix A, Matrix B) {
         
         

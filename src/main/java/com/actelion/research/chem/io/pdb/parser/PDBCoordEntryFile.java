@@ -35,6 +35,7 @@
 package com.actelion.research.chem.io.pdb.parser;
 
 import com.actelion.research.chem.Molecule3D;
+import com.actelion.research.util.SortedList;
 
 import java.util.*;
 
@@ -132,7 +133,7 @@ public class PDBCoordEntryFile {
     private List<AtomRecord> hetAtomRecords;
 
 
-    private List<int[]> liConnect;
+    private SortedList<int[]> liConnect;
 
     private String master;
 
@@ -555,11 +556,11 @@ public class PDBCoordEntryFile {
         this.liMtrix3 = liMtrix3;
     }
 
-    public List<int[]> getLiConnect() {
+    public SortedList<int[]> getLiConnect() {
         return liConnect;
     }
 
-    public void setLiConnect(List<int[]> liConnect) {
+    public void setLiConnect(SortedList<int[]> liConnect) {
         this.liConnect = liConnect;
     }
 
@@ -580,11 +581,14 @@ public class PDBCoordEntryFile {
     }
     
     public Map<String,List<Molecule3D>> extractMols() {
-    	StructureAssembler assembler = new StructureAssembler(liConnect,protAtomRecords,hetAtomRecords);
-    	return assembler.assemble();
+        return extractMols(false);
     }
-    
-    
+
+    public Map<String,List<Molecule3D>> extractMols(boolean detachCovalentLigands) {
+        StructureAssembler assembler = new StructureAssembler(liConnect,protAtomRecords,hetAtomRecords);
+        assembler.setDetachCovalentLigands(detachCovalentLigands);
+        return assembler.assemble();
+    }
 
     @Override
     public String toString() {

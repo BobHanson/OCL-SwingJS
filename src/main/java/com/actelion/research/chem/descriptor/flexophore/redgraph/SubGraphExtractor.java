@@ -47,6 +47,8 @@ import java.util.*;
  *
  * Created by korffmo1 on 17.02.16.
  * 10.03.2017 Bug fix in isEnclosingRing() for multi-bridged ring systems.
+ *
+ * mvK Validated 24.01.2024 works as expected.
  */
 public class SubGraphExtractor {
 
@@ -94,9 +96,7 @@ public class SubGraphExtractor {
         }
 
         StereoMolecule mol = new StereoMolecule(molOrig);
-
         mol.ensureHelperArrays(Molecule.cHelperRings);
-
         createRingAtomIndexMap(mol);
 
         //
@@ -104,7 +104,6 @@ public class SubGraphExtractor {
         //
         List<Integer> liEndStandingAtoms = new ArrayList<>();
         for (int i = 0; i < nAtoms; i++) {
-
             int nConnAtms = mol.getAllConnAtoms(i);
             int ccConnNonHydrogen = 0;
             for (int j = 0; j < nConnAtms; j++) {
@@ -114,9 +113,9 @@ public class SubGraphExtractor {
                     ccConnNonHydrogen++;
                 }
             }
-
             if(ccConnNonHydrogen==1){
-                liEndStandingAtoms.add(i);
+                if(mol.getAtomicNo(i)>1)
+                    liEndStandingAtoms.add(i);
             }
         }
 
@@ -128,22 +127,16 @@ public class SubGraphExtractor {
         List<SubGraphIndices> liFragmentHetero = getEndStandingHeteroGroups(mol, liEndStandingAtoms);
 
         liFragment.addAll(liFragmentHetero);
-
         HashSetInt hsAtomIndicesInFragment = new HashSetInt();
-
         SubGraphIndices.addAtomIndices(hsAtomIndicesInFragment, liFragmentHetero);
 
         //
         // Small rings
         //
         List<SubGraphIndices> liFragmentRings = getSmallRingsWithConnEndStanding(mol);
-
         liFragment.addAll(liFragmentRings);
-
         HashSetInt hsAtomIndicesInSmallRings = new HashSetInt();
-
         SubGraphIndices.addAtomIndices(hsAtomIndicesInSmallRings, liFragmentRings);
-
         hsAtomIndicesInFragment.add(hsAtomIndicesInSmallRings.getValues());
 
         //
@@ -151,7 +144,6 @@ public class SubGraphExtractor {
         // Hetero atoms that were not covered by the end standing groups and that are not enclosed in the small rings.
         //
         List<SubGraphIndices> liFragmentRemainingHetero = getRemainingHeteroGroups(mol, hsAtomIndicesInFragment);
-
         liFragment.addAll(liFragmentRemainingHetero);
 
         SubGraphIndices.addAtomIndices(hsAtomIndicesInFragment, liFragmentRemainingHetero);
@@ -159,6 +151,7 @@ public class SubGraphExtractor {
         //
         // End standing aliphatic group
         //
+
         List<SubGraphIndices> liFragmentEndStandingAliphaticGroup = getEndStandingAliphaticGroups(mol, liEndStandingAtoms, hsAtomIndicesInFragment);
 
         liFragment.addAll(liFragmentEndStandingAliphaticGroup);
@@ -663,6 +656,7 @@ public class SubGraphExtractor {
         //
 
         for (int indexEndStandingAtom : liEndStandingAtoms) {
+
             if(arrAtomIndicesUsedMap[indexEndStandingAtom]){
                 continue;
             }
@@ -699,9 +693,6 @@ public class SubGraphExtractor {
                 fragment.addIndex(indexEndStandingAtom);
                 liFragmentEndStandingAliphaticGroup.add(fragment);
             }
-
-
-
         }
 
         //
@@ -752,59 +743,41 @@ public class SubGraphExtractor {
         int [] arrAtomIndicesUsed = hsAtomIndicesUsed.getValues();
 
         for (int indexAtmUsed : arrAtomIndicesUsed) {
-
             arrAtomIndicesUsedMap[indexAtmUsed] = true;
-
         }
 
         LinkedList<Integer> liIndAtm = new LinkedList<>();
-
         int [] arrIndAtmLayer = new int[atoms];
 
         // Contains only one index.
         int [] arrIndAtm = fragment.getAtomIndices();
-
         for (int indAtm : arrIndAtm) {
             liIndAtm.add(indAtm);
             arrIndAtmLayer[indAtm] = 0;
         }
 
         while (!liIndAtm.isEmpty()){
-
             int indAtm = liIndAtm.poll();
-
             if(arrIndAtmLayer[indAtm]>maxDepth){
-
                 continue;
-
             }
 
             fragment.addIndex(indAtm);
 
             int nConnAtms = mol.getConnAtoms(indAtm);
-
             for (int i = 0; i < nConnAtms; i++) {
-
                 int indAtmConn = mol.getConnAtom(indAtm, i);
-
                 if(arrAtomIndicesUsedMap[indAtmConn]){
-
                     continue;
-
                 }
 
                 if(arrAtomInSmallRing[indAtmConn]) {
-
                     continue;
-
                 }
 
                 if(mol.getAtomicNo(indAtmConn)==6) {
-
                     liIndAtm.add(indAtmConn);
-
                     arrIndAtmLayer[indAtmConn] = arrIndAtmLayer[indAtm] + 1;
-
                 }
             }
         }
@@ -1008,23 +981,14 @@ public class SubGraphExtractor {
     private List<SubGraphIndices> getSmallRingsWithConnEndStanding(StereoMolecule mol){
 
         List<SubGraphIndices> liFragmentRings = new ArrayList<>();
-
-
-
         RingHelper ringHelper = new RingHelper(mol);
-
         RingCollection ringCollection = ringHelper.getRingCollection();
-
         int rings = ringCollection.getSize();
-
         for (int ringNo = 0; ringNo < rings; ringNo++) {
-
             int ringSize = ringCollection.getRingSize(ringNo);
-
             if(ringSize > MAX_RING_SIZE_TO_SUMMARIZE_HETERO_RINGS) {
                 continue;
             }
-
             int [] arrIndexRingAtoms = ringCollection.getRingAtoms(ringNo);
 
             // Exclude enclosing rings
@@ -1033,9 +997,7 @@ public class SubGraphExtractor {
             }
 
             SubGraphIndices fragment = new SubGraphIndices();
-
             fragment.addIndex(arrIndexRingAtoms);
-
             liFragmentRings.add(fragment);
         }
 
@@ -1048,23 +1010,21 @@ public class SubGraphExtractor {
             int [] arrIndexRingAtoms = subGraphIndices.getAtomIndices();
 
             for (int indexRingAtom : arrIndexRingAtoms) {
-
                 int nConnAtms = mol.getConnAtoms(indexRingAtom);
-
                 if(nConnAtms < 3) {
                     continue;
                 }
 
                 for (int i = 0; i < nConnAtms; i++) {
-
                     int indAtmConn = mol.getConnAtom(indexRingAtom, i);
 
+                    if(mol.getAtomicNo(indAtmConn)==1){ // explicit H or D
+                        continue;
+                    }
+
                     int nConnAtomsChild = mol.getConnAtoms(indAtmConn);
-
                     if(nConnAtomsChild == 1){
-
                         subGraphIndices.addIndex(indAtmConn);
-
                     }
                 }
             }
@@ -1214,16 +1174,11 @@ public class SubGraphExtractor {
         // The parent- or the child atom may be of hetero type.
         //
         List<SubGraphIndices> liFragmentHetero = new ArrayList<>();
-
         for (int indexEndStandingAtom : liEndStandingAtoms) {
-
             int atomicNo = mol.getAtomicNo(indexEndStandingAtom);
-
             int indAtmConn = mol.getConnAtom(indexEndStandingAtom, 0);
-
             if(isSmallRingAtom(indAtmConn)){
-
-                // If the end standing atom is of this type it will become a own pharmacophore point.
+                // If the end standing atom is of this type it will become an own pharmacophore point.
                 // Even if it is directly connected to a ring.
                 // Additionally it can be included to the atom types of the ring.
                 if(atomicNo != PeriodicTable.Nitrogen &&
@@ -1231,21 +1186,17 @@ public class SubGraphExtractor {
                         atomicNo != PeriodicTable.Sulfur &&
                         atomicNo != PeriodicTable.Chlorine &&
                         atomicNo != PeriodicTable.Bromine)
-
                 continue;
-
             }
 
             if (ExtendedMoleculeFunctions.isHetero(mol, indexEndStandingAtom) || ExtendedMoleculeFunctions.isHetero(mol, indAtmConn)){
-
                 SubGraphIndices fragment = new SubGraphIndices();
-
                 fragment.addIndex(indexEndStandingAtom);
                 fragment.addIndex(indAtmConn);
-
                 liFragmentHetero.add(fragment);
             }
         }
+
 
         SubGraphIndices.merge(liFragmentHetero);
 
@@ -1255,24 +1206,17 @@ public class SubGraphExtractor {
         //
         for (SubGraphIndices frag : liFragmentHetero) {
 
-            int [] arrAtomIndices = frag.getAtomIndices();
+            int [] arrAtomIndices = frag.getAtomIndices(); // contains two indices, the hetero atom and the connected atom
 
             for (int atmIndex : arrAtomIndices) {
-
                 int nConnAtms = mol.getConnAtoms(atmIndex);
-
-                if(nConnAtms > 1) {
-
+                if(nConnAtms > 1) { // not the end standing hetero atom
                     boolean heteroParent = ExtendedMoleculeFunctions.isHetero(mol, atmIndex);
-
                     for (int i = 0; i < nConnAtms; i++) {
 
                         int indexAtmConn = mol.getConnAtom(atmIndex, i);
-
                         if(frag.contains(indexAtmConn)) {
-
                             continue;
-
                         }
 
                         boolean heteroChild = ExtendedMoleculeFunctions.isHetero(mol, indexAtmConn);
@@ -1284,11 +1228,10 @@ public class SubGraphExtractor {
 
                         // 07.05.2020 Changed, no hetero atom in ring allowed any more.
                         // Result was a coarse granulation. i.e. for (Ring)N-C-S
+                        // The atom types are anyway considering the neighbour atoms.
                         if (isSmallRingAtom(indexAtmConn)) {
                             continue;
                         }
-
-
                         if (heteroParent || heteroChild){
                             frag.addIndex(indexAtmConn);
                         }
@@ -1299,39 +1242,28 @@ public class SubGraphExtractor {
 
         SubGraphIndices.merge(liFragmentHetero);
 
+
+
         //
         // Get fourth layer
         // Only if the new atom is a hetero atom.
         //
 
         for (SubGraphIndices frag : liFragmentHetero) {
-
             int [] arrAtomIndices = frag.getAtomIndices();
-
             for (int atmIndex : arrAtomIndices) {
-
                 int nConnAtms = mol.getConnAtoms(atmIndex);
-
                 if(nConnAtms > 1) {
-
                     for (int i = 0; i < nConnAtms; i++) {
-
                         int indexAtmConn = mol.getConnAtom(atmIndex, i);
-
                         if (mol.isRingAtom(indexAtmConn)) {
-
                             continue;
-
                         } else if(frag.contains(indexAtmConn)) {
-
                             continue;
-
                         }
 
                         if (ExtendedMoleculeFunctions.isHetero(mol, indexAtmConn)){
-
                             frag.addIndex(indexAtmConn);
-
                         }
                     }
                 }
@@ -1340,47 +1272,36 @@ public class SubGraphExtractor {
 
         SubGraphIndices.merge(liFragmentHetero);
 
+
         //
         // Add end standing attached carbon atoms to the group.
         //
         for (SubGraphIndices frag : liFragmentHetero) {
-
             int [] arrAtomIndices = frag.getAtomIndices();
-
             for (int atmIndex : arrAtomIndices) {
-
                 int nConnAtms = mol.getConnAtoms(atmIndex);
-
                 if (nConnAtms == 1) {
-
                     continue;
-
                 }
 
                 for (int i = 0; i < nConnAtms; i++) {
-
                     int indexAtmConn = mol.getConnAtom(atmIndex, i);
-
                     if(frag.contains(indexAtmConn)) {
-
                         continue;
-
                     }
 
                     boolean endStandingChild = (mol.getConnAtoms(indexAtmConn) == 1) ? true : false;
-
                     if(!endStandingChild){
-
                         continue;
-
                     }
 
-                    frag.addIndex(indexAtmConn);
 
-                    if(mol.getAtomicNo(indexAtmConn) != 6) {
-
-                        throw new RuntimeException("This should not happen!");
-
+                    if(mol.getAtomicNo(indexAtmConn) != 1) { // explicit H (Deuterium made trouble)
+                        frag.addIndex(indexAtmConn);
+                        if (mol.getAtomicNo(indexAtmConn) != 6) {
+                            System.err.println("Wrong non-carbon atom at this index " + indexAtmConn);
+                            throw new RuntimeException("This should not happen! But happened for " + mol.getIDCode());
+                        }
                     }
                 }
             }

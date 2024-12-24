@@ -29,9 +29,6 @@ import swingjs.api.JSUtilI;
 
 public class SwingUIHelper implements GenericUIHelper {
 	
-	public static boolean isJS = /** @j2sNative true || */
-			false;
-
 	public static JSUtilI jsutil;
 
 	static {
@@ -95,16 +92,6 @@ public class SwingUIHelper implements GenericUIHelper {
 		mParentComponent.setCursor(SwingCursorHelper.getCursor(cursor));
 	}
 
-	@Override
-	public File openChemistryFile(boolean isReaction) {
-		return isReaction ?
-				FileHelper.getFile(mParentComponent, "Please select a reaction file",
-						FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD)
-				: FileHelper.getFile(mParentComponent, "Please select a molecule file",
-				FileHelper.cFileTypeMOL | CompoundFileHelper.cFileTypeMOL2);
-		}
-
-	@Override
 	public void openChemistryFileAsync(boolean isReaction, Consumer<File> onOK) {
 		if (isReaction) {
 			FileHelper.getFileAsync(mParentComponent, "Please select a reaction file",
@@ -157,7 +144,7 @@ public class SwingUIHelper implements GenericUIHelper {
 			}
 		
 		}
-		}
+	}
 
 	private Window getWindow() {
 		return getWindow(mParentComponent);
@@ -165,10 +152,6 @@ public class SwingUIHelper implements GenericUIHelper {
 
 	public static Window getWindow(JComponent c) {
 		return (Window) c.getTopLevelAncestor();
-	}
+		}
 
-	public static boolean isAsynchronous() {
-		return (/** @j2sNative true ||*/ false);
-	}
-	
 }

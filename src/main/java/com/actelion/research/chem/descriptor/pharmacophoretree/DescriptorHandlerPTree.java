@@ -1,16 +1,13 @@
 package com.actelion.research.chem.descriptor.pharmacophoretree;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.descriptor.DescriptorConstants;
 import com.actelion.research.chem.descriptor.DescriptorHandler;
 import com.actelion.research.chem.descriptor.DescriptorInfo;
-import com.actelion.research.chem.descriptor.pharmacophoretree.PharmacophoreNode;
-import com.actelion.research.chem.descriptor.pharmacophoretree.PharmacophoreTree;
-import com.actelion.research.chem.descriptor.pharmacophoretree.PharmacophoreTreeGenerator;
-import com.actelion.research.chem.descriptor.pharmacophoretree.TreeMatcher;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DescriptorHandlerPTree implements DescriptorHandler<PharmacophoreTree,StereoMolecule> {
 	
@@ -24,9 +21,15 @@ public class DescriptorHandlerPTree implements DescriptorHandler<PharmacophoreTr
 	
 	@Override
 	public float getSimilarity(PharmacophoreTree pt1, PharmacophoreTree pt2) {
-		TreeMatcher matcher = new TreeMatcher(pt1,pt2);
-		TreeMatcher.TreeMatching matching = matcher.matchSearch();
-		return (float)matching.getSim();
+		float sim = 0.0f;
+		if(pt1.getNodes().size()==1 || pt2.getNodes().size()==1)
+			sim = (float)pt1.getDirectSim(pt2);
+		else {
+			TreeMatcher matcher = new TreeMatcher(pt1,pt2);
+			TreeMatcher.TreeMatching matching = matcher.matchSearch();	
+			sim = (float)matching.getSim();
+		}
+		return sim;
 	}
 	
 	@Override
@@ -79,7 +82,7 @@ public class DescriptorHandlerPTree implements DescriptorHandler<PharmacophoreTr
 	
 	public PharmacophoreTree decode(byte[] arr) {
 
-		return decode(new String(arr));
+		return decode(new String(arr, StandardCharsets.UTF_8));
 		
 	}
 	
@@ -95,9 +98,9 @@ public class DescriptorHandlerPTree implements DescriptorHandler<PharmacophoreTr
 	}
 
 	@Override
-	public PharmacophoreTree createDescriptor(StereoMolecule mol) {
+	public PharmacophoreTree createDescriptor(StereoMolecule m) {
+		StereoMolecule mol = new StereoMolecule(m);
 		mol.stripSmallFragments();
-		
 		PharmacophoreTree pharmTree =  PharmacophoreTreeGenerator.generate(mol);
 		if(pharmTree.getNodes().size()>MAX_NODE_SIZE)
 			pharmTree = FAILED_OBJECT;

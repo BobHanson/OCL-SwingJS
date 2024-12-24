@@ -37,6 +37,7 @@ import com.actelion.research.gui.FileHelper;
 import com.actelion.research.util.DoubleFormat;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,9 +55,10 @@ import java.util.zip.ZipInputStream;
  * For special purposes you may consider creating an own custom cache file using the createCacheFiles() method.
  **/
 public class RigidFragmentCache extends ConcurrentHashMap<String, RigidFragmentCache.CacheEntry> implements Serializable {
+	private static final int DEFAULT_MAX_ENTRY_COUNT = 500000;
 	private static final String DEFAULT_CACHE_FILE = "/resources/defaultRigidFragments.zip";
 	private static RigidFragmentCache sInstance;
-	private int mHitCount,mGetCount, mNonCachableCount;
+	private int mHitCount,mGetCount,mNonCachableCount,mMaxEntryCount;
 	private boolean mDefaultCacheLoaded;
 	private TreeSet<String> mSetOfLoadedCacheFiles;
 
@@ -78,7 +80,9 @@ public class RigidFragmentCache extends ConcurrentHashMap<String, RigidFragmentC
 		return cache;
 	}
 
-	private RigidFragmentCache() {}
+	private RigidFragmentCache() {
+		mMaxEntryCount = DEFAULT_MAX_ENTRY_COUNT;
+	}
 
 	@Override
 	public void clear() {
@@ -122,6 +126,19 @@ public class RigidFragmentCache extends ConcurrentHashMap<String, RigidFragmentC
 		mHitCount = 0;
 		mGetCount = 0;
 		}
+
+	public void setMaxEntryCount(int count) {
+		mMaxEntryCount = count;
+		}
+
+	public boolean canAddEntry() {
+		return size() < mMaxEntryCount;
+	}
+
+	@Override
+	public RigidFragmentCache.CacheEntry put(String key, RigidFragmentCache.CacheEntry cacheEntry) {
+		return (size() < mMaxEntryCount) ? super.put(key, cacheEntry) : null;
+	}
 
 	/**
 	 * Writes for every distinct fragment: one idcode, multiple encoded coordinate sets, multiple conformer likelihoods
@@ -173,7 +190,7 @@ public class RigidFragmentCache extends ConcurrentHashMap<String, RigidFragmentC
 				if (is != null) {
 					ZipInputStream zipStream = new ZipInputStream(is);
 					zipStream.getNextEntry();
-					BufferedReader reader = new BufferedReader(new InputStreamReader(zipStream));
+					BufferedReader reader = new BufferedReader(new InputStreamReader(zipStream, StandardCharsets.UTF_8));
 					loadCache(reader);
 					reader.close();
 					mDefaultCacheLoaded = true;
@@ -202,7 +219,7 @@ public class RigidFragmentCache extends ConcurrentHashMap<String, RigidFragmentC
 				if (cacheFileName.endsWith(".zip")) {
 					ZipInputStream zipStream = new ZipInputStream(new FileInputStream(cacheFileName));
 					zipStream.getNextEntry();
-					reader = new BufferedReader(new InputStreamReader(zipStream));
+					reader = new BufferedReader(new InputStreamReader(zipStream, StandardCharsets.UTF_8));
 				}
 				else {
 					reader = new BufferedReader(new FileReader(cacheFileName));
@@ -229,7 +246,7 @@ public class RigidFragmentCache extends ConcurrentHashMap<String, RigidFragmentC
 			for (int i=0; i<count; i++) {
 				for (int j=0; j<coords[i].length; j++)
 					coords[i][j] = new Coordinates();
-				parser.parseCoordinates(br.readLine().getBytes(), 0, mol, coords[i]);
+				parser.parseCoordinates(br.readLine().getBytes(StandardCharsets.UTF_8), 0, mol, coords[i]);
 			}
 
 			double[] likelihood = new double[count];

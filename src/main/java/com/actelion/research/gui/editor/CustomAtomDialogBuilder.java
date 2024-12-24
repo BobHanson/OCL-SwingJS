@@ -44,11 +44,11 @@ public class CustomAtomDialogBuilder extends AsynchronousQueryBuilder {
 			"Two electrons (singulet)" };
 
 	private GenericEditorArea mEditorArea;
-	private StereoMolecule mMol;
-	private int mAtom, mOldAtomicNo, mOldAtomMass, mOldAtomValence, mOldAtomRadical;
-	private String mOldCustomLabel;
-	private GenericTextField mTextFieldLabel, mTextFieldMass, mTextFieldValence;
-	private GenericComboBox mComboBoxRadical;
+    private StereoMolecule mMol;
+    private int mAtom,mOldAtomicNo,mOldAtomMass,mOldAtomValence,mOldAtomRadical;
+    private String mOldCustomLabel;
+    private GenericTextField mTextFieldLabel,mTextFieldMass,mTextFieldValence;
+    private GenericComboBox mComboBoxRadical;
 
 	public CustomAtomDialogBuilder(GenericUIHelper dialogHelper, GenericEditorArea editorArea, int atomicNo, int mass,
 			int valence, int radical, String label) {
@@ -76,59 +76,59 @@ public class CustomAtomDialogBuilder extends AsynchronousQueryBuilder {
 		mOldAtomRadical = mMol.getAtomRadical(atom);
 		mOldCustomLabel = mMol.getAtomCustomLabel(atom);
 		build();
-	}
+		}
 
 	private void build() {
-		int[] hLayout = { 8, GenericDialog.PREFERRED, 8, GenericDialog.PREFERRED, 8 };
+        int[] hLayout = {8, GenericDialog.PREFERRED, 8, GenericDialog.PREFERRED, 8 };
 		int[] vLayout = { 8, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED, 12, GenericDialog.PREFERRED, 4,
 				GenericDialog.PREFERRED, 12, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED, 12,
 				GenericDialog.PREFERRED, 8 };
-		mDialog.setLayout(hLayout, vLayout);
+        mDialog.setLayout(hLayout, vLayout);
 
-		mTextFieldLabel = mDialog.createTextField(1, 1);
-		mTextFieldLabel.addEventConsumer(this);
-		mDialog.add(mDialog.createLabel("Atom Label:"), 1, 1);
-		mDialog.add(mTextFieldLabel, 3, 1);
-		mDialog.add(mDialog.createLabel("(examples: 'D', 'Li', 'Cys', 'R12', 'R3@C')"), 1, 3, 3, 3);
+        mTextFieldLabel = mDialog.createTextField(1,1);
+        mTextFieldLabel.addEventConsumer(this);
+		mDialog.add(mDialog.createLabel("Atom Label:"), 1,1);
+		mDialog.add(mTextFieldLabel, 3,1);
+		mDialog.add(mDialog.createLabel("(examples: 'D', 'Li', 'Cys', 'R12', 'R3@C')"), 1,3,3,3);
 
-		mTextFieldMass = mDialog.createTextField(1, 1);
-		mTextFieldMass.addEventConsumer(this);
-		mDialog.add(mDialog.createLabel("Atom Mass:"), 1, 5);
-		mDialog.add(mTextFieldMass, 3, 5);
-		mDialog.add(mDialog.createLabel("(empty for natural abundance)"), 1, 7, 3, 7);
+        mTextFieldMass = mDialog.createTextField(1,1);
+        mTextFieldMass.addEventConsumer(this);
+		mDialog.add(mDialog.createLabel("Atom Mass:"), 1,5);
+		mDialog.add(mTextFieldMass, 3,5);
+		mDialog.add(mDialog.createLabel("(empty for natural abundance)"), 1,7,3,7);
 
-		mTextFieldValence = mDialog.createTextField(1, 1);
-		mTextFieldValence.addEventConsumer(this);
-		mDialog.add(mDialog.createLabel("Abnormal Valence:"), 1, 9);
-		mDialog.add(mTextFieldValence, 3, 9);
-		mDialog.add(mDialog.createLabel("(empty for default valence)"), 1, 11, 3, 11);
+        mTextFieldValence = mDialog.createTextField(1,1);
+        mTextFieldValence.addEventConsumer(this);
+		mDialog.add(mDialog.createLabel("Abnormal Valence:"), 1,9);
+		mDialog.add(mTextFieldValence, 3,9);
+		mDialog.add(mDialog.createLabel("(empty for default valence)"), 1,11,3,11);
 
-		if (mAtom == -1) {
-			String label = Molecule.cAtomLabel[mOldAtomicNo];
-			mTextFieldLabel.setText(mOldCustomLabel == null ? label : mOldCustomLabel + "@" + label);
-			if (mOldAtomMass != 0)
-				mTextFieldMass.setText("" + mOldAtomMass);
-			if (mOldAtomValence != -1)
-				mTextFieldValence.setText("" + mOldAtomValence);
+        if (mAtom == -1) {
+	        String label = Molecule.cAtomLabel[mOldAtomicNo];
+	        mTextFieldLabel.setText(mOldCustomLabel == null ? label : mOldCustomLabel+"@"+label);
+	        if (mOldAtomMass != 0)
+		        mTextFieldMass.setText(""+mOldAtomMass);
+	        if (mOldAtomValence != -1)
+		        mTextFieldValence.setText(""+mOldAtomValence);
 		} else {
-			String label = mMol.getAtomLabel(mAtom);
-			String customLabel = mMol.getAtomCustomLabel(mAtom);
-			mTextFieldLabel.setText(customLabel == null ? label : customLabel + "@" + label);
-			if (mMol.getAtomMass(mAtom) != 0)
-				mTextFieldMass.setText("" + mMol.getAtomMass(mAtom));
-			if (mMol.getAtomAbnormalValence(mAtom) != -1)
-				mTextFieldValence.setText("" + mMol.getAtomAbnormalValence(mAtom));
-		}
+        	String label = mMol.getAtomLabel(mAtom);
+        	String customLabel = mMol.getAtomCustomLabel(mAtom);
+            mTextFieldLabel.setText(customLabel == null ? label : customLabel+"@"+label);
+            if (mMol.getAtomMass(mAtom) != 0)
+                mTextFieldMass.setText(""+mMol.getAtomMass(mAtom));
+            if (mMol.getAtomAbnormalValence(mAtom) != -1)
+                mTextFieldValence.setText(""+mMol.getAtomAbnormalValence(mAtom));
+            }
 
 		mComboBoxRadical = mDialog.createComboBox();
-		for (String s : RADICAL_STATES)
-			mComboBoxRadical.addItem(s);
-		int state = (mAtom == -1) ? mOldAtomRadical : mMol.getAtomRadical(mAtom);
+        for (String s:RADICAL_STATES)
+	        mComboBoxRadical.addItem(s);
+        int state = (mAtom == -1) ? mOldAtomRadical : mMol.getAtomRadical(mAtom);
 		mComboBoxRadical.setSelectedIndex(state == Molecule.cAtomRadicalStateD ? 1
 				: state == Molecule.cAtomRadicalStateT ? 2 : state == Molecule.cAtomRadicalStateS ? 3 : 0);
-		mDialog.add(mDialog.createLabel("Radical State:"), 1, 13);
-		mDialog.add(mComboBoxRadical, 3, 13);
-	}
+		mDialog.add(mDialog.createLabel("Radical State:"), 1,13);
+		mDialog.add(mComboBoxRadical, 3,13);
+		}
 
 	@Override
 	public void eventHappened(GenericActionEvent e) {
@@ -141,16 +141,16 @@ public class CustomAtomDialogBuilder extends AsynchronousQueryBuilder {
 				mMol.setAtomAbnormalValence(mAtom, mOldAtomValence);
 				mMol.setAtomRadical(mAtom, mOldAtomRadical);
 				mMol.setAtomCustomLabel(mAtom, mOldCustomLabel);
+				}
 			}
-		}
 		// OK and disposal is handled by AsynchronousQueryBuilder to setQueryFeatures
 		handleOkCancel(e);
 	}
 
 	@Override
 	protected void setQueryFeatures() {
-		processAtomLabel(true);
-	}
+			processAtomLabel(true);
+		}
 
 	private void processAtomLabel(boolean updateDefault) {
 		String text = mTextFieldLabel.getText();
@@ -160,58 +160,58 @@ public class CustomAtomDialogBuilder extends AsynchronousQueryBuilder {
 			int index = text.indexOf('@');
 			if (index != -1) {
 				customLabel = text.substring(0, index);
-				text = text.substring(index + 1);
+				text = text.substring(index+1);
+				}
 			}
-		}
 
 		if (text.length() != 0) {
 			int atomicNo = Molecule.getAtomicNoFromLabel(text, mEditorArea.getAllowedPseudoAtoms());
 			if (atomicNo != 0 || text.equals("?")) {
-				int mass = 0;
-				if (mTextFieldMass.getText().length() != 0) {
-					try {
-						mass = Integer.parseInt(mTextFieldMass.getText());
-						if (mass < Molecule.cRoundedMass[atomicNo] - 18
-								|| mass > Molecule.cRoundedMass[atomicNo] + 12) {
-							mDialog.showMessage("Your mass is out of range!");
-							return;
-						}
+			    int mass = 0;
+			    if (mTextFieldMass.getText().length() != 0) {
+    			    try {
+    			        mass = Integer.parseInt(mTextFieldMass.getText());
+    	                if (mass < Molecule.cRoundedMass[atomicNo] - 18
+                         || mass > Molecule.cRoundedMass[atomicNo] + 12) {
+    	                	mDialog.showMessage("Your mass is out of range!");
+    	                    return;
+    	                    }
 					} catch (NumberFormatException nfe) {
-						mDialog.showMessage("Your mass is not a number!");
-						return;
-					}
-				}
+				        mDialog.showMessage("Your mass is not a number!");
+    			        return;
+    			        }
+			        }
 
-				int valence = -1;
-				if (mTextFieldValence.getText().length() != 0) {
-					try {
-						valence = Integer.parseInt(mTextFieldValence.getText());
-						if (valence < 0 || valence > 15) {
-							mDialog.showMessage("Your valence is out of range!");
-							return;
-						}
+                int valence = -1;
+			    if (mTextFieldValence.getText().length() != 0) {
+                    try {
+                        valence = Integer.parseInt(mTextFieldValence.getText());
+                        if (valence < 0 || valence > 15) {
+	                        mDialog.showMessage("Your valence is out of range!");
+                            return;
+                            }
 					} catch (NumberFormatException nfe) {
-						mDialog.showMessage("Your valence is not a number!");
-						return;
-					}
-				}
+	                    mDialog.showMessage("Your valence is not a number!");
+                        return;
+                        }
+                    }
 
 				int radical = mComboBoxRadical.getSelectedIndex() == 1 ? Molecule.cAtomRadicalStateD
 						: mComboBoxRadical.getSelectedIndex() == 2 ? Molecule.cAtomRadicalStateT
 								: mComboBoxRadical.getSelectedIndex() == 3 ? Molecule.cAtomRadicalStateS : 0;
 
-				// set the current property set for the custom atom
+			    // set the current property set for the custom atom
 				if (updateDefault)
-					mEditorArea.setCustomAtom(atomicNo, mass, valence, radical, customLabel);
+				    mEditorArea.setCustomAtom(atomicNo, mass, valence, radical,customLabel);
 
-				if (mAtom != -1) {
-					mMol.changeAtom(mAtom, atomicNo, mass, valence, radical);
-					mMol.setAtomCustomLabel(mAtom, customLabel);
-				}
+			    if (mAtom != -1) {
+				    mMol.changeAtom(mAtom, atomicNo, mass, valence, radical);
+				    mMol.setAtomCustomLabel(mAtom, customLabel);
+			        }
 
-				mOKSelected = true;
-				mDialog.disposeDialog();
+                mOKSelected = true;
+                mDialog.disposeDialog();
+			    }
 			}
 		}
 	}
-}

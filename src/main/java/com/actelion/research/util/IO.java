@@ -35,9 +35,12 @@ package com.actelion.research.util;
 
 
 import java.io.*;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -90,7 +93,7 @@ public class IO {
 
 		if (sAbsolutePathIn.length() > 0) {
 			FileInputStream fis = new FileInputStream(sAbsolutePathIn);
-			InputStreamReader isr = new InputStreamReader(fis);
+			InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
 			bufferedReader = new BufferedReader(isr);
 		}
 
@@ -505,18 +508,15 @@ public class IO {
     }
 
 	public static String read(InputStream is) throws IOException {
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line=null;
-		
 		StringBuilder sb = new StringBuilder();
-		
 		while ((line = reader.readLine())!=null) {
-			sb.append(line + "\n");
+			if(sb.length()>0)
+				sb.append("\n");
+			sb.append(line);
 		}
-		
 		reader.close();
-
 		return sb.toString();
 	}
 	
@@ -596,21 +596,20 @@ public class IO {
 
 	}
 
+
 	public static String read(File file) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(file));
-		
 		String line=null;
-		
 		StringBuilder sb = new StringBuilder();
-		
 		while ((line = reader.readLine())!=null) {
-			sb.append(line + "\n");
+			if(sb.length()>0)
+				sb.append("\n");
+			sb.append(line);
 		}
-		
 		reader.close();
-
 		return sb.toString();
 	}
+
 	
     public static String readLine(Reader is) throws IOException {
 		StringBuffer b = new StringBuffer();
@@ -699,7 +698,7 @@ public class IO {
 	public static List<String> readLines2List(InputStream is) throws IOException {
 		List<String> li = new ArrayList<String>();
 
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 
 		String line = null;
 

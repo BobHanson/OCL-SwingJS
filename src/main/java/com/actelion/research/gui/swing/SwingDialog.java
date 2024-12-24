@@ -10,16 +10,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 @SuppressWarnings("serial")
-public class SwingDialog extends JDialog implements ActionListener, GenericDialog {
+public class SwingDialog extends JDialog implements ActionListener,GenericDialog {
 	private Component mParent;
-	private JPanel mContent;
+	private JPanel  mContent;
 	private GenericEventListener<GenericActionEvent> mConsumer;
 	private Runnable onOK;
 	private Runnable onCancel;
 
 	public SwingDialog(Window parent, String title) {
 		this(parent, title, DEFAULT_MODALITY_TYPE);
-	}
+		}
 
 	/**
 	 * BH added 2024.12.19
@@ -30,7 +30,7 @@ public class SwingDialog extends JDialog implements ActionListener, GenericDialo
 	public SwingDialog(Window parent, String title, ModalityType modality) {
 		super(parent, title, modality);
 		mParent = parent;
-	}
+		}
 
 	@Override
 	public void setEventConsumer(GenericEventListener<GenericActionEvent> consumer) {
@@ -62,14 +62,14 @@ public class SwingDialog extends JDialog implements ActionListener, GenericDialo
 		double[][] size = new double[2][];
 		size[0] = new double[hLayout.length];
 		size[1] = new double[vLayout.length];
-		for (int i = 0; i < hLayout.length; i++)
+		for (int i=0; i<hLayout.length; i++)
 			size[0][i] = (hLayout[i] > 0) ? HiDPIHelper.scale(hLayout[i]) : hLayout[i];
-		for (int i = 0; i < vLayout.length; i++)
+		for (int i=0; i<vLayout.length; i++)
 			size[1][i] = (vLayout[i] > 0) ? HiDPIHelper.scale(vLayout[i]) : vLayout[i];
 
 		mContent = new JPanel();
 		mContent.setLayout(new TableLayout(size));
-	}
+		}
 
 	public void add(JPanel c) {
 		mContent = c;
@@ -96,7 +96,7 @@ public class SwingDialog extends JDialog implements ActionListener, GenericDialo
 	public void showDialog() {
 		JPanel buttonpanel = new JPanel();
 		int gap = HiDPIHelper.scale(8);
-		buttonpanel.setBorder(BorderFactory.createEmptyBorder(gap * 3 / 2, gap, gap, gap));
+		buttonpanel.setBorder(BorderFactory.createEmptyBorder(gap*3/2, gap, gap, gap));
 		buttonpanel.setLayout(new BorderLayout());
 		JPanel ibp = new JPanel();
 		ibp.setLayout(new GridLayout(1, 2, gap, 0));
@@ -114,7 +114,7 @@ public class SwingDialog extends JDialog implements ActionListener, GenericDialo
 		pack();
 		setLocationRelativeTo(mParent);
 		setVisible(true);
-	}
+		}
 
 	@Override
 	public void showDialog(Runnable onOK, Runnable onCancel) {
@@ -133,7 +133,7 @@ public class SwingDialog extends JDialog implements ActionListener, GenericDialo
 	@Override
 	public void disposeDialog() {
 		dispose();
-	}
+		}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -156,17 +156,17 @@ public class SwingDialog extends JDialog implements ActionListener, GenericDialo
 			mConsumer = setEventListener(null, null);
 		}
 		return mConsumer;
-	}
+		}
 
 	@Override
 	public void showMessage(String message) {
 		JOptionPane.showMessageDialog(mParent, message);
-	}
+		}
 
 	@Override
 	public GenericLabel createLabel(String text) {
 		return new SwingLabel(text);
-	}
+		}
 
 	@Override
 	public GenericTextField createTextField(int width, int height) {

@@ -7,16 +7,17 @@ import com.actelion.research.util.Platform;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 
 public class HiDPIHelper {
-	private static final int[] BRIGHT_TO_DARK_LAF = {   // supplied image always contains 1st color (bright L&F)
-			0x00503CB4, 0x00B4A0FF, 	// main color (bright and dark L&F)
-			0x00000000, 0x00E0E0E0 };	// second color (bright and dark L&F)
-
 	// This is an Apple only solution and needs to be adapted to support high-res displays of other vendors
 	private static float sRetinaFactor = -1f;
 	private static float sUIScaleFactor = -1f;
+	private static float sIconScaleFactor = -1f;
+	private static float sPixelPerComponentSizeFactor = -1f;
 
 	/**
 	 * Macintosh retina display support for Java 7 and newer.
@@ -24,48 +25,31 @@ public class HiDPIHelper {
 	 * @return 1.0 on standard resolution devices and 2.0 for retina screens
 	 */
 	public static float getRetinaScaleFactor() {
-		/* with Apple-Java-6 this was:
-		Object sContentScaleFactorObject = Toolkit.getDefaultToolkit().getDesktopProperty("apple.awt.contentScaleFactor");
-		private static final float sRetinaFactor = (sContentScaleFactorObject == null) ? 1f : ((Float)sContentScaleFactorObject).floatValue();
-		*/
-		if (Platform.isMacintosh()) {
-			if (sRetinaFactor != -1f)
-				return sRetinaFactor;
+		if (!Platform.isMacintosh())
+			return 1f;
 
-			sRetinaFactor = 1f;
+		if (sRetinaFactor != -1f)
+			return sRetinaFactor;
 
-			GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-			final GraphicsDevice device = env.getDefaultScreenDevice();
+		sRetinaFactor = 1f;
 
+		GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		final GraphicsDevice device = env.getDefaultScreenDevice();
+
+		if (System.getProperty("java.version").startsWith("1.")) {  // for JRE8 and earlier
 			try {
 				Field field = device.getClass().getDeclaredField("scale");
-				if (field != null) {
-					field.setAccessible(true);
-					Object scale = field.get(device);
+				field.setAccessible(true);
+				Object scale = field.get(device);
 
-					if (scale instanceof Integer)
-						sRetinaFactor = (Integer) scale;
-					else
-						System.out.println("Unexpected content scale (not 1 nor 2): " + scale.toString());
+				if (scale instanceof Integer)
+					sRetinaFactor = (Integer) scale;
+				else
+					System.out.println("Unexpected content scale (not 1 nor 2): " + scale.toString());
 				}
-			} catch (Throwable e) {
+			catch (Throwable e) {}
 			}
-	/*	the above code gives WARNING under Java 9:
-				WARNING: An illegal reflective access operation has occurred
-				WARNING: All illegal access operations will be denied in a future release
-
-				If we know, we are on a Mac, we could do something like:
-
-			if (device instanceof CGraphicsDevice) {	// apple.awt.CGraphicsDevice
-				final CGraphicsDevice cgd = (CGraphicsDevice)device;
-
-				// this is the missing correction factor, it's equal to 2 on HiDPI a.k.a. Retina displays
-				final int scaleFactor = cgd.getScaleFactor();
-
-				// now we can compute the real DPI of the screen
-				final double realDPI = scaleFactor * (cgd.getXResolution() + cgd.getYResolution()) / 2;
-				}*/
-		} else {
+		else {
 			GraphicsDevice sd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 			sRetinaFactor = (float) sd.getDefaultConfiguration().getDefaultTransform().getScaleX();
 		}
@@ -73,34 +57,91 @@ public class HiDPIHelper {
 	}
 
 	/**
-	 * For Windows and Linux this method returns the user defined UI scaling factor.
-	 * This is done by judging from the size of the UIManager's Label.font
-	 * and comparing it to the unscaled default (13). Typically this factor is larger
-	 * than 1.0 on HiDPI devices. For this method to work the Look&Feel must consider
-	 * the OS provided setting and scale its fonts accordingly (Substance LaF does).<br>
-	 * On the Macintosh this factor is usually 1.0, because HiDPI device support uses
-	 * a different mechanism (see getRetinaScaleFactor()).
+	 * For Windows and Linux this method returns a (hopefully) reasonable UI scaling factor.
+	 * If DataWarrior was launched with a user supplied system property 'dpifactor', then we use
+	 * this value. Otherwise, we take the screen resolution devided by 96, which finally results
+	 * in a scaling factor of 1.0 at 96 dpi monitor resolution. If we use factor*12 point system
+	 * fonts, then these are about 3 mm high on monitors independent of their resolution.
+	 * On the Macintosh this factor is 1.0, because HiDPI device support uses
+	 * a different mechanism on OSX (see getRetinaScaleFactor()).
 	 * @return typically 1.0 or 1.25, 1.5, ...
 	 */
 	public static float getUIScaleFactor() {
 		if (sUIScaleFactor == -1) {
-			if (getRetinaScaleFactor() != 1f)
-				sUIScaleFactor = 1f;
-			else {
-				float f = 0;
-				String dpiFactor = System.getProperty("dpifactor");
-				if (dpiFactor != null)
-					try { f = Float.parseFloat(dpiFactor); } catch (NumberFormatException nfe) {}
-				if (f != 0)
-					sUIScaleFactor = f;
-				else
-					sUIScaleFactor = Platform.isMacintosh() ? 1f : (float)UIManager.getFont("Label.font").getSize() / 12f;
+			float f = 0;
+			String dpiFactor = System.getProperty("dpifactor");
+			if (dpiFactor != null)
+				try { f = Float.parseFloat(dpiFactor); } catch (NumberFormatException nfe) {}
+			if (f != 0)
+				sUIScaleFactor = f;
+			else if (Platform.isMacintosh()) {
+				sUIScaleFactor = 1.0f;
 				}
-//System.out.println("HiDPIHelper.getUIScaleFactor() retina:"+sRetinaFactor+" UI:"+sUIScaleFactor);
+			else if (Platform.isWindows()) {
+				// only do scaling if jre <= 1.8
+				if (System.getProperty("java.version").startsWith("1.")) {
+					try {
+						// with JRE8 we used (float)UIManager.getFont("Label.font").getSize() / 12f
+						sUIScaleFactor = Toolkit.getDefaultToolkit().getScreenResolution() / 96f;
+					} catch (HeadlessException hle) {
+						sUIScaleFactor = 1.0f;
+					}
+				} else {
+					sUIScaleFactor = 1.0f;
+				}
 			}
-
+			else {  // Linux; Toolkit.getDefaultToolkit().getScreenResolution() always returns 1.0
+				try {
+					sUIScaleFactor = 1.0f;  // default in case of error
+					Process process = Runtime.getRuntime().exec("xrdb -q");
+					process.waitFor();
+					BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+					String line;
+					while ((line = br.readLine()) != null) {
+						if (line.startsWith("Xft.dpi:")) {
+							int dpi = Integer.parseInt(line.substring(8).trim());
+							sUIScaleFactor = dpi / 96f;
+							break;
+							}
+						}
+					br.close();
+					}
+				catch (Exception ioe) {}
+				}
+			if (sUIScaleFactor < 1.1f)
+				sUIScaleFactor = 1.0f;
+			}
 		return sUIScaleFactor;
 		}
+
+	/**
+	 * Depending on the operating system, reported sizes for Java components are often smaller
+	 * than the real number of pixels if high resolution monitors are used.
+	 * This method is supposed to report the factor needed between these.
+	 * Note: For a multiscreen setup, ideally, this should be screen dependent.
+	 * @return the (largest) image scaling factor of all connected screens
+	 */
+	public static float getPixelPerComponentSizeFactor() {
+		if (sPixelPerComponentSizeFactor == -1)
+			sPixelPerComponentSizeFactor = Platform.isWindows() ? getMaxDeviceUIScaling() : Platform.isMacintosh() ? getRetinaScaleFactor() : 1.0f;
+
+		return sPixelPerComponentSizeFactor;
+		}
+
+	/**
+	 * Factor describing the screen resolution increase (of highest resolution device) in regard to 96-dpi
+	 * @return
+	 */
+	public static float getIconScaleFactor() {
+		if (sIconScaleFactor == -1)
+			sIconScaleFactor = Platform.isWindows() ? getMaxDeviceUIScaling() : Platform.isMacintosh() ? getRetinaScaleFactor() : getUIScaleFactor();
+
+		return sIconScaleFactor;
+		}
+
+	public static void setUIScaleFactor(float factor) {
+		sUIScaleFactor = factor;
+	}
 
 	/**
 	 * This is a convenience method that scales the passed int value with getUIScaleFactor()
@@ -122,8 +163,13 @@ public class HiDPIHelper {
 		return Math.round(getUIScaleFactor() * getRetinaScaleFactor() * value);
 		}
 
-	public static Color getThemeColor(int no) {
-		return new Color(BRIGHT_TO_DARK_LAF[2*no+(LookAndFeelHelper.isDarkLookAndFeel()?1:0)]);
+	private static float getMaxDeviceUIScaling() {
+		double scaling = 1.0;
+		for (GraphicsDevice gd : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()) {
+			double deviceScaling = gd.getDisplayMode().getWidth() / (double)gd.getDefaultConfiguration().getBounds().width;
+			scaling = Math.max(scaling, deviceScaling);
+			}
+		return (float)scaling;
 		}
 
 	/**
@@ -131,11 +177,6 @@ public class HiDPIHelper {
 	 * @param image
 	 * @return
 	 */
-	public static void adaptForLookAndFeel(GenericImage image) {
-		if (LookAndFeelHelper.isDarkLookAndFeel())
-			useSpotColorsForDarkLookAndFeel(image);
-	}
-
 	public static void disableImage(GenericImage image) {
 		Color gray = LookAndFeelHelper.isDarkLookAndFeel() ?
 				ColorHelper.brighter(UIManager.getColor("Panel.background"), 0.8f)
@@ -146,22 +187,6 @@ public class HiDPIHelper {
 			for (int y=0; y<image.getHeight(); y++) {
 				int argb = image.getRGB(x, y);
 				image.setRGB(x, y, (0xFF000000 & argb) + grayRGB);
-			}
-		}
-	}
-
-	private static void useSpotColorsForDarkLookAndFeel(GenericImage image) {
-		for (int x=0; x<image.getWidth(); x++) {
-			for (int y=0; y<image.getHeight(); y++) {
-				int argb = image.getRGB(x, y);
-				int rgb = argb & 0x00FFFFFF;
-				for (int i=0; i<BRIGHT_TO_DARK_LAF.length; i+=2) {
-					if (rgb == BRIGHT_TO_DARK_LAF[i]) {
-						rgb = BRIGHT_TO_DARK_LAF[i + 1];
-						break;
-					}
-				}
-				image.setRGB(x, y, (0xFF000000 & argb) + rgb);
 			}
 		}
 	}

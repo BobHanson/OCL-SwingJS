@@ -9,7 +9,6 @@ import com.actelion.research.chem.phesa.pharmacophore.PharmacophoreCalculator;
 
 public interface IPharmacophorePoint {
 	
-	
 	public enum Functionality {ACCEPTOR(PharmacophoreCalculator.ACCEPTOR_ID), DONOR(PharmacophoreCalculator.DONOR_ID), 
 		NEG_CHARGE(PharmacophoreCalculator.CHARGE_NEG_ID), POS_CHARGE(PharmacophoreCalculator.CHARGE_POS_ID),
 		AROM_RING(PharmacophoreCalculator.AROM_RING_ID),EXIT_VECTOR(PharmacophoreCalculator.EXIT_VECTOR_ID);
@@ -20,7 +19,6 @@ public interface IPharmacophorePoint {
 		public int getIndex() {
 			return this.index;
 		}
-		
 	}
 	
 	
@@ -42,7 +40,9 @@ public interface IPharmacophorePoint {
 	
 	public void setDirectionality(Coordinates directionality);
 	
-	public void updateAtomIndeces(int[] map);
+	public void updateAtomIndices(int[] map);
+
+	int [] getAtomIndices();
 	
 	public IPharmacophorePoint copyPharmacophorePoint();
 	
@@ -79,8 +79,4 @@ public interface IPharmacophorePoint {
 	default public double getVectorSimilarity(IPharmacophorePoint pp2) {
 		return getVectorSimilarity(pp2, pp2.getDirectionality());
 	}
-	
-	
-	
-	
 }
