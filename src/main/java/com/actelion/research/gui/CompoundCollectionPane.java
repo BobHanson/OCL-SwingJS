@@ -44,9 +44,11 @@ import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.util.ColorHelper;
 import com.actelion.research.gui.swing.SwingCursorHelper;
+import com.actelion.research.gui.swing.SwingUIHelper;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Dialog.ModalityType;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
@@ -256,8 +258,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals(COPY) && mHighlightedIndex != -1) {
 			mClipboardHandler.copyMolecule(mModel.getMolecule(mHighlightedIndex));
-			}
-		else if (e.getActionCommand().equals(PASTE)) {
+		} else if (e.getActionCommand().equals(PASTE)) {
 			int index = (mHighlightedIndex == -1) ? mModel.getSize() : mHighlightedIndex;
 			ArrayList<StereoMolecule> molList = mClipboardHandler.pasteMolecules();
 			if (molList != null) {
@@ -270,50 +271,50 @@ public class CompoundCollectionPane<T> extends JScrollPane
 						errorCount++;
 					}
 				if (errorCount != 0)
-					JOptionPane.showMessageDialog(getParentFrame(), errorCount+" compound(s) could not be added, because they don't qualify.");
+					JOptionPane.showMessageDialog(getParentFrame(),
+							errorCount + " compound(s) could not be added, because they doesn't qualify.");
 				}
-			}
-		else if (e.getActionCommand().equals(ADD)) {
+		} else if (e.getActionCommand().equals(ADD)) {
 			editStructure(-1);
-			}
-		else if (e.getActionCommand().equals(EDIT) && mHighlightedIndex != -1) {
+		} else if (e.getActionCommand().equals(EDIT) && mHighlightedIndex != -1) {
 			editStructure(mHighlightedIndex);
-			}
-		else if (e.getActionCommand().equals(REMOVE) && mHighlightedIndex != -1) {
+		} else if (e.getActionCommand().equals(REMOVE) && mHighlightedIndex != -1) {
 			mModel.remove(mHighlightedIndex);
 			mHighlightedIndex = -1;
-			}
-		else if (e.getActionCommand().equals(REMOVE_ALL)) {
+		} else if (e.getActionCommand().equals(REMOVE_ALL)) {
 			mModel.clear();
 			mHighlightedIndex = -1;
+		} else if (e.getActionCommand().equals(OPEN)) {
+			new FileHelper(getParentFrame()).readStructuresFromFileAsync(true, (list) -> {
+				if (list != null) {
+					for (Object compound : list) {
+						((StereoMolecule) compound).setFragment(mCreateFragments);
 			}
-		else if (e.getActionCommand().equals(OPEN)) {
-			ArrayList<StereoMolecule> compounds = new FileHelper(getParentFrame()).readStructuresFromFile(true);
-			if (compounds != null) {
-				for (StereoMolecule compound:compounds)
-					compound.setFragment(mCreateFragments);
-				if (mCompoundFilter != null) {
+					ArrayList<StereoMolecule> compounds = new ArrayList<>();
 					int count = 0;
-					for (int i = compounds.size() - 1; i >= 0; i--) {
-						if (!mCompoundFilter.moleculeQualifies(compounds.get(i))) {
-							compounds.remove(i);
+					for (int i = 0, n = list.size(); i < n; i++) {
+						StereoMolecule m = (StereoMolecule) list.get(i);
+						if (mCompoundFilter != null && !mCompoundFilter.moleculeQualifies(m)) {
 							count++;
+						} else {
+							compounds.add(m);
 							}
 						}
 					if (count != 0) {
-						JOptionPane.showMessageDialog(getParentFrame(),Integer.toString(count).concat(" compounds were removed, because they don't qualify."));
-						}
+						JOptionPane.showMessageDialog(getParentFrame(),
+								Integer.toString(count).concat(" compounds were removed, because they don't qualify."));
 					}
 				mModel.addMoleculeList(compounds);
 				}
-			}
-		else if (e.getActionCommand().equals(SAVE_DWAR)) {
-			String filename = new FileHelper(getParentFrame()).selectFileToSave(
-					"Save DataWarrior File", FileHelper.cFileTypeDataWarrior, "Untitled");
+			});
+		} else if (e.getActionCommand().equals(SAVE_DWAR)) {
+			String filename = new FileHelper(getParentFrame()).selectFileToSave("Save DataWarrior File",
+					FileHelper.cFileTypeDataWarrior, "Untitled");
 			if (filename != null) {
 				try {
 					String title = mCreateFragments ? "Fragment" : "Structure";
-					BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"UTF-8"));
+					BufferedWriter writer = new BufferedWriter(
+							new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"));
 					writer.write("<datawarrior-fileinfo>");
 					writer.newLine();
 					writer.write("<version=\"3.1\">");
@@ -346,13 +347,11 @@ public class CompoundCollectionPane<T> extends JScrollPane
 								writer.write(idcode.substring(0, index));
 								writer.write('\t');
 								writer.write(idcode.substring(index+1));
-								}
-							else {
+							} else {
 								writer.write(idcode);
 								writer.write('\t');
 								}
-							}
-						else {
+						} else {
 							Canonizer canonizer = new Canonizer(mModel.getMolecule(i));
 							writer.write(canonizer.getIDCode());
 							writer.write('\t');
@@ -361,20 +360,18 @@ public class CompoundCollectionPane<T> extends JScrollPane
 						writer.newLine();
 						}
 					writer.close();
-					}
-				catch (IOException ioe) {
+				} catch (IOException ioe) {
 					JOptionPane.showMessageDialog(getParentFrame(), ioe.toString());
 					}
 				}
-			}
-		else if (e.getActionCommand().equals(SAVE_SDF2)
-			  || e.getActionCommand().equals(SAVE_SDF3)) {
+		} else if (e.getActionCommand().equals(SAVE_SDF2) || e.getActionCommand().equals(SAVE_SDF3)) {
 			String version = "Version " + (e.getActionCommand().equals(SAVE_SDF2) ? "2" : "3");
-			String filename = new FileHelper(getParentFrame()).selectFileToSave(
-					"Save SD-File "+version, FileHelper.cFileTypeSD, "Untitled");
+			String filename = new FileHelper(getParentFrame()).selectFileToSave("Save SD-File " + version,
+					FileHelper.cFileTypeSD, "Untitled");
 			if (filename != null) {
 				try {
-					BufferedWriter theWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"UTF-8"));
+					BufferedWriter theWriter = new BufferedWriter(
+							new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"));
 	
 					for (int i=0; i<mModel.getSize(); i++) {
 						StereoMolecule mol = mModel.getMolecule(i);
@@ -388,8 +385,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 						theWriter.newLine();
 						}
 					theWriter.close();
-					}
-				catch (IOException ioe) {
+				} catch (IOException ioe) {
 					JOptionPane.showMessageDialog(getParentFrame(), ioe.toString());
 					}
 				}
@@ -406,8 +402,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 		else {
 			mol = mModel.getMolecule(mEditedIndex);
 			}
-		Component c = getParentFrame();
-		SwingEditorDialog theDialog = (c instanceof Frame) ? new SwingEditorDialog((Frame)c, mol) : new SwingEditorDialog((Dialog)c, mol);
+		SwingEditorDialog theDialog = new SwingEditorDialog(SwingUIHelper.getWindow(this), mol, ModalityType.APPLICATION_MODAL);
 		theDialog.addStructureListener(this);
 		theDialog.setVisible(true);
 		}
@@ -557,9 +552,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 		}
 
 	public void mouseEntered(MouseEvent e) {}
-	public void mouseExited(MouseEvent e) {
-		setCursor(SwingCursorHelper.getCursor(SwingCursorHelper.cPointerCursor));
-		}
+	public void mouseExited(MouseEvent e) {}
 
 	public void mousePressed(MouseEvent e) {
 		if (mIsEnabled) {
@@ -589,9 +582,9 @@ public class CompoundCollectionPane<T> extends JScrollPane
 			int index = getMoleculeIndex(e.getX(), e.getY());
 			if (mHighlightedIndex != index) {
 				mHighlightedIndex = index;
+				setCursor(SwingCursorHelper.getCursor(index == -1 ? SwingCursorHelper.cPointerCursor : SwingCursorHelper.cHandCursor));
 				repaint();
 				}
-			setCursor(SwingCursorHelper.getCursor(index == -1 ? SwingCursorHelper.cPointerCursor : SwingCursorHelper.cHandCursor));
 			}
 		mDragIndex = -1;
 		}
@@ -803,10 +796,7 @@ public class CompoundCollectionPane<T> extends JScrollPane
 		}
 
 	private Component getParentFrame() {
-		Component c = this;
-		while (c != null && !(c instanceof Frame) && !(c instanceof Dialog))
-			c = c.getParent();
-		return c;
+		return getTopLevelAncestor();
 		}
 
 		// This class is needed for inter-jvm drag&drop. Although not neccessary for standard environments, it prevents

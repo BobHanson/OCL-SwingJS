@@ -58,6 +58,76 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	private boolean        mIsCancelled;
 	private ArrayList<StructureListener> mListener;
 
+// BH Just use the Window constructor -- Java will test for Frame or Dialog
+
+//	/**
+//	 * Creates a modal chemical editor dialog to edit a single molecule,
+//	 * which may, of course, consist of multiple disconnected fragments.
+//	 * Query features can be edited, if the passed mol's fragment bit is true.
+//	 * @param owner
+//	 * @param mol
+//	 */
+//	public SwingEditorDialog(Dialog owner, StereoMolecule mol) {
+//		this(owner, mol, Dialog.DEFAULT_MODALITY_TYPE);
+//	}
+//
+//	/**
+//	 * Creates a modal chemical editor dialog to edit a chemical reaction.
+//	 * Query features can be edited, if the passed rxn's fragment bit is true.
+//	 * @param owner
+//	 * @param rxn
+//	 */
+//	public SwingEditorDialog(Dialog owner, Reaction rxn) {
+//		this(owner, rxn, Dialog.DEFAULT_MODALITY_TYPE);
+//	}
+//
+//	/**
+//	 * Creates a chemical editor dialog to edit a single molecule,
+//	 * which may, of course, consist of multiple disconnected fragments.
+//	 * Query features can be edited, if the passed mol's fragment bit is true.
+//	 * @param owner
+//	 * @param mol
+//	 * @param modalityType
+//	 */
+//	public SwingEditorDialog(Dialog owner, StereoMolecule mol, ModalityType modalityType) {
+//		super(owner, DEFAULT_MOLECULE_TITLE, modalityType);
+//		mMolecule = (mol == null) ? new StereoMolecule() : new StereoMolecule(mol);
+//		initialize(owner, 0);
+//	}
+//
+//	/**
+//	 * Creates a modal chemical editor dialog to edit multiple molecules in one editor pane.
+//	 * Each of these molecule may consist of multiple disconnected fragments.
+//	 * Atoms connected by bonds or being in close vicinity are recognized to belong to the
+//	 * same molecule, while more distant fragments are perceived as separated molecules.
+//	 * Query features can be edited, if the passed mols' fragment bits are true.
+//	 * @param owner
+//	 * @param mol
+//	 * @param modalityType
+//	 */
+//	public SwingEditorDialog(Dialog owner, StereoMolecule[] mol, ModalityType modalityType) {
+//		super(owner, DEFAULT_MOLECULE_TITLE, modalityType);
+//		mMolecule = new StereoMolecule();
+//		initialize(owner, GenericEditorArea.MODE_MULTIPLE_FRAGMENTS);
+//		if (mol != null)
+//			mArea.getGenericDrawArea().setFragments(mol);
+//	}
+//
+//	/**
+//	 * Creates a modal chemical editor dialog to edit a chemical reaction.
+//	 * Query features can be edited, if the passed rxn's fragment bit is true.
+//	 * @param owner
+//	 * @param rxn
+//	 * @param modalityType
+//	 */
+//	public SwingEditorDialog(Dialog owner, Reaction rxn, ModalityType modalityType) {
+//		super(owner, DEFAULT_REACTION_TITLE, modalityType);
+//		mMolecule = new StereoMolecule();
+//		initialize(owner, GenericEditorArea.MODE_REACTION);
+//		if (rxn != null)
+//			mArea.getGenericDrawArea().setReaction(rxn);
+//	}
+//
 	/**
 	 * Creates a modal chemical editor dialog to edit a single molecule,
 	 * which may, of course, consist of multiple disconnected fragments.
@@ -65,7 +135,7 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	 * @param owner
 	 * @param mol
 	 */
-	public SwingEditorDialog(Dialog owner, StereoMolecule mol) {
+	public SwingEditorDialog(Window owner, StereoMolecule mol) {
 		this(owner, mol, Dialog.DEFAULT_MODALITY_TYPE);
 	}
 
@@ -75,7 +145,7 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	 * @param owner
 	 * @param rxn
 	 */
-	public SwingEditorDialog(Dialog owner, Reaction rxn) {
+	public SwingEditorDialog(Window owner, Reaction rxn) {
 		this(owner, rxn, Dialog.DEFAULT_MODALITY_TYPE);
 	}
 
@@ -87,7 +157,7 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	 * @param mol
 	 * @param modalityType
 	 */
-	public SwingEditorDialog(Dialog owner, StereoMolecule mol, ModalityType modalityType) {
+	public SwingEditorDialog(Window owner, StereoMolecule mol, ModalityType modalityType) {
 		super(owner, DEFAULT_MOLECULE_TITLE, modalityType);
 		mMolecule = (mol == null) ? new StereoMolecule() : new StereoMolecule(mol);
 		initialize(owner, 0);
@@ -103,7 +173,7 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	 * @param mol
 	 * @param modalityType
 	 */
-	public SwingEditorDialog(Dialog owner, StereoMolecule[] mol, ModalityType modalityType) {
+	public SwingEditorDialog(Window owner, StereoMolecule[] mol, ModalityType modalityType) {
 		super(owner, DEFAULT_MOLECULE_TITLE, modalityType);
 		mMolecule = new StereoMolecule();
 		initialize(owner, GenericEditorArea.MODE_MULTIPLE_FRAGMENTS);
@@ -118,75 +188,7 @@ public class SwingEditorDialog extends JDialog implements ActionListener {
 	 * @param rxn
 	 * @param modalityType
 	 */
-	public SwingEditorDialog(Dialog owner, Reaction rxn, ModalityType modalityType) {
-		super(owner, DEFAULT_REACTION_TITLE, modalityType);
-		mMolecule = new StereoMolecule();
-		initialize(owner, GenericEditorArea.MODE_REACTION);
-		if (rxn != null)
-			mArea.getGenericDrawArea().setReaction(rxn);
-	}
-
-	/**
-	 * Creates a modal chemical editor dialog to edit a single molecule,
-	 * which may, of course, consist of multiple disconnected fragments.
-	 * Query features can be edited, if the passed mol's fragment bit is true.
-	 * @param owner
-	 * @param mol
-	 */
-	public SwingEditorDialog(Frame owner, StereoMolecule mol) {
-		this(owner, mol, Dialog.DEFAULT_MODALITY_TYPE);
-	}
-
-	/**
-	 * Creates a modal chemical editor dialog to edit a chemical reaction.
-	 * Query features can be edited, if the passed rxn's fragment bit is true.
-	 * @param owner
-	 * @param rxn
-	 */
-	public SwingEditorDialog(Frame owner, Reaction rxn) {
-		this(owner, rxn, Dialog.DEFAULT_MODALITY_TYPE);
-	}
-
-	/**
-	 * Creates a chemical editor dialog to edit a single molecule,
-	 * which may, of course, consist of multiple disconnected fragments.
-	 * Query features can be edited, if the passed mol's fragment bit is true.
-	 * @param owner
-	 * @param mol
-	 * @param modalityType
-	 */
-	public SwingEditorDialog(Frame owner, StereoMolecule mol, ModalityType modalityType) {
-		super(owner, DEFAULT_MOLECULE_TITLE, modalityType);
-		mMolecule = (mol == null) ? new StereoMolecule() : new StereoMolecule(mol);
-		initialize(owner, 0);
-	}
-
-	/**
-	 * Creates a modal chemical editor dialog to edit multiple molecules in one editor pane.
-	 * Each of these molecule may consist of multiple disconnected fragments.
-	 * Atoms connected by bonds or being in close vicinity are recognized to belong to the
-	 * same molecule, while more distant fragments are perceived as separated molecules.
-	 * Query features can be edited, if the passed mols' fragment bits are true.
-	 * @param owner
-	 * @param mol
-	 * @param modalityType
-	 */
-	public SwingEditorDialog(Frame owner, StereoMolecule[] mol, ModalityType modalityType) {
-		super(owner, DEFAULT_MOLECULE_TITLE, modalityType);
-		mMolecule = new StereoMolecule();
-		initialize(owner, GenericEditorArea.MODE_MULTIPLE_FRAGMENTS);
-		if (mol != null)
-			mArea.getGenericDrawArea().setFragments(mol);
-	}
-
-	/**
-	 * Creates a modal chemical editor dialog to edit a chemical reaction.
-	 * Query features can be edited, if the passed rxn's fragment bit is true.
-	 * @param owner
-	 * @param rxn
-	 * @param modalityType
-	 */
-	public SwingEditorDialog(Frame owner, Reaction rxn, ModalityType modalityType) {
+	public SwingEditorDialog(Window owner, Reaction rxn, ModalityType modalityType) {
 		super(owner, DEFAULT_REACTION_TITLE, modalityType);
 		mMolecule = new StereoMolecule();
 		initialize(owner, GenericEditorArea.MODE_REACTION);

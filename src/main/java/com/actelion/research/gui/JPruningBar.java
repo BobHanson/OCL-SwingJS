@@ -34,6 +34,7 @@
 
 package com.actelion.research.gui;
 
+import com.actelion.research.gui.swing.SwingUIHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.util.ColorHelper;
 
@@ -416,9 +417,7 @@ public class JPruningBar extends JPanel implements MouseListener, MouseMotionLis
 	 */
 	public void mouseClicked(MouseEvent e) {
 		if (mAllowDoubleClickChange && e.getClickCount() == 2 && (mClickedArea == 1 || mClickedArea == 3)) {
-			Component c = this;
-			while (c != null && !(c instanceof Window || c instanceof Frame))
-				c = c.getParent();
+			Window c = SwingUIHelper.getWindow(this);
 			if (c != null) {
 				try {
 					String s = JOptionPane.showInputDialog(c, "Please type in a value!", "Set Value", JOptionPane.QUESTION_MESSAGE);

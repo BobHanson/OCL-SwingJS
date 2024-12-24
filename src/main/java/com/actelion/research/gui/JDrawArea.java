@@ -33,7 +33,60 @@
 
 package com.actelion.research.gui;
 
-import com.actelion.research.chem.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.awt.Toolkit;
+import java.awt.Window;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.TreeMap;
+
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import javax.swing.text.html.HTMLEditorKit;
+
+import com.actelion.research.chem.AbstractDepictor;
+import com.actelion.research.chem.AbstractDrawingObject;
+import com.actelion.research.chem.Depictor2D;
+import com.actelion.research.chem.DepictorTransformation;
+import com.actelion.research.chem.DrawingObjectList;
+import com.actelion.research.chem.ExtendedDepictor;
+import com.actelion.research.chem.MarkushStructure;
+import com.actelion.research.chem.Molecule;
+import com.actelion.research.chem.NamedSubstituents;
+import com.actelion.research.chem.SSSearcher;
+import com.actelion.research.chem.StereoMolecule;
+import com.actelion.research.chem.TextDrawingObject;
 import com.actelion.research.chem.coords.CoordinateInventor;
 import com.actelion.research.chem.io.CompoundFileHelper;
 import com.actelion.research.chem.io.RDFileParser;
@@ -46,30 +99,20 @@ import com.actelion.research.chem.reaction.ReactionArrow;
 import com.actelion.research.gui.clipboard.IClipboardHandler;
 import com.actelion.research.gui.dnd.MoleculeDropAdapter;
 import com.actelion.research.gui.editor.EditorEvent;
-import com.actelion.research.gui.generic.*;
+import com.actelion.research.gui.generic.GenericEventListener;
+import com.actelion.research.gui.generic.GenericPolygon;
+import com.actelion.research.gui.generic.GenericRectangle;
+import com.actelion.research.gui.generic.GenericShape;
+import com.actelion.research.gui.generic.GenericUIHelper;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.ScaledEditorKit;
-import com.actelion.research.gui.swing.SwingDrawContext;
-import com.actelion.research.util.ColorHelper;
 import com.actelion.research.gui.swing.SwingCursorHelper;
-
-import javax.swing.*;
-import javax.swing.text.html.HTMLEditorKit;
-import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.event.*;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.TreeMap;
+import com.actelion.research.gui.swing.SwingDrawContext;
+import com.actelion.research.gui.swing.SwingUIHelper;
+import com.actelion.research.util.ColorHelper;
 
 @Deprecated
-public class JDrawArea extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
+public class JDrawArea extends SwingCanvas implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 	static final long serialVersionUID = 0x20061019;
 
 	public static final int MODE_MULTIPLE_FRAGMENTS = 1;
@@ -95,8 +138,6 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	private static final String ITEM_REMOVE_MAPPING = "Remove Manual Atom Mapping";
 	private static final String ITEM_FLIP_HORIZONTALLY = "Flip Horizontally";
 	private static final String ITEM_FLIP_VERTICALLY = "Flip Vertically";
-
-	private static final long WARNING_MILLIS = 1200;
 
 	private static final float FRAGMENT_MAX_CLICK_DISTANCE = 24.0f;
 	private static final float FRAGMENT_GROUPING_DISTANCE = 1.4f;	// in average bond lengths
@@ -151,7 +192,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	private boolean mShiftIsDown, mAltIsDown, mControlIsDown, mMouseIsDown,
 					mIsAddingToSelection, mAtomColorSupported, mAllowQueryFeatures;
 	private boolean[] mIsSelectedAtom, mIsSelectedObject;
-	private String mOtherLabel,mWarningMessage;
+	private String mOtherLabel;
 	private String[] mAtomText;
 	private ExtendedDepictor mDepictor;
 	private StereoMolecule mMol;	    // molecule being modified directly by the drawing editor
@@ -470,7 +511,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 		return ColorHelper.intermediateColor(selectionColor, background, 0.5f);
 	}
 
-	private void drawHiliting(GenericDrawContext context, Graphics g)
+	private void drawHiliting(SwingDrawContext context, Graphics g)
 	{
 		if (mHiliteBondSet != null) {
 			g.setColor(chainHiliteColor());
@@ -600,7 +641,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 		} else if (command.startsWith(ITEM_PASTE_STRUCTURE)) {
 			pasteMolecule();
 		} else if (e.getActionCommand().equals(ITEM_LOAD_REACTION)) {
-			openReaction();
+			openReactionAsync();
 		} else if (e.getActionCommand().equals(ITEM_ADD_AUTO_MAPPING)) {
 			autoMapReaction();
 			fireMoleculeChanged();
@@ -836,9 +877,9 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 		return ret;
 	}
 
-	private void openReaction() {
-		File rxnFile = FileHelper.getFile(this, "Please select a reaction file",
-				FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD);
+	private void openReactionAsync() {
+		FileHelper.getFileAsync(this, "Please select a reaction file",
+				FileHelper.cFileTypeRXN | CompoundFileHelper.cFileTypeRD, (rxnFile) -> {
 		if (rxnFile != null) {
 			try {
 				Reaction reaction = null;
@@ -862,16 +903,8 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			}
 			catch (Exception ex) {}
 		}
-	}
 
-	private void showWarningMessage(String msg) {
-		mWarningMessage = msg;
-		repaint();
-		new Thread(() -> {
-			try { Thread.sleep(WARNING_MILLIS); } catch (InterruptedException ie) {}
-			mWarningMessage = null;
-			repaint();
-		} ).start();
+				});
 	}
 
 	public void mousePressed(MouseEvent e)
@@ -1314,16 +1347,8 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			} catch (Exception ex) {
 				helpPane.setText(ex.toString());
 			}
-			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog)) {
-				c = c.getParent();
-			}
-
-			if (c instanceof Frame) {
-				mHelpDialog = new JDialog((Frame) c, "Structure Editor Help", false);
-			} else {
-				mHelpDialog = new JDialog((Dialog) c, "Structure Editor Help", false);
-			}
+			Window c = SwingUIHelper.getWindow(this);
+			mHelpDialog = new JDialog(c, "Idorsia Structure Editor Help", Dialog.ModalityType.MODELESS);
 
 			mHelpDialog.setSize(HiDPIHelper.scale(520), HiDPIHelper.scale(440));
 			mHelpDialog.getContentPane().add(new JScrollPane(helpPane,
@@ -1333,11 +1358,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 			mHelpDialog.setLocation(x, c.getY());
 			mHelpDialog.setVisible(true);
 		} else {
-			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog)) {
-				c = c.getParent();
-			}
-
+			Window c = SwingUIHelper.getWindow(this);
 			int x = (mHelpDialog.getX() + mHelpDialog.getWidth() / 2 >= c.getX() + c.getWidth() / 2) ?
 				c.getX() - 8 - mHelpDialog.getWidth() : c.getX() + 8 + c.getWidth();
 			mHelpDialog.setLocation(x, c.getY());
@@ -1603,27 +1624,17 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 				update(UPDATE_REDRAW);
 			}
 		} else if (mCurrentTool == JDrawToolbar.cToolAtomOther) {
-			Component c = this;
-			while (c.getParent() != null) {
-				c = c.getParent();
-			}
-			JOptionPane.showMessageDialog((Frame)c, "Please hold 'Ctrl' while pressing the left mouse button\nto open the atom property dialog.");
+			JOptionPane.showMessageDialog(SwingUIHelper.getWindow(this), "Please hold 'Ctrl' while pressing the left mouse button\nto open the atom property dialog.");
 		}
 	}
 
 	private void showAtomQFDialog(int atom)
 	{
 		if (mAllowQueryFeatures) {
-			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog) && c.getParent() != null) {
-				c = c.getParent();
-			}
+			Window c = SwingUIHelper.getWindow(this);
 			storeState();
 			boolean showReactionHints = ((mMode & MODE_REACTION) != 0);
-			if (c instanceof Dialog)
-				new JAtomQueryFeatureDialog((Dialog) c, mMol, atom, showReactionHints);
-			else
-				new JAtomQueryFeatureDialog((Frame) c, mMol, atom, showReactionHints);
+			new JAtomQueryFeatureDialog(c, mMol, atom, showReactionHints);
 			fireMoleculeChanged();
 			update(UPDATE_REDRAW);
 		}
@@ -1632,15 +1643,9 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 	private void showBondQFDialog(int bond)
 	{
 		if (mAllowQueryFeatures) {
-			Component c = this;
-			while (!(c instanceof Frame || c instanceof Dialog) && c.getParent() != null) {
-				c = c.getParent();
-			}
+			Window c = SwingUIHelper.getWindow(this);
 			storeState();
-			if (c instanceof Dialog)
-				new JBondQueryFeatureDialog((Dialog) c, mMol, bond);
-			else
-				new JBondQueryFeatureDialog((Frame) c, mMol, bond);
+			new JBondQueryFeatureDialog(c, mMol, bond);
 			fireMoleculeChanged();
 			update(UPDATE_REDRAW);
 		}
@@ -1962,12 +1967,11 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 				if (mOtherAtom == -1 || e.isControlDown()) {
 					int atom = mMol.findAtom(mX1, mY1);
 					if (atom != -1) {
-						Component c = this;
-						while (c.getParent() != null) {
-							c = c.getParent();
-						}
 						storeState();
-						new JAtomLabelDialog((Frame) c, mMol, atom);
+						Runnable whenDone = new Runnable() {
+
+							@Override
+							public void run() {
 						mOtherAtom = mMol.getAtomicNo(atom);
 						mOtherMass = mMol.getAtomMass(atom);
 						mOtherValence = mMol.getAtomAbnormalValence(atom);
@@ -1975,6 +1979,17 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 						mOtherLabel = mMol.getAtomCustomLabel(atom);
 						fireMoleculeChanged();
 						update(UPDATE_REDRAW);
+					}
+							
+						};
+						if (GenericUIHelper.isAsynchronous()) {
+							new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom, whenDone, whenDone);							
+							// continues - end of thread;
+							return;
+						} else {
+							new JAtomLabelDialog(SwingUIHelper.getWindow(this), mMol, atom);
+							whenDone.run();
+						}
 					}
 				}
 				else {
@@ -2697,15 +2712,15 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 		return KEY_IS_INVALID;
 	}
 
-	/**
-	 * @param s
-	 * @return true if s is either a valid atom symbol or a valid substituent name
-	 */
-	private boolean isValidAtomKeyStroke(String s)
-	{
-		return Molecule.getAtomicNoFromLabel(s) != 0
-			|| NamedSubstituents.getSubstituentIDCode(s) != null;
-	}
+//	/**
+//	 * @param s
+//	 * @return true if s is either a valid atom symbol or a valid substituent name
+//	 */
+//	private boolean isValidAtomKeyStroke(String s)
+//	{
+//		return Molecule.getAtomicNoFromLabel(s) != 0
+//			|| NamedSubstituents.getSubstituentIDCode(s) != null;
+//	}
 
 	/**
 	 * @param s
@@ -2787,11 +2802,7 @@ public class JDrawArea extends JPanel implements ActionListener, KeyListener, Mo
 
 	private void editTextObject(TextDrawingObject object)
 	{
-		Component c = this;
-		while (c.getParent() != null) {
-			c = c.getParent();
-		}
-		new JTextDrawingObjectDialog((Frame) c, object);
+		new JTextDrawingObjectDialog(SwingUIHelper.getWindow(this), object);
 
 		boolean nonWhiteSpaceFound = false;
 		for (int i = 0; i < object.getText().length(); i++) {

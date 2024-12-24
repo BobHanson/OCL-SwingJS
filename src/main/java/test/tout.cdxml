@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!DOCTYPE CDXML SYSTEM "http://www.cambridgesoft.com/xml/cdxml.dtd" >
+<CDXML HashSpacing="2.50" MarginWidth="1.60" LineWidth="0.60" BoldWidth="2" BondLength="14.40" BondSpacing="18">
+<page>
+<fragment id="5">
+<n id="2" p="115.91 106.59"/>
+<n id="4" p="115.91 120.99"/>
+<n id="6" p="128.38 128.2" BondOrdering="15 16 0 25"/>
+<n id="8" p="140.85 120.99"/>
+<n id="10" p="140.85 106.59" BondOrdering="17 18 21 0"/>
+<n id="12" p="128.38 99.39"/>
+<n id="20" p="153.32 99.39" Element="8">
+<t>
+<s>OH</s>
+</t>
+</n>
+<n id="24" p="128.38 142.6"/>
+<n id="26" p="103.44 128.2"/>
+<n id="28" p="90.97 120.99"/>
+<n id="30" p="78.5 128.2"/>
+<n id="32" p="78.5 142.6"/>
+<n id="34" p="90.97 149.8"/>
+<n id="36" p="103.44 142.6"/>
+<b id="14" B="2" E="4"/>
+<b id="15" B="4" E="6"/>
+<b id="16" B="6" E="8"/>
+<b id="17" B="8" E="10"/>
+<b id="18" B="10" E="12"/>
+<b id="19" B="12" E="2"/>
+<b id="21" B="10" E="20" Display="WedgeBegin"/>
+<b id="25" B="6" E="24" Display="WedgedHashBegin"/>
+<b id="27" B="4" E="26"/>
+<b id="38" B="26" E="28" Order="2"/>
+<b id="39" B="28" E="30"/>
+<b id="40" B="30" E="32" Order="2"/>
+<b id="41" B="32" E="34"/>
+<b id="42" B="34" E="36" Order="2"/>
+<b id="43" B="36" E="26"/>
+</fragment>
+</page>
+</CDXML>

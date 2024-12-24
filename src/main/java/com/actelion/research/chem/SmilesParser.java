@@ -963,11 +963,11 @@ public class SmilesParser {
 		boolean[] isAromaticBond = new boolean[mMol.getBonds()];
 		if (mMol.getBonds()>=0) System.arraycopy(mIsAromaticBond, 0, isAromaticBond, 0, mMol.getBonds());
 
-		// Some Smiles contain 'aromatic' rings with atoms not being compatible
-		// with a PI-bond. These include: tertiary non-charged nitrogen, [nH],
-		// sulfur, non-charged oxygen, charged carbon, etc...
-		// All these atoms and attached bonds are marked as handled to avoid
-		// attached bonds to be promoted (changed to double bond) later.
+			// Some Smiles contain 'aromatic' rings with atoms not being compatible
+			// with a PI-bond. These include: tertiary non-charged nitrogen, [nH],
+			// sulfur, non-charged oxygen, charged carbon, etc...
+			// All these atoms and attached bonds are marked as handled to avoid
+			// attached bonds to be promoted (changed to double bond) later.
 		for (int ring=0; ring<ringSet.getSize(); ring++) {
 			if (isAromaticRing[ring]) {
 				int[] ringAtom = ringSet.getRingAtoms(ring);
@@ -1011,8 +1011,8 @@ public class SmilesParser {
 				}
 			}
 
-		// handle remaining annelated rings (naphtalines, azulenes, etc.) starting from bridge heads (qualifyingNo=5)
-		// and then handle and simple rings (qualifyingNo=4)
+			// handle remaining annelated rings (naphtalines, azulenes, etc.) starting from bridge heads (qualifyingNo=5)
+			// and then handle and simple rings (qualifyingNo=4)
 		boolean qualifyingBondFound;
 		for (int qualifyingNo=5; qualifyingNo>=4; qualifyingNo--) {
 			do {

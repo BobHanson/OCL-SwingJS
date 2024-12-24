@@ -80,6 +80,8 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	transient private int mConnBond[][];
 	transient private int mConnBondOrder[][];
 
+	private boolean[] mReallySimpleHydrogens;
+
 	public ExtendedMolecule() {
 		}
 
@@ -404,6 +406,13 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		return mConnAtom[atom].length - mAllConnAtoms[atom];
 		}
 
+	/**
+	 * @param atom
+	 * @return check the list of REALLY simple hydrogen atoms
+	 */
+	public boolean isReallySimpleHydrogen(int atom) {
+		return mReallySimpleHydrogens != null && mReallySimpleHydrogens[atom];
+		}
 
 	/**
 	 * This is different from the Hendrickson pi-value, which considers pi-bonds to carbons only.
@@ -3638,24 +3647,24 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	 */
 	private void handleHydrogens() {
 		// find all hydrogens that are connected to a non-H atom and therefore can be implicit		
-		boolean[] isHydrogen = findSimpleHydrogens();
+		mReallySimpleHydrogens = findSimpleHydrogens();
 
 					// move all hydrogen atoms to end of atom table
 		int lastNonHAtom = mAllAtoms;
 		do lastNonHAtom--;
-			while ((lastNonHAtom >= 0) && isHydrogen[lastNonHAtom]);
+			while ((lastNonHAtom >= 0) && mReallySimpleHydrogens[lastNonHAtom]);
 
 		for (int atom=0; atom<lastNonHAtom; atom++) {
-			if (isHydrogen[atom]) {
+			if (mReallySimpleHydrogens[atom]) {
 				swapAtoms(atom, lastNonHAtom);
 
 				// swap simple H flags also
-				boolean temp = isHydrogen[atom];
-				isHydrogen[atom] = isHydrogen[lastNonHAtom];
-				isHydrogen[lastNonHAtom] = temp;
+				boolean temp = mReallySimpleHydrogens[atom];
+				mReallySimpleHydrogens[atom] = mReallySimpleHydrogens[lastNonHAtom];
+				mReallySimpleHydrogens[lastNonHAtom] = temp;
 
 				do lastNonHAtom--;
-					while (isHydrogen[lastNonHAtom]);
+					while (mReallySimpleHydrogens[lastNonHAtom]);
 				}
 			}
 		mAtoms = lastNonHAtom + 1;
@@ -3670,8 +3679,8 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		for (int bond=0; bond<mAllBonds; bond++) {	// mark all bonds to hydrogen
 			int atom1 = mBondAtom[0][bond];
 			int atom2 = mBondAtom[1][bond];
-			if (isHydrogen[atom1]
-			 || isHydrogen[atom2])
+			if (mReallySimpleHydrogens[atom1]
+			 || mReallySimpleHydrogens[atom2])
 				isHydrogenBond[bond] = true;
 			}
 
@@ -4100,28 +4109,28 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 		ensureHelperArrays(cHelperRings);
 
-		for (int atom=0; atom<mAtoms; atom++) {
+		for (int atom = 0; atom < mAtoms; atom++) {
 			if (isRingAtom(atom)) {
 				// don't remove cAtomQFNotChain, if it is part of more complex ringstate
 				if ((mAtomQueryFeatures[atom] & cAtomQFRingState) == cAtomQFNotChain)
-					mAtomQueryFeatures[atom] &= ~cAtomQFNotChain;  // redundant
-				mAtomQueryFeatures[atom] &= ~cAtomQFRingSize0;  // forbidden
-				}
+					mAtomQueryFeatures[atom] &= ~cAtomQFNotChain; // redundant
+				mAtomQueryFeatures[atom] &= ~cAtomQFRingSize0; // forbidden
+			}
 
 			if (isAromaticAtom(atom))
-				mAtomQueryFeatures[atom] &= ~cAtomQFAromState;   // redundant or impossible
+				mAtomQueryFeatures[atom] &= ~cAtomQFAromState; // redundant or impossible
 			else if ((mAtomQueryFeatures[atom] & cAtomQFAromatic) != 0)
 				mAtomQueryFeatures[atom] &= ~cAtomQFNotAromatic;
 
-			if ((mAtomQueryFeatures[atom] & cAtomQFSmallRingSize) != 0  // of (legacy) smallest ring size is defined
+			if ((mAtomQueryFeatures[atom] & cAtomQFSmallRingSize) != 0 // of (legacy) smallest ring size is defined
 			 || ((mAtomQueryFeatures[atom] & cAtomQFNewRingSize) != 0)  // allowed list of ring sizes is provided and doesn't contain 'no-ring'
-			  && ((mAtomQueryFeatures[atom] & cAtomQFRingSize0) == 0)) {
+							&& ((mAtomQueryFeatures[atom] & cAtomQFRingSize0) == 0)) {
 				// don't remove cAtomQFNotChain, if it is part of more complex ringstate
 				if ((mAtomQueryFeatures[atom] & cAtomQFRingState) == cAtomQFNotChain)
-					mAtomQueryFeatures[atom] &= ~cAtomQFNotChain;  // redundant
-				}
+					mAtomQueryFeatures[atom] &= ~cAtomQFNotChain; // redundant
+			}
 
-			if (mAtomCharge[atom] != 0)	// explicit charge supersedes query features
+			if (mAtomCharge[atom] != 0) // explicit charge supersedes query features
 				mAtomQueryFeatures[atom] &= ~cAtomQFCharge;
 
 			if (getOccupiedValence(atom) == getMaxValence(atom)) {
@@ -4129,13 +4138,13 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 				mAtomQueryFeatures[atom] &= ~cAtomQFENeighbours;
 				mAtomQueryFeatures[atom] &= ~cAtomQFHydrogen;
 				mAtomQueryFeatures[atom] &= ~cAtomQFPiElectrons;
-				}
+			}
 
 			if ((mAtomQueryFeatures[atom] & cAtomQFExcludeGroup) != 0
 			 && mAtomMapNo[atom] != 0)
 				removeMappingNo(mAtomMapNo[atom]);
-			}
 		}
+	}
 
 	/**
 	 * Normalizes bond query features by removing redundant ones that are implicitly defined

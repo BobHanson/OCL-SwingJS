@@ -462,7 +462,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 // This used to be Molecule.cBondTypeDelocalized, which is redundant to the bond order encoding
 // Then it was wrongly fixed to cBondQFDelocalized, which is part of cBondQFBondTypes and encoded as type 10
 // We can take it out entirely without sacrifycing idcode compatibility
-//					mMol.setBondQueryFeature(bond, Molecule.cBondQFDelocalized, true);
+//					mMol.setBondQueryFeature(bond, Molecule.cBondTypeDelocalized, true);
 //System.out.println("wrong outdated 'delocalized bond'; idcode:"+new String(mDecodingBytes));
 					}
 				break;

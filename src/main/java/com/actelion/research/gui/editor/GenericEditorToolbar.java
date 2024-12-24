@@ -33,8 +33,11 @@
 
 package com.actelion.research.gui.editor;
 
-import com.actelion.research.gui.LookAndFeelHelper;
-import com.actelion.research.gui.generic.*;
+import com.actelion.research.gui.generic.GenericCanvas;
+import com.actelion.research.gui.generic.GenericDrawContext;
+import com.actelion.research.gui.generic.GenericEventListener;
+import com.actelion.research.gui.generic.GenericImage;
+import com.actelion.research.gui.generic.GenericMouseEvent;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 import com.actelion.research.gui.hidpi.HiDPIIcon;
 import com.actelion.research.util.ColorHelper;
@@ -206,8 +209,9 @@ public class GenericEditorToolbar implements GenericEventListener<GenericMouseEv
 						        : (mESRSelected == 1) ? cToolESRAnd : cToolESROr);
 	            }
 	        else if (mCurrentTool == cToolCustomAtom) {
-	        	mArea.showCustomAtomDialog(-1);
-		        mArea.toolChanged(releasedButton);
+		        		mArea.showCustomAtomDialog(-1, ()-> {
+		        			mArea.toolChanged(releasedButton);
+		        		}, null);
 	            }
 	        else {
 		        mArea.toolChanged(releasedButton);
