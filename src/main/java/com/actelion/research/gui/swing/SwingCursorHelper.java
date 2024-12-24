@@ -54,8 +54,13 @@ public class SwingCursorHelper extends GenericCursorHelper {
 		if (sCursor == null)
 			sCursor = new Cursor[cCursorCount];
 
-		if (sCursor[cursor] == null)
+		if (sCursor[cursor] == null) {
+			try {
 			sCursor[cursor] = createCursor(cursor);
+			} catch (Exception e) {
+				// first mouse move may not have image ready yet.
+			}
+		}
 
 		return sCursor[cursor];
 		}

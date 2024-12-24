@@ -1,0 +1,4 @@
+j2s.compiler.status=enable
+#j2s.compiler.nonqualified.classes=
+j2s.excluded.paths=smile;org;info;com.actelion.research.calc;com.actelion.research.io;com.actelion.research.jfx;com.actelion.research/share;
+

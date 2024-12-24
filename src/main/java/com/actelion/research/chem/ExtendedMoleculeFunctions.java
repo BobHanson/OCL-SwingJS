@@ -65,14 +65,18 @@
 
 package com.actelion.research.chem;
 
-import com.actelion.research.calc.ArrayUtilsCalc;
-import com.actelion.research.calc.statistics.StatisticsOverview;
-import com.actelion.research.calc.statistics.median.MedianStatisticFunctions;
-import com.actelion.research.chem.descriptor.DescriptorEncoder;
-import com.actelion.research.chem.descriptor.DescriptorHandler;
-import com.actelion.research.util.BurtleHasher;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
-import java.util.*;
+import com.actelion.research.calc.ArrayUtilsCalc;
+import com.actelion.research.calc.statistics.median.MedianStatisticFunctions;
+import com.actelion.research.chem.descriptor.DescriptorHandler;
 
 /**
  *
@@ -540,7 +544,9 @@ public class ExtendedMoleculeFunctions {
 		int bndno = getBondNo(mol, atm1,atm2);
 		if(bndno==-1)
 			return false;
+
 		mol.deleteBond(bndno);
+
 		return true;
 	}
 
@@ -1759,6 +1765,7 @@ public class ExtendedMoleculeFunctions {
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static float getSimilarity(StereoMolecule m1, StereoMolecule m2, DescriptorHandler dh){
 
 		Object d1 = dh.createDescriptor(m1);

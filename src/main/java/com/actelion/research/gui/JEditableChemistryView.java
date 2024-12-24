@@ -6,6 +6,7 @@ import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.reaction.Reaction;
 import com.actelion.research.gui.editor.SwingEditorDialog;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
+import com.actelion.research.gui.swing.SwingUIHelper;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -148,14 +149,8 @@ public class JEditableChemistryView extends JChemistryView {
 		}
 
 	protected SwingEditorDialog createDrawDialog(String title, Reaction reaction) {
-		Component c = this;
-		while (!(c instanceof Frame || c instanceof Dialog))
-			c = c.getParent();
-
-		SwingEditorDialog d = (c instanceof Frame) ?
-			  new SwingEditorDialog((Frame)c, reaction, Dialog.ModalityType.DOCUMENT_MODAL)
-			: new SwingEditorDialog((Dialog)c, reaction, Dialog.ModalityType.DOCUMENT_MODAL);
-
+		SwingEditorDialog d = new SwingEditorDialog(SwingUIHelper.getWindow(this), reaction, Dialog.ModalityType.DOCUMENT_MODAL);
+			  			  
 		if (title != null)
 			d.setTitle(title);
 
@@ -163,13 +158,7 @@ public class JEditableChemistryView extends JChemistryView {
 		}
 
 	protected SwingEditorDialog createDrawDialog(String title, StereoMolecule[] mol) {
-		Component c = this;
-		while (!(c instanceof Frame || c instanceof Dialog))
-			c = c.getParent();
-
-		SwingEditorDialog d = (c instanceof Frame) ?
-			  new SwingEditorDialog((Frame)c, mol, Dialog.ModalityType.DOCUMENT_MODAL)
-			: new SwingEditorDialog((Dialog)c, mol, Dialog.ModalityType.DOCUMENT_MODAL);
+		SwingEditorDialog d = new SwingEditorDialog(SwingUIHelper.getWindow(this), mol, Dialog.ModalityType.DOCUMENT_MODAL);
 
 		if (title != null)
 			d.setTitle(title);

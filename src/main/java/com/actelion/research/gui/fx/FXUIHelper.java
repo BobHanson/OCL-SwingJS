@@ -66,7 +66,6 @@ public class FXUIHelper implements GenericUIHelper {
 		Platform.runLater(r);
 	}
 
-	@Override
 	public File openChemistryFile(boolean isReaction) {
 		FileChooser fileChooser = new FileChooser();
 		if (isReaction) {

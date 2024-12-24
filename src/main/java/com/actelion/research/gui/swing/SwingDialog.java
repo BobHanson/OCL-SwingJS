@@ -9,24 +9,52 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+@SuppressWarnings("serial")
 public class SwingDialog extends JDialog implements ActionListener,GenericDialog {
 	private Component mParent;
 	private JPanel  mContent;
 	private GenericEventListener<GenericActionEvent> mConsumer;
+	private Runnable onOK;
+	private Runnable onCancel;
 
-	public SwingDialog(Frame parent, String title) {
-		super(parent, title, true);
-		mParent = parent;
+	public SwingDialog(Window parent, String title) {
+		this(parent, title, DEFAULT_MODALITY_TYPE);
 		}
 
-	public SwingDialog(Dialog parent, String title) {
-		super(parent, title, true);
+	/**
+	 * BH added 2024.12.19
+	 * @param parent
+	 * @param title
+	 * @param modality
+	 */
+	public SwingDialog(Window parent, String title, ModalityType modality) {
+		super(parent, title, modality);
 		mParent = parent;
 		}
 
 	@Override
 	public void setEventConsumer(GenericEventListener<GenericActionEvent> consumer) {
-		mConsumer = consumer;
+		mConsumer = (mConsumer == null ? consumer : setEventListener(mConsumer, consumer));
+	}
+
+	private GenericEventListener<GenericActionEvent> setEventListener(GenericEventListener<GenericActionEvent> mc, GenericEventListener<GenericActionEvent> consumer) {
+		return new GenericEventListener<GenericActionEvent>() {
+			@Override
+			public void eventHappened(GenericActionEvent e) {
+				if (mc != null)
+					mc.eventHappened(e);
+				if (consumer != null)
+					consumer.eventHappened(e);
+				if (e.getWhat() == GenericActionEvent.WHAT_OK) {
+					if (onOK != null)
+						onOK.run();
+				} else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL) {
+					if (onCancel != null)
+						onCancel.run();
+				}
+			}
+
+		};
 	}
 
 	@Override
@@ -43,14 +71,25 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 		mContent.setLayout(new TableLayout(size));
 		}
 
+	public void add(JPanel c) {
+		mContent = c;
+		super.add(c);
+	}
+	
 	@Override
 	public void add(GenericComponent c, int x, int y) {
-		mContent.add(((SwingComponent)c).getComponent(), x+","+y);
+		getContent().add(((SwingComponent) c).getComponent(), x + "," + y);
+	}
+
+	public JPanel getContent() {
+		if (mContent == null)
+			mContent = (JPanel) getContentPane();
+		return mContent;
 	}
 
 	@Override
 	public void add(GenericComponent c, int x1, int y1, int x2, int y2) {
-		mContent.add(((SwingComponent)c).getComponent(), x1+","+y1+","+x2+","+y2);
+		getContent().add(((SwingComponent) c).getComponent(), x1 + "," + y1 + "," + x2 + "," + y2);
 	}
 
 	@Override
@@ -68,8 +107,7 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 		bok.addActionListener(this);
 		ibp.add(bok);
 		buttonpanel.add(ibp, BorderLayout.EAST);
-
-		getContentPane().add(mContent, BorderLayout.CENTER);
+		getContentPane().add(getContent(), BorderLayout.CENTER);
 		getContentPane().add(buttonpanel, BorderLayout.SOUTH);
 		getRootPane().setDefaultButton(bok);
 
@@ -79,16 +117,45 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 		}
 
 	@Override
+	public void showDialog(Runnable onOK, Runnable onCancel) {
+		this.onOK = onOK;
+		this.onCancel = onCancel;
+		showDialog();
+	}
+
+	@Override
+	public void setVisible(boolean b) {
+		super.setVisible(b);
+		if (!b && onCancel != null && getModalityType() != ModalityType.MODELESS)
+			onCancel.run();
+	}
+
+	@Override
 	public void disposeDialog() {
 		dispose();
 		}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if ("OK".equals(e.getActionCommand()))
-			mConsumer.eventHappened(new GenericActionEvent(this, GenericActionEvent.WHAT_OK, 0));
-		else if ("Cancel".equals(e.getActionCommand()))
-			mConsumer.eventHappened(new GenericActionEvent(this, GenericActionEvent.WHAT_CANCEL, 0));
+		int type;
+		switch (e.getActionCommand()) {
+		case "OK":
+			type = GenericActionEvent.WHAT_OK;
+			break;
+		case "Cancel":
+			type = GenericActionEvent.WHAT_CANCEL;
+			break;
+		default:
+			return;
+		}
+		getEventListener().eventHappened(new GenericActionEvent(this, type, 0));
+	}
+	
+	private GenericEventListener<GenericActionEvent> getEventListener() {
+		if (mConsumer == null) {
+			mConsumer = setEventListener(null, null);
+		}
+		return mConsumer;
 		}
 
 	@Override
@@ -115,4 +182,5 @@ public class SwingDialog extends JDialog implements ActionListener,GenericDialog
 	public GenericComboBox createComboBox() {
 		return new SwingComboBox();
 	}
-	}
+
+}

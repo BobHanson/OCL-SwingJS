@@ -89,4 +89,9 @@ public class FXDialog extends Dialog<String> implements GenericDialog {
 	public void showMessage(String message) {
 		new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
 	}
+
+	@Override
+	public void showDialog(Runnable onOK, Runnable onCancel) {
+		// n/a to FXDialog
+	}
 }

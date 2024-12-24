@@ -142,6 +142,7 @@ public abstract class AbstractDepictor<T> {
 	public static final int	cDModeNoColorOnESRAndCIP = 0x1000;
 	public static final int cDModeNoImplicitHydrogen = 0x2000;
 	public static final int cDModeDrawBondsInGray = 0x4000;
+	public static final int cDModeBHNoSimpleHydrogens = 0x100000;
 
 	private static final double cFactorTextSize = 0.6;
 	private static final double cFactorChiralTextSize = 0.5;
@@ -172,6 +173,8 @@ public abstract class AbstractDepictor<T> {
 									mExcludeGroupFGColor,mExcludeGroupBGColor,mCustomForeground,mCustomBackground,
 									mRGBColor;
 	protected T                     mContext;
+
+	private boolean noSimpleH;
 
 	public AbstractDepictor(StereoMolecule mol) {
 		this(mol, 0);
@@ -377,9 +380,12 @@ public abstract class AbstractDepictor<T> {
 		if (mMol.getAllAtoms() == 0)
 			return null;
 
-		DepictorTransformation t1 = simpleValidateView(viewRect, mode);
+		noSimpleH = ((mDisplayMode & cDModeBHNoSimpleHydrogens) == cDModeBHNoSimpleHydrogens);
 
 		mMol.ensureHelperArrays(requiredHelperArrays());
+		
+		DepictorTransformation t1 = simpleValidateView(viewRect, mode);
+
 		markIsolatedAtoms();
 
 		mpDot.clear();
@@ -457,16 +463,26 @@ public abstract class AbstractDepictor<T> {
 
 
     public GenericRectangle simpleCalculateBounds() {
-	    double minx = getAtomX(0);	// determine size of molecule
-	    double maxx = getAtomX(0);
-	    double miny = getAtomY(0);
-	    double maxy = getAtomY(0);
+		double minx = Double.NaN, maxx = 0, miny = 0, maxy = 0;
 
-		for (int i=0; i<mMol.getAllAtoms(); i++) {
-			if (minx > getAtomX(i)) minx = getAtomX(i);
-			if (maxx < getAtomX(i)) maxx = getAtomX(i);
-			if (miny > getAtomY(i)) miny = getAtomY(i);
-			if (maxy < getAtomY(i)) maxy = getAtomY(i);
+		for (int i = 0; i < mMol.getAllAtoms(); i++) {
+			if (noSimpleH && isSimpleH(i, -1)) {
+				continue;
+			}
+			if (Double.isNaN(minx)) {
+				minx = getAtomX(i); // determine size of molecule
+				maxx = getAtomX(i);
+				miny = getAtomY(i);
+				maxy = getAtomY(i);
+			}
+			if (minx > getAtomX(i))
+				minx = getAtomX(i);
+			if (maxx < getAtomX(i))
+				maxx = getAtomX(i);
+			if (miny > getAtomY(i))
+				miny = getAtomY(i);
+			if (maxy < getAtomY(i))
+				maxy = getAtomY(i);
 			}
 
 		return new GenericRectangle(minx, miny, maxx-minx, maxy-miny);
@@ -500,6 +516,9 @@ public abstract class AbstractDepictor<T> {
 		for (int i=0; i<mMol.getAllAtoms(); i++) {
 			double radius = (mMol.getAtomQueryFeatures(i) & Molecule.cAtomQFExcludeGroup) != 0 ? avbl*cFactorExcludeGroupRadius
 					: isAtomHilited[i] ? avbl*cFactorBondHiliteRadius : 0;
+			if (noSimpleH && isSimpleH(i, -1)) {
+				return;
+			}
 
 			if (radius != 0) {
 				double x = mTransformation.transformX(mMol.getAtomX(i));
@@ -1003,6 +1022,14 @@ public abstract class AbstractDepictor<T> {
 				}
             switch (bondType) {
 			case Molecule.cBondTypeSingle:
+				if (noSimpleH) {
+					if (mMol.getAtomicNo(atom1) == 1
+							&& isSimpleH(atom1, atom2)
+							|| mMol.getAtomicNo(atom2) == 1
+							&& isSimpleH(atom2, atom1)) {
+						return;
+					}
+				}
 				mpHandleLine(theLine, atom1, atom2);
 				break;
 			case Molecule.cBondTypeUp:
@@ -1684,6 +1711,10 @@ public abstract class AbstractDepictor<T> {
 	private void mpDrawAtom(int atom, int[][] esrGroupMemberCount) {
 		double chax,chay,xdiff,ydiff,x,y;
 
+		if (noSimpleH && isSimpleH(atom, -1)) {
+				return;
+		}
+
         if (!mIsValidatingView)
             onDrawAtom(atom,mMol.getAtomLabel(atom), getAtomX(atom), getAtomY(atom));
 
@@ -2193,6 +2224,21 @@ public abstract class AbstractDepictor<T> {
 		if (mCurrentColor == COLOR_EXCLUDE_GROUP_FG)
 			setColorCode(COLOR_RESTORE_PREVIOUS);
 		}
+
+	private boolean isSimpleH(int atom, int a2) {
+		if (mMol.getAtomicNo(atom) != 1
+				|| !mMol.isReallySimpleHydrogen(atom))
+			return false;
+		if (a2 < 0) {
+			if (mMol.getConnAtoms(atom) > 0)
+				a2 = mMol.getConnAtom(atom, 0);			
+		}
+		if (a2 < 0 || mMol.getAtomicNo(a2) != 6
+				|| (mMol.getAtomParity(a2) & 3) != 0) {
+			return false;
+		}
+		return true;
+	}
 
 	private String createRingSizeText(long queryFeatures) {
 		queryFeatures &= Molecule.cAtomQFNewRingSize;

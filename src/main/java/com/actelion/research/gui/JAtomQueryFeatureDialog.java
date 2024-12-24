@@ -60,16 +60,16 @@ public class JAtomQueryFeatureDialog extends JDialog
 	private JTextField			mTFAtomList;
 	private JLabel				mLabelAtomList;
 
-	protected JAtomQueryFeatureDialog(Dialog parent, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
-		super(parent, (mol.isSelectedAtom(atom)) ? "Multiple Atom Properties" : "Atom Properties", true);
+	protected JAtomQueryFeatureDialog(Window parent, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
+		super(parent, (mol.isSelectedAtom(atom)) ? "Multiple Atom Properties" : "Atom Properties", Dialog.DEFAULT_MODALITY_TYPE);
 		init(parent, mol, atom, includeReactionHints);
 		}
 
-	protected JAtomQueryFeatureDialog(Frame parent, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
-		super(parent, (mol.isSelectedAtom(atom)) ? "Multiple Atom Properties" : "Atom Properties", true);
-		init(parent, mol, atom, includeReactionHints);
-		}
-
+//	protected JAtomQueryFeatureDialog(Frame parent, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
+//		super(parent, (mol.isSelectedAtom(atom)) ? "Multiple Atom Properties" : "Atom Properties", true);
+//		init(parent, mol, atom, includeReactionHints);
+//		}
+//
 	private void init(Component parent, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
 		mParent = parent;
 		mMol = mol;

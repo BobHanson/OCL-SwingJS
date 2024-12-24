@@ -1193,7 +1193,7 @@ public class Molecule implements Serializable {
 	 */
 	public int[] addMolecule(Molecule mol, int atoms, int bonds, boolean includeExcludeGroups) {
 		return addMolecule(mol, 0, atoms, 0, bonds, includeExcludeGroups);
-	}
+		}
 
 
 	/**
@@ -1219,13 +1219,13 @@ public class Molecule implements Serializable {
 		int esrGroupCountOR = renumberESRGroups(cESRTypeOr);
 		for (int atom=atom1; atom<atom2; atom++)
 			if (includeExcludeGroups || (mol.getAtomQueryFeatures(atom) & cAtomQFExcludeGroup) == 0)
-				atomMap[atom] = mol.copyAtom(this, atom, esrGroupCountAND, esrGroupCountOR);
+			atomMap[atom] = mol.copyAtom(this, atom, esrGroupCountAND, esrGroupCountOR);
 
 		for (int bond=bond1; bond<bond2; bond++)
 			if (includeExcludeGroups
 			 || ((mol.getAtomQueryFeatures(mol.getBondAtom(0, bond)) & cAtomQFExcludeGroup) == 0
 			  && (mol.getAtomQueryFeatures(mol.getBondAtom(1, bond)) & cAtomQFExcludeGroup) == 0))
-				mol.copyBond(this, bond, esrGroupCountAND, esrGroupCountOR, atomMap, false);
+			mol.copyBond(this, bond, esrGroupCountAND, esrGroupCountOR, atomMap, false);
 
 		mIsRacemate = (mIsRacemate && mol.mIsRacemate);
 		mChirality = cChiralityUnknown;
@@ -3870,8 +3870,8 @@ public class Molecule implements Serializable {
 			double ay = mCoordinates[atom].y - y;
 			mCoordinates[atom].x = x + ax * cos - ay * sin;
 			mCoordinates[atom].y = y + ay * cos + ax * sin;
-			}
 		}
+	}
 
 
 	/**

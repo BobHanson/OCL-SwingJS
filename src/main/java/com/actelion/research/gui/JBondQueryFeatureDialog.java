@@ -51,17 +51,10 @@ public class JBondQueryFeatureDialog extends JDialog implements ActionListener {
 	private JCheckBox			mCBSingle,mCBDouble,mCBTriple,mCBDelocalized,mCBMetalLigand,mCBIsBridge,mCBMatchStereo;
 	private JComboBox			mComboBoxRing,mComboBoxRingSize,mComboBoxMinAtoms,mComboBoxMaxAtoms;
 
-	protected JBondQueryFeatureDialog(Dialog parent, ExtendedMolecule mol, int bond) {
+	protected JBondQueryFeatureDialog(Window parent, ExtendedMolecule mol, int bond) {
 		super(parent, (mol.isSelectedAtom(mol.getBondAtom(0, bond))
 				&& mol.isSelectedAtom(mol.getBondAtom(1, bond))) ?
-				"Multiple Bond Properties" : "Bond Properties", true);
-		init(parent, mol, bond);
-		}
-
-	protected JBondQueryFeatureDialog(Frame parent, ExtendedMolecule mol, int bond) {
-		super(parent, (mol.isSelectedAtom(mol.getBondAtom(0, bond))
-				&& mol.isSelectedAtom(mol.getBondAtom(1, bond))) ?
-				"Multiple Bond Properties" : "Bond Properties", true);
+				"Multiple Bond Properties" : "Bond Properties", Dialog.DEFAULT_MODALITY_TYPE);
 		init(parent, mol, bond);
 		}
 

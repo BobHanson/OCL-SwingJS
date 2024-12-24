@@ -1,5 +1,10 @@
 package com.actelion.research.gui.editor;
 
+import java.awt.Point;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.io.File;
+
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.gui.clipboard.ClipboardHandler;
 import com.actelion.research.gui.dnd.MoleculeDropAdapter;
@@ -7,7 +12,13 @@ import com.actelion.research.gui.fx.FXDrawContext;
 import com.actelion.research.gui.fx.FXKeyHandler;
 import com.actelion.research.gui.fx.FXMouseHandler;
 import com.actelion.research.gui.fx.FXUIHelper;
-import com.actelion.research.gui.generic.*;
+import com.actelion.research.gui.generic.GenericCanvas;
+import com.actelion.research.gui.generic.GenericDrawContext;
+import com.actelion.research.gui.generic.GenericKeyEvent;
+import com.actelion.research.gui.generic.GenericMouseEvent;
+import com.actelion.research.gui.generic.GenericPoint;
+import com.actelion.research.gui.generic.GenericUIHelper;
+
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
@@ -18,22 +29,35 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 
-import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.dnd.DnDConstants;
-
 
 public class FXEditorArea extends Canvas implements GenericCanvas {
+	public class FXEditorDrawArea extends GenericEditorArea {
+
+		public FXEditorDrawArea(StereoMolecule mol, int mode, GenericUIHelper helper, GenericCanvas canvas) {
+			super(mol, mode, helper, canvas);
+		}
+
+		@Override
+		protected void openReaction() {
+			File rxnFile = ((FXUIHelper) mUIHelper).openChemistryFile(true);
+			if (rxnFile != null) {
+				openReactionFile(rxnFile);
+			}
+		}
+
+	}
+
 	private static final int ALLOWED_DROP_ACTIONS = DnDConstants.ACTION_COPY_OR_MOVE;
 
 	private GenericEditorArea mDrawArea;
 	private FXKeyHandler mKeyHandler;
 	private volatile boolean mDrawPending;
 
+	@SuppressWarnings("unchecked")
 	public FXEditorArea(StereoMolecule mol, int mode) {
 //		setFocusable(true);
 
-		mDrawArea = new GenericEditorArea(mol, mode, new FXUIHelper(this), this);
+		mDrawArea = new FXEditorDrawArea(mol, mode, new FXUIHelper(this), this);
 
 		widthProperty().addListener(evt -> repaint());
 		heightProperty().addListener(evt -> repaint());

@@ -60,25 +60,25 @@ public class JDrawDialog extends JDialog implements ActionListener,KeyListener {
 	private boolean        mIsCancelled;
 	private ArrayList<StructureListener> mListener;
 
-	public JDrawDialog(Dialog owner, StereoMolecule mol) {
+	public JDrawDialog(Window owner, StereoMolecule mol) {
 		this(owner, mol, DEFAULT_TITLE);
 		}
 
-	public JDrawDialog(Dialog owner, StereoMolecule mol, ModalityType modalityType) {
+	public JDrawDialog(Window owner, StereoMolecule mol, ModalityType modalityType) {
 		this(owner, mol, DEFAULT_TITLE, modalityType);
 		}
 
-	public JDrawDialog(Dialog owner, StereoMolecule mol, String title) {
+	public JDrawDialog(Window owner, StereoMolecule mol, String title) {
 		this(owner, mol, title, Dialog.DEFAULT_MODALITY_TYPE);
 		}
 
-	public JDrawDialog(Dialog owner, StereoMolecule mol, String title, ModalityType modalityType) {
+	public JDrawDialog(Window owner, StereoMolecule mol, String title, ModalityType modalityType) {
 		super(owner, title, modalityType);
 		mMolecule = (mol == null) ? new StereoMolecule() : new StereoMolecule(mol);
 		initialize(owner, 0);
 		}
 
-	public JDrawDialog(Dialog owner, StereoMolecule[] mol, String title, ModalityType modalityType) {
+	public JDrawDialog(Window owner, StereoMolecule[] mol, String title, ModalityType modalityType) {
 		super(owner, title, modalityType);
 		mMolecule = new StereoMolecule();
 		initialize(owner, JDrawArea.MODE_MULTIPLE_FRAGMENTS);
@@ -86,7 +86,7 @@ public class JDrawDialog extends JDialog implements ActionListener,KeyListener {
 			mArea.setFragments(mol);
 		}
 
-	public JDrawDialog(Dialog owner, Reaction rxn, String title, ModalityType modalityType) {
+	public JDrawDialog(Window owner, Reaction rxn, String title, ModalityType modalityType) {
 		super(owner, title, modalityType);
 		mMolecule = new StereoMolecule();
 		initialize(owner, JDrawArea.MODE_REACTION);
@@ -94,78 +94,45 @@ public class JDrawDialog extends JDialog implements ActionListener,KeyListener {
 			mArea.setReaction(rxn);
 		}
 
-	public JDrawDialog(Frame owner) {
+	public JDrawDialog(Window owner) {
 		this(owner, false, DEFAULT_TITLE);
 		}
 
-	public JDrawDialog(Frame owner, boolean isFragment) {
+	public JDrawDialog(Window owner, boolean isFragment) {
 		this(owner, isFragment, DEFAULT_TITLE);
 		}
 
-	public JDrawDialog(Frame owner, boolean isFragment, String title) {
-		super(owner, title, true);
+	public JDrawDialog(Window owner, boolean isFragment, String title) {
+		super(owner, title, Dialog.DEFAULT_MODALITY_TYPE);
 		mMolecule = new StereoMolecule();
 		mMolecule.setFragment(isFragment);
 		initialize(owner, 0);
 		}
-
-	public JDrawDialog(Frame owner, StereoMolecule mol) {
+	
+	public JDrawDialog(Window owner, StereoMolecule[] mol) {
 		this(owner, mol, DEFAULT_TITLE);
 		}
 
-	public JDrawDialog(Frame owner, StereoMolecule mol, ModalityType modalityType) {
+	public JDrawDialog(Window owner, StereoMolecule[] mol, ModalityType modalityType) {
 		this(owner, mol, DEFAULT_TITLE, modalityType);
 		}
 
-	public JDrawDialog(Frame owner, StereoMolecule mol, String title) {
+	public JDrawDialog(Window owner, StereoMolecule[] mol, String title) {
 		this(owner, mol, title, Dialog.DEFAULT_MODALITY_TYPE);
 		}
 
-	public JDrawDialog(Frame owner, StereoMolecule mol, String title, ModalityType modalityType) {
-		super(owner, title, modalityType);
-		mMolecule = (mol == null) ? new StereoMolecule() : new StereoMolecule(mol);
-		initialize(owner, 0);
-		}
-
-	public JDrawDialog(Frame owner, StereoMolecule[] mol) {
-		this(owner, mol, DEFAULT_TITLE);
-		}
-
-	public JDrawDialog(Frame owner, StereoMolecule[] mol, ModalityType modalityType) {
-		this(owner, mol, DEFAULT_TITLE, modalityType);
-		}
-
-	public JDrawDialog(Frame owner, StereoMolecule[] mol, String title) {
-		this(owner, mol, title, Dialog.DEFAULT_MODALITY_TYPE);
-		}
-
-	public JDrawDialog(Frame owner, StereoMolecule[] mol, String title, ModalityType modalityType) {
-		super(owner, title, modalityType);
-		mMolecule = new StereoMolecule();
-		initialize(owner, JDrawArea.MODE_MULTIPLE_FRAGMENTS);
-		if (mol != null)
-			mArea.setFragments(mol);
-		}
-
-	public JDrawDialog(Frame owner, Reaction rxn) {
+	public JDrawDialog(Window owner, Reaction rxn) {
 		this(owner, rxn, DEFAULT_TITLE);
 		}
 
-	public JDrawDialog(Frame owner, Reaction rxn, ModalityType modalityType) {
+	public JDrawDialog(Window owner, Reaction rxn, ModalityType modalityType) {
 		this(owner, rxn, DEFAULT_TITLE, modalityType);
 		}
 
-	public JDrawDialog(Frame owner, Reaction rxn, String title) {
+	public JDrawDialog(Window owner, Reaction rxn, String title) {
 		this(owner, rxn, title, Dialog.DEFAULT_MODALITY_TYPE);
 		}
 
-	public JDrawDialog(Frame owner, Reaction rxn, String title, ModalityType modalityType) {
-		super(owner, title, modalityType);
-		mMolecule = new StereoMolecule();
-		initialize(owner, JDrawArea.MODE_REACTION);
-		if (rxn != null)
-			mArea.setReaction(rxn);
-		}
 
 	private void initialize(Component owner, int mode) {
         addKeyListener(this);

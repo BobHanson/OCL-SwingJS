@@ -38,32 +38,21 @@ import com.actelion.research.gui.generic.*;
 
 import java.awt.*;
 
-public class TextDrawingObjectDialogBuilder implements GenericEventListener<GenericActionEvent> {
+public class TextDrawingObjectDialogBuilder extends AsynchronousQueryBuilder {
     static final long serialVersionUID = 0x20110325;
 
     private static final int[] TEXT_STYLE = { Font.PLAIN, Font.ITALIC, Font.BOLD, Font.ITALIC | Font.BOLD};
 	private static final String[] TEXT_STYLE_LIST = { "plain", "italic", "bold", "italics & bold" };
 	private static final String[] TEXT_SIZE_LIST = { "8", "9", "10", "12", "14", "18", "24", "32" };
 
-	private GenericDialog       mDialog;
 	private GenericTextField    mTextArea;
 	private TextDrawingObject	mTextObject;
 	private GenericComboBox     mComboBoxTextSize,mComboBoxStyle;
-	private boolean             mOKSelected;
 
 	public TextDrawingObjectDialogBuilder(GenericUIHelper dialogHelper, TextDrawingObject textObject) {
 		mDialog = dialogHelper.createDialog("Edit Text", this);
 		mTextObject = textObject;
 		build();
-		}
-
-	/**
-	 * @return true if OK was pressed and potential change was applied to molecule
-	 */
-	public boolean showDialog() {
-		mOKSelected = false;
-		mDialog.showDialog();
-		return mOKSelected;
 		}
 
 	private void build() {
@@ -101,20 +90,20 @@ public class TextDrawingObjectDialogBuilder implements GenericEventListener<Gene
 
 	@Override
 	public void eventHappened(GenericActionEvent e) {
-		if (e.getWhat() == GenericActionEvent.WHAT_OK) {
-			int textSize;
-			try {
-				textSize = Integer.parseInt(mComboBoxTextSize.getSelectedItem());
-				}
-			catch (NumberFormatException nfe) {
-				mDialog.showMessage("Illegal text size.");
-				return;
-				}
-			int textStyle = TEXT_STYLE[mComboBoxStyle.getSelectedIndex()];
-			mTextObject.setValues(mTextArea.getText(), textSize, textStyle);
-			mOKSelected = true;
-			}
+		handleOkCancel(e);
+	}
 
-		mDialog.disposeDialog();
+	@Override
+	protected void setQueryFeatures() {
+		int textSize;
+		try {
+			textSize = Integer.parseInt(mComboBoxTextSize.getSelectedItem());
+		} catch (NumberFormatException nfe) {
+			mDialog.showMessage("Illegal text size.");
+			return;
 		}
+		int textStyle = TEXT_STYLE[mComboBoxStyle.getSelectedIndex()];
+		mTextObject.setValues(mTextArea.getText(), textSize, textStyle);
+		}
+
 	}

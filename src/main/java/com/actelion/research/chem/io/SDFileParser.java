@@ -68,7 +68,8 @@ public class SDFileParser extends CompoundFileParser {
 		} catch (IOException e) {
 			mReader = null;
 		}
-
+		
+		
 		init();
 		}
 

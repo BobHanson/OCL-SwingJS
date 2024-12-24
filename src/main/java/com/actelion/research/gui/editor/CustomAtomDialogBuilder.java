@@ -39,20 +39,19 @@ import com.actelion.research.gui.generic.*;
 
 import javax.swing.*;
 
-public class CustomAtomDialogBuilder implements GenericEventListener<GenericActionEvent> {
-    private static final String[] RADICAL_STATES = { "None", "One electron (duplet)", "Two electrons (triplet)", "Two electrons (singulet)" };
+public class CustomAtomDialogBuilder extends AsynchronousQueryBuilder {
+	private static final String[] RADICAL_STATES = { "None", "One electron (duplet)", "Two electrons (triplet)",
+			"Two electrons (singulet)" };
 
 	private GenericEditorArea mEditorArea;
-	private GenericDialog mDialog;
     private StereoMolecule mMol;
     private int mAtom,mOldAtomicNo,mOldAtomMass,mOldAtomValence,mOldAtomRadical;
     private String mOldCustomLabel;
     private GenericTextField mTextFieldLabel,mTextFieldMass,mTextFieldValence;
     private GenericComboBox mComboBoxRadical;
-    private boolean mOKSelected;
 
-	public CustomAtomDialogBuilder(GenericUIHelper dialogHelper, GenericEditorArea editorArea,
-	                               int atomicNo, int mass, int valence, int radical, String label) {
+	public CustomAtomDialogBuilder(GenericUIHelper dialogHelper, GenericEditorArea editorArea, int atomicNo, int mass,
+			int valence, int radical, String label) {
 		mDialog = dialogHelper.createDialog("Atom Properties", this);
 		mEditorArea = editorArea;
 		mAtom = -1;
@@ -65,7 +64,8 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 
 	}
 
-	public CustomAtomDialogBuilder(GenericUIHelper dialogHelper, GenericEditorArea editorArea, StereoMolecule mol, int atom) {
+	public CustomAtomDialogBuilder(GenericUIHelper dialogHelper, GenericEditorArea editorArea, StereoMolecule mol,
+			int atom) {
 		mDialog = dialogHelper.createDialog("Atom Properties", this);
 		mEditorArea = editorArea;
 		mMol = mol;
@@ -78,21 +78,11 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 		build();
 		}
 
-	/**
-	 * @return true if OK was pressed and potential change was applied to molecule
-	 */
-	public boolean showDialog() {
-		mOKSelected = false;
-		mDialog.showDialog();
-		return mOKSelected;
-		}
-
 	private void build() {
         int[] hLayout = {8, GenericDialog.PREFERRED, 8, GenericDialog.PREFERRED, 8 };
-		int[] vLayout = {8, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED,
-                        12, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED,
-                        12, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED,
-                        12, GenericDialog.PREFERRED, 8};
+		int[] vLayout = { 8, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED, 12, GenericDialog.PREFERRED, 4,
+				GenericDialog.PREFERRED, 12, GenericDialog.PREFERRED, 4, GenericDialog.PREFERRED, 12,
+				GenericDialog.PREFERRED, 8 };
         mDialog.setLayout(hLayout, vLayout);
 
         mTextFieldLabel = mDialog.createTextField(1,1);
@@ -120,8 +110,7 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 		        mTextFieldMass.setText(""+mOldAtomMass);
 	        if (mOldAtomValence != -1)
 		        mTextFieldValence.setText(""+mOldAtomValence);
-	        }
-        else {
+		} else {
         	String label = mMol.getAtomLabel(mAtom);
         	String customLabel = mMol.getAtomCustomLabel(mAtom);
             mTextFieldLabel.setText(customLabel == null ? label : customLabel+"@"+label);
@@ -135,9 +124,8 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
         for (String s:RADICAL_STATES)
 	        mComboBoxRadical.addItem(s);
         int state = (mAtom == -1) ? mOldAtomRadical : mMol.getAtomRadical(mAtom);
-        mComboBoxRadical.setSelectedIndex(state == Molecule.cAtomRadicalStateD ? 1 :
-                                          state == Molecule.cAtomRadicalStateT ? 2 :
-                                          state == Molecule.cAtomRadicalStateS ? 3 : 0);
+		mComboBoxRadical.setSelectedIndex(state == Molecule.cAtomRadicalStateD ? 1
+				: state == Molecule.cAtomRadicalStateT ? 2 : state == Molecule.cAtomRadicalStateS ? 3 : 0);
 		mDialog.add(mDialog.createLabel("Radical State:"), 1,13);
 		mDialog.add(mComboBoxRadical, 3,13);
 		}
@@ -146,8 +134,7 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 	public void eventHappened(GenericActionEvent e) {
 		if (e.getSource() instanceof JTextField) {
 			processAtomLabel(false);
-			}
-		else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL) {
+		} else if (e.getWhat() == GenericActionEvent.WHAT_CANCEL) {
 			if (mAtom != -1) {
 				mMol.setAtomicNo(mAtom, mOldAtomicNo);
 				mMol.setAtomMass(mAtom, mOldAtomMass);
@@ -155,12 +142,14 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 				mMol.setAtomRadical(mAtom, mOldAtomRadical);
 				mMol.setAtomCustomLabel(mAtom, mOldCustomLabel);
 				}
-			mDialog.disposeDialog();
 			}
-		else if (e.getWhat() == GenericActionEvent.WHAT_OK) {
+		// OK and disposal is handled by AsynchronousQueryBuilder to setQueryFeatures
+		handleOkCancel(e);
+	}
+
+	@Override
+	protected void setQueryFeatures() {
 			processAtomLabel(true);
-			mDialog.disposeDialog();
-			}
 		}
 
 	private void processAtomLabel(boolean updateDefault) {
@@ -187,8 +176,7 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
     	                	mDialog.showMessage("Your mass is out of range!");
     	                    return;
     	                    }
-    			        }
-    			    catch (NumberFormatException nfe) {
+					} catch (NumberFormatException nfe) {
 				        mDialog.showMessage("Your mass is not a number!");
     			        return;
     			        }
@@ -202,16 +190,15 @@ public class CustomAtomDialogBuilder implements GenericEventListener<GenericActi
 	                        mDialog.showMessage("Your valence is out of range!");
                             return;
                             }
-                        }
-                    catch (NumberFormatException nfe) {
+					} catch (NumberFormatException nfe) {
 	                    mDialog.showMessage("Your valence is not a number!");
                         return;
                         }
                     }
 
-                int	radical = mComboBoxRadical.getSelectedIndex() == 1 ? Molecule.cAtomRadicalStateD :
-                			  mComboBoxRadical.getSelectedIndex() == 2 ? Molecule.cAtomRadicalStateT :
-                   			  mComboBoxRadical.getSelectedIndex() == 3 ? Molecule.cAtomRadicalStateS : 0;
+				int radical = mComboBoxRadical.getSelectedIndex() == 1 ? Molecule.cAtomRadicalStateD
+						: mComboBoxRadical.getSelectedIndex() == 2 ? Molecule.cAtomRadicalStateT
+								: mComboBoxRadical.getSelectedIndex() == 3 ? Molecule.cAtomRadicalStateS : 0;
 
 			    // set the current property set for the custom atom
 				if (updateDefault)

@@ -52,14 +52,8 @@ public class JLoginDialog extends JDialog implements WindowListener {
 	private JTextField		mTextFieldUserID;
 	private JPasswordField	mTextFieldPassword;
 
-	public JLoginDialog(Dialog owner, ActionListener listener) {
-		super(owner, "Database Login", true);
-		initialize(listener);
-		setLocationRelativeTo(owner);
-		}
-
-	public JLoginDialog(Frame owner, ActionListener listener) {
-		super(owner, "Database Login", true);
+	public JLoginDialog(Window owner, ActionListener listener) {
+		super(owner, "Database Login", Dialog.DEFAULT_MODALITY_TYPE);
 		initialize(listener);
 		setLocationRelativeTo(owner);
 		}

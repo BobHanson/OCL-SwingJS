@@ -53,15 +53,8 @@ public class JTextDrawingObjectDialog extends JDialog implements ActionListener 
 	private TextDrawingObject	mTextObject;
 	private JComboBox			mComboBoxTextSize,mComboBoxStyle;
 
-	protected JTextDrawingObjectDialog(Dialog owner, TextDrawingObject textObject) {
-		super(owner, true);
-		mTextObject = textObject;
-		init(owner);
-		}
-
-
-	protected JTextDrawingObjectDialog(Frame owner, TextDrawingObject textObject) {
-		super(owner, true);
+	protected JTextDrawingObjectDialog(Window owner, TextDrawingObject textObject) {
+		super(owner, Dialog.DEFAULT_MODALITY_TYPE);
 		mTextObject = textObject;
 		init(owner);
 		}
