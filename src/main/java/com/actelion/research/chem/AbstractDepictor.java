@@ -381,9 +381,7 @@ public abstract class AbstractDepictor<T> {
 			return null;
 
 		noSimpleH = ((mDisplayMode & cDModeBHNoSimpleHydrogens) == cDModeBHNoSimpleHydrogens);
-
 		mMol.ensureHelperArrays(requiredHelperArrays());
-		
 		DepictorTransformation t1 = simpleValidateView(viewRect, mode);
 
 		markIsolatedAtoms();

@@ -35,7 +35,9 @@ import net.sf.jniinchi.INCHI_BOND_TYPE;
 import net.sf.jniinchi.INCHI_PARITY;
 import net.sf.jniinchi.JniInchiAtom;
 import net.sf.jniinchi.JniInchiBond;
+import net.sf.jniinchi.JniInchiInput;
 import net.sf.jniinchi.JniInchiInputInchi;
+import net.sf.jniinchi.JniInchiOutput;
 import net.sf.jniinchi.JniInchiOutputStructure;
 import net.sf.jniinchi.JniInchiStereo0D;
 import net.sf.jniinchi.JniInchiStructure;
@@ -43,14 +45,17 @@ import net.sf.jniinchi.JniInchiWrapper;
 
 public class InChIJNI {
 
+	// all methods are static, but we still need a public constructor
+	// for dynamic class loading in JavaScript. (Or do we? Maybe not in SwingJS
+	
 	public InChIJNI() {
-		// for dynamic loading
+		// for dynamic loading in JavaScript
 	}
 
 	public static boolean inchiToMolecule(String inchi, StereoMolecule mol) {
 		try {
 			JniInchiOutputStructure struc = JniInchiWrapper.getStructureFromInchi(new JniInchiInputInchi(inchi));
-			getMolecule(struc, mol);
+			getOCLMolecule(struc, mol);
 			return true;
 		} catch (Throwable e) {
 			e.printStackTrace();
@@ -69,15 +74,12 @@ public class InChIJNI {
 		}
 	}
 
-
-	@SuppressWarnings("boxing")
-	private static String toJSON(JniInchiStructure mol) {
+	static String toJSON(JniInchiStructure mol) {
 		int na = mol.getNumAtoms();
 		int nb = mol.getNumBonds();
 		int ns = mol.getNumStereo0D();
 		Map<JniInchiAtom, Integer> mapAtoms = new HashMap<>();
 		String s = "{\"atoms\":[\n";
-		String sep = "";
 		for (int i = 0; i < na; i++) {
 			JniInchiAtom a = mol.getAtom(i);
 			mapAtoms.put(a, Integer.valueOf(i));
@@ -135,7 +137,6 @@ public class InChIJNI {
 	}
 
 	private static String toJSON(String key, Object val, String term) {
-
 		key = "\"" + key + "\"";
 		String sval = null;
 		if (val instanceof int[]) {
@@ -153,84 +154,83 @@ public class InChIJNI {
 		return key + ":" + sval + term + "\n";
 	}
 
-	private static void getMolecule(JniInchiOutputStructure struc, StereoMolecule molOut) {
-		boolean[] enabled = new boolean[] {false};
-		StereoMolecule mol = new StereoMolecule() {
-			public int getAtomParity(int atom) {
-				if (enabled[0]) {
-					
-					switch (atom) {
-					case 10:
-					case 15:
-					case 16:
-						return Molecule.cAtomParity2;
-					case 9:
-					case 12:
-						return Molecule.cAtomParity1;
-					}
-					
-					return molOut.getAtomParity(atom);
-				}
-				return super.getAtomParity(atom);
-			}
-		};
+	private static void getOCLMolecule(JniInchiOutputStructure struc, StereoMolecule mol) {
 		int nAtoms = struc.getNumAtoms();
 		int nBonds = struc.getNumBonds();
 		int nStereo = struc.getNumStereo0D();
-		int nh = 0;
-		for (int i = 0; i < nAtoms; i++) {
-			JniInchiAtom a = struc.getAtom(i);
-			nh += a.getImplicitH();
-		}
 		List<JniInchiAtom> atoms = new ArrayList<>();
 		Map<JniInchiAtom, Integer> map = new HashMap<>();
 		for (int i = 0; i < nAtoms; i++) {
 			JniInchiAtom a = struc.getAtom(i);
 			atoms.add(a);
 			String sym = a.getElementType();
+			int nH = a.getImplicitH();
+			//System.out.println("inchi " + i + "=" + sym + (nH == 0 ? "" : "H" + nH));
 			int atom = mol.addAtom(Molecule.getAtomicNoFromLabel(sym));
 			mol.setAtomCharge(atom, a.getCharge());
-			mol.setAtomX(atom, -1);
 			map.put(a, Integer.valueOf(i));
 		}
 		for (int i = 0; i < nStereo; i++) {
 			JniInchiStereo0D d = struc.getStereo0D(i);
-			int ia = Integer.valueOf(map.get(d.getCentralAtom()));
-			int p = decodeParity(d.getParity());
-			mol.setAtomParity(ia, p, false);
-			JniInchiAtom[] an = d.getNeighbors();
-			int[] nbs = new int[an.length];
-			for (int j = 0; j < an.length; j++) {
-				nbs[j] = map.get(d.getNeighbor(j)).intValue();
+			JniInchiAtom atom = d.getCentralAtom();
+			int ia = Integer.valueOf(map.get(atom));
+			int[] neighbors = new int[d.getNeighbors().length];
+			for (int j = neighbors.length; --j >= 0;) {
+				neighbors[j] = Integer.valueOf(map.get(d.getNeighbor(j)));
 			}
+			int p = getOCLParity(ia, d.getParity(), isOrdered(neighbors));
+			//System.out.println("inchi " + ia + " " + Arrays.toString(neighbors) + " " + p);
+			mol.setAtomParity(ia, p, false);
 		}
 		for (int i = 0; i < nBonds; i++) {
 			JniInchiBond b = struc.getBond(i);
 			JniInchiAtom a1 = b.getOriginAtom();
 			JniInchiAtom a2 = b.getTargetAtom();
-			int bt = getBondType(b);
+			int bt = getOCLSimpleBondType(b);
 			int i1 = map.get(a1);
 			int i2 = map.get(a2);
 			mol.addBond(i1, i2, bt);
 		}
 		// temporarily preserve parities
-		mol.copyMolecule(molOut);
-		enabled[0] = true;
+//		mol.copyMolecule(molOut);
+//		enabled[0] = true;
 		mol.setParitiesValid(0);
+		// coordinates are not 
+		mol.setPrioritiesPreset(true);
 		new CoordinateInventor(Canonizer.COORDS_ARE_3D | CoordinateInventor.MODE_SKIP_DEFAULT_TEMPLATES).invent(mol);
-		enabled[0] = false;
-		mol.copyMolecule(molOut);
-		//new CoordinateInventor(0).invent(molOut);
+		mol.ensureHelperArrays(31);
+		//mol.setPrioritiesPreset(false);
+//		enabled[0] = false;
+		//mol.copyMolecule(molOut);
 	}
 
+	/**
+	 * Determine whether this list is a permutation of an ordered list.
+	 * 
+	 * @param list
+	 * @return true if even-order permuted
+	 */
+	private static boolean isOrdered(int[] list) {
+		boolean ok = true;
+		for (int i = 0; i < list.length - 1; i++) {
+			int l1 = list[i];
+			for (int j = i + 1; j < list.length; j++) {
+				int l2 = list[j];
+				if (l1 > l2) {
+					list[j] = l1;
+					l1 = list[i] = l2;
+					ok = !ok;
+				}
+			}
+		}
+		return ok;
+	}
 
-	private static int decodeParity(INCHI_PARITY parity) {
-
+	private static int getOCLParity(int ia, INCHI_PARITY parity, boolean isOrdered) {
 		switch (parity) {
-		case EVEN:
-			return Molecule.cAtomParity2;
 		case ODD:
-			return Molecule.cAtomParity1;
+		case EVEN:
+			return ((parity == INCHI_PARITY.ODD) ^ isOrdered ? Molecule.cAtomParity1 : Molecule.cAtomParity2);
 		case UNKNOWN:
 			return Molecule.cAtomParityUnknown;
 		case NONE:
@@ -239,10 +239,8 @@ public class InChIJNI {
 		}
 	}
 
-	private static int getBondType(JniInchiBond b) {
+	private static int getOCLSimpleBondType(JniInchiBond b) {
 		INCHI_BOND_TYPE type = b.getBondType();
-		INCHI_BOND_STEREO stereo = b.getBondStereo();
-
 		switch (type) {
 		case NONE:
 			return 0;
@@ -253,30 +251,135 @@ public class InChIJNI {
 		case TRIPLE:
 			return Molecule.cBondTypeTriple;
 		case SINGLE:
-			if (true)
-				break;
-			switch (stereo) {
-			case NONE:
-				break;
-			case SINGLE_1UP:
-				break;
-			case SINGLE_1EITHER:
-				break;
-			case SINGLE_1DOWN:
-				break;
-			case SINGLE_2UP:
-				break;
-			case SINGLE_2EITHER:
-				break;
-			case SINGLE_2DOWN:
-				break;
-			case DOUBLE_EITHER:
-				break;
-			}
 		default:
-			break;
- 		}
-		return Molecule.cBondTypeSingle;
+			return Molecule.cBondTypeSingle;
+		}
+ 		
 	}
 
+	// TODO enumerate all options
+	
+	/**
+	 * Get an InChIKey based on options
+	 * @param mol
+	 * @param options standard InChI options and "fixedh?", meaning fixedh only if it is different from standard
+	 * @return InChIKey
+	 */
+	public static String getInChIKey(StereoMolecule mol, String options) {
+		return getInChI(mol, options, true);
+	}
+
+	/**
+	 * Get an InChI based on options
+	 * @param mol
+	 * @param options standard InChI options and "fixedh?", meaning fixedh only if it is different from standard
+	 * @return InChIKey
+	 */
+	public static String getInChI(StereoMolecule mol, String options) {
+		return getInChI(mol, options, false);
+	}
+	
+	private static String getInChI(StereoMolecule mol, String options, boolean getKey) {
+		try {
+			if (options == null)
+				options = "";
+			String inchi = null;
+			String lc = options.toLowerCase();
+			options = lc;
+			if (options.indexOf("fixedh?") >= 0) {
+				String fxd = getInChI(mol, options.replace('?', ' '), false);
+				options = options.replaceAll("fixedh\\?", "");
+				String std = getInChI(mol, options, false);
+				inchi = (fxd != null && fxd.length() <= std.length() ? std : fxd);
+			} else {
+				JniInchiInput in = new JniInchiInput(options);
+				JniInchiStructure struc = newJniInchiStructure(mol);
+				in.setStructure(struc);
+				JniInchiOutput out = JniInchiWrapper.getInchi(in);
+				String msg = out.getMessage();
+				if (msg != null)
+					System.err.println(msg);
+				inchi = out.getInchi();
+			}
+			return (getKey ? JniInchiWrapper.getInchiKey(inchi).getKey() : inchi);
+		} catch (Throwable e) {
+			System.out.println(e);
+
+			if (e.getMessage().indexOf("ption") >= 0)
+				System.out.println(e.getMessage() + ": " + options.toLowerCase()
+						+ "\n See https://www.inchi-trust.org/download/104/inchi-faq.pdf for valid options");
+			else
+				e.printStackTrace();
+			return "";
+		}
+
+	}
+	private static JniInchiStructure newJniInchiStructure(StereoMolecule mol) {
+		JniInchiStructure struc = new JniInchiStructure();
+		int nAtoms = mol.getAllAtoms();
+		JniInchiAtom[] atoms = new JniInchiAtom[nAtoms];
+		for (int i = 0; i < nAtoms; i++) {
+			int elem = mol.getAtomicNo(i);
+			String sym = Molecule.cAtomLabel[elem];
+			int iso = mol.getAtomMass(i);
+			if (elem == 1) {
+				sym = "H"; // in case this is D
+			}
+			JniInchiAtom a = atoms[i] = new JniInchiAtom(mol.getAtomX(i), -mol.getAtomY(i), mol.getAtomZ(i), sym);
+			struc.addAtom(a);
+			a.setCharge(mol.getAtomCharge(i));
+			if (iso > 0)
+				a.setIsotopicMass(iso);
+			a.setImplicitH(mol.getImplicitHydrogens(i));
+		}
+		int nBonds = mol.getAllBonds();
+		for (int i = 0; i < nBonds; i++) {
+			int oclOrder = mol.getBondTypeSimple(i);
+			INCHI_BOND_TYPE order = getInChIOrder(oclOrder);
+			if (order != null) {
+				int atom1 = mol.getBondAtom(0, i);
+				int atom2 = mol.getBondAtom(1, i);
+				int oclType = mol.getBondType(i);
+				int oclParity = mol.getBondParity(i);
+				INCHI_BOND_STEREO stereo = getInChIStereo(oclOrder, oclType, oclParity);
+				struc.addBond(new JniInchiBond(atoms[atom1], atoms[atom2], order, stereo));
+			}
+		}
+		return struc;
+	}
+
+	private static INCHI_BOND_TYPE getInChIOrder(int oclOrder) {
+		switch (oclOrder) {
+		case Molecule.cBondTypeSingle:
+			return INCHI_BOND_TYPE.SINGLE;
+		case Molecule.cBondTypeDouble:
+			return INCHI_BOND_TYPE.DOUBLE;
+		case Molecule.cBondTypeTriple:
+			return INCHI_BOND_TYPE.TRIPLE;
+		case Molecule.cBondTypeDelocalized:
+			return INCHI_BOND_TYPE.ALTERN;
+		case Molecule.cBondTypeMetalLigand:
+		default:
+			return null;
+		}
+	}
+
+	private static INCHI_BOND_STEREO getInChIStereo(int oclOrder, int oclType, int oclParity) {
+		if (oclOrder == 1) {
+			switch (oclType) {
+			case Molecule.cBondTypeDown:
+				return INCHI_BOND_STEREO.SINGLE_1DOWN;
+			case Molecule.cBondTypeUp:
+				return INCHI_BOND_STEREO.SINGLE_1UP;
+			default:
+				if (oclParity == Molecule.cBondParityUnknown) {
+					return INCHI_BOND_STEREO.SINGLE_1EITHER;
+				}
+			}
+		}
+		return INCHI_BOND_STEREO.NONE;
+	}
+
+	
+	
 }

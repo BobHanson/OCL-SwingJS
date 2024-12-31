@@ -2,7 +2,6 @@ package com.actelion.research.chem.moreparsers;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
 import java.util.Map;
 

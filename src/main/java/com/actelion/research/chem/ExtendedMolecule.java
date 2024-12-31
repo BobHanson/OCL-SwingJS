@@ -1977,56 +1977,88 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 			}
 		}
 
+	/**
+	 * the parities that result from different choices of preferred bond;
+	 * stereobond type to achieve parity = 1
+	 * 
+	 * first dimension: one of the 6 angle orders
+	 * 
+	 * second dimension: index of ConnAtom bearing stereobond
+	 */
+	final static int[][] up_down = { //
+			{ 2, 1, 2, 1 }, // 
+			{ 1, 2, 2, 1 }, // 
+			{ 1, 1, 2, 2 }, // 
+			{ 2, 1, 1, 2 }, // 
+			{ 2, 2, 1, 1 }, // 
+			{ 1, 2, 1, 2 }  //
+	}; 
+
 
 	/**
 	 * Requires helper arrays level cHelperRings!
+	 * 
 	 * @param atom
 	 */
 	public void setStereoBondFromAtomParity(int atom) {
 		convertStereoBondsToSingleBonds(atom);
 
-			// set an optimal bond to up/down to reflect the atom parity
-		if (getAtomParity(atom) == Molecule.cAtomParityNone
-		 || getAtomParity(atom) == Molecule.cAtomParityUnknown)
+		// set an optimal bond to up/down to reflect the atom parity
+		if (getAtomParity(atom) == Molecule.cAtomParityNone || getAtomParity(atom) == Molecule.cAtomParityUnknown)
 			return;
 
 		if (mPi[atom] == 2 && mConnAtoms[atom] == 2) {
 			setAlleneStereoBondFromParity(atom);
 			return;
-			}
+		}
 
 		if (mConnAtoms[atom] < 3 || mConnAtoms[atom] > 4) {
 			setAtomParity(atom, cAtomParityNone, false);
 			return;
-			}
+		}
 
 		int allConnAtoms = mAllConnAtoms[atom];
 
-		// We may have a rare case without any single bond (e.g. O=S(=NH)=NMe) with parities assigned from 3D-coords
+		// We may have a rare case without any single bond (e.g. O=S(=NH)=NMe) with
+		// parities assigned from 3D-coords
 		boolean singleBondFound = false;
-		for (int i=0; i<allConnAtoms; i++) {
+		for (int i = 0; i < allConnAtoms; i++) {
 			if (getBondOrder(mConnBond[atom][i]) == 1) {
 				singleBondFound = true;
 				break;
-				}
 			}
+		}
 		if (!singleBondFound)
 			return;
 
 		int[] sortedConnMap = getSortedConnMap(atom);
 
-		double angle[] = new double[allConnAtoms];
-		for (int i=0; i<allConnAtoms; i++)
-			angle[i] = getBondAngle(mConnAtom[atom][sortedConnMap[i]], atom);
-
-		for (int i=0; i<allConnAtoms; i++)
-			if (mBondAtom[0][mConnBond[atom][i]] == atom
-			 && getBondOrder(mConnBond[atom][i]) == 1)
+		for (int i = 0; i < allConnAtoms; i++)
+			if (mBondAtom[0][mConnBond[atom][i]] == atom && getBondOrder(mConnBond[atom][i]) == 1)
 				mBondType[mConnBond[atom][i]] = cBondTypeSingle;
 
-		// Don't allow Fisher projection for large rings, which may have multiple almost vertical bonds
+		double angle[] = new double[allConnAtoms];
+		int[] catoms = new int[allConnAtoms];
+		for (int i=0; i<allConnAtoms; i++) {
+			int atom2 = mConnAtom[atom][sortedConnMap[i]];
+			angle[i] = getBondAngle(atom2, atom);
+			catoms[i] = atom2;
+		}
+		
+		for (int i = 1; i < allConnAtoms; i++)
+			if (angle[i] < angle[0])
+				angle[i] += Math.PI * 2;
+
+		double[] dangles = new double[angle.length];
+		for (int i = 0; i < allConnAtoms; i++) {
+			dangles[i] = angle[i] / Math.PI * 180;
+		}
+
+
+		// Don't allow Fisher projection for large rings, which may have multiple almost
+		// vertical bonds
 		if (getAtomRingSize(atom) <= FISCHER_PROJECTION_RING_LIMIT
-		 && setFisherProjectionStereoBondsFromParity(atom, sortedConnMap, angle))
+				&& setFisherProjectionStereoBondsFromParity(atom, sortedConnMap, angle))
 			return;
 
 		int preferredBond = preferredTHStereoBond(atom, true);
@@ -2036,60 +2068,46 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		if (mBondAtom[0][preferredBond] != atom) {
 			mBondAtom[1][preferredBond] = mBondAtom[0][preferredBond];
 			mBondAtom[0][preferredBond] = atom;
-			}
-
+		}
 		int preferredBondIndex = -1;
-		for (int i=0; i<allConnAtoms; i++) {
+		for (int i = 0; i < allConnAtoms; i++) {
 			if (preferredBond == mConnBond[atom][sortedConnMap[i]]) {
 				preferredBondIndex = i;
 				break;
-				}
 			}
+		}
 
-		final int[][] up_down = { { 2,1,2,1 },	// stereobond type to
-								  { 1,2,2,1 },	// achieve parity = 1
-								  { 1,1,2,2 },	// first dimension:
-								  { 2,1,1,2 },	// one of the 6 angle orders
-								  { 2,2,1,1 },	// second dimension:
-								  { 1,2,1,2 } };// index of ConnAtom bearing stereobond
-
-/*		int preferredBondIndex = -1;
-		int sortedConn[] = new int[4];
-		for (int i=0; i<mAllConnAtoms[atom]; i++) {
-			int lowestConnAtom = Integer.MAX_VALUE;
-			int lowestConnIndex = -1;
-			for (int j=0; j<mAllConnAtoms[atom]; j++) {
-				if ((i == 0 || mConnAtom[atom][j] > sortedConn[i-1]) && lowestConnAtom > mConnAtom[atom][j]) {
-					lowestConnAtom = mConnAtom[atom][j];
-					lowestConnIndex = j;
-					}
-				}
-
-			sortedConn[i] = lowestConnAtom;
-			if (mConnBond[atom][lowestConnIndex] == preferredBond)
-				preferredBondIndex = i;
-			}	*/
-
-		for (int i=1; i<allConnAtoms; i++)
-			if (angle[i] < angle[0])
-				angle[i] += Math.PI*2;
+		/*
+		 * int preferredBondIndex = -1; int sortedConn[] = new int[4]; for (int i=0;
+		 * i<mAllConnAtoms[atom]; i++) { int lowestConnAtom = Integer.MAX_VALUE; int
+		 * lowestConnIndex = -1; for (int j=0; j<mAllConnAtoms[atom]; j++) { if ((i == 0
+		 * || mConnAtom[atom][j] > sortedConn[i-1]) && lowestConnAtom >
+		 * mConnAtom[atom][j]) { lowestConnAtom = mConnAtom[atom][j]; lowestConnIndex =
+		 * j; } }
+		 * 
+		 * sortedConn[i] = lowestConnAtom; if (mConnBond[atom][lowestConnIndex] ==
+		 * preferredBond) preferredBondIndex = i; }
+		 */
 
 		int bondType;
+		int order = 0;
 		if (allConnAtoms == 3) {
-				// new handling!!! TLS 17.Oct.2005
-				// Originally the parity depended solely on clockwise/anti-clockwise orientation
-				// of three (priority sorted) angles, which included the angle of the stereo bond.
-				// Now to handle strained rings with 'invalid' projections in an expected way
-				// (all three bonds are within 180 degrees and the middle bond is the stereo bond
-				// then treat this as if the stereo bond would be drawn 180 degrees rotated)
-				// the angle of the stereobond is not considered anymore and the parity depends
-				// solely on the question if the angle difference between higher priority bond
-				// to lower priority bond is less or larger than 180 degrees.
+			// new handling!!! TLS 17.Oct.2005
+			// Originally the parity depended solely on clockwise/anti-clockwise orientation
+			// of three (priority sorted) angles, which included the angle of the stereo
+			// bond.
+			// Now to handle strained rings with 'invalid' projections in an expected way
+			// (all three bonds are within 180 degrees and the middle bond is the stereo
+			// bond
+			// then treat this as if the stereo bond would be drawn 180 degrees rotated)
+			// the angle of the stereobond is not considered anymore and the parity depends
+			// solely on the question if the angle difference between higher priority bond
+			// to lower priority bond is less or larger than 180 degrees.
 			boolean inverted = false;
 			switch (preferredBondIndex) {
 			case 0:
 				inverted = (((angle[1] < angle[2]) && (angle[2] - angle[1] < Math.PI))
-						 || ((angle[1] > angle[2]) && (angle[1] - angle[2] > Math.PI)));
+						|| ((angle[1] > angle[2]) && (angle[1] - angle[2] > Math.PI)));
 				break;
 			case 1:
 				inverted = (angle[2] - angle[0] > Math.PI);
@@ -2097,32 +2115,34 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 			case 2:
 				inverted = (angle[1] - angle[0] < Math.PI);
 				break;
-				}
-
-			bondType = ((getAtomParity(atom) == cAtomParity1) ^ inverted) ?
-						cBondTypeUp : cBondTypeDown;
-
-/*				// original handling where parity depended solely on the clockwise/anti-clockwise of three angles
-			bondType = ((getAtomParity(atom) == cAtomParity1)
-					  ^ (angle[1] > angle[2])) ?
-						cBondTypeDown : cBondTypeUp;	*/
-			}
-		else {
-			int order = 0;
-			if		(angle[1] <= angle[2] && angle[2] <= angle[3]) order = 0;
-			else if (angle[1] <= angle[3] && angle[3] <= angle[2]) order = 1;
-			else if (angle[2] <= angle[1] && angle[1] <= angle[3]) order = 2;
-			else if (angle[2] <= angle[3] && angle[3] <= angle[1]) order = 3;
-			else if (angle[3] <= angle[1] && angle[1] <= angle[2]) order = 4;
-			else if (angle[3] <= angle[2] && angle[2] <= angle[1]) order = 5;
-			bondType = ((getAtomParity(atom) == cAtomParity1)
-					  ^ (up_down[order][preferredBondIndex] == 1)) ?
-						cBondTypeDown : cBondTypeUp;
 			}
 
-		mBondType[preferredBond] = bondType;
+			bondType = ((getAtomParity(atom) == cAtomParity1) ^ inverted) ? cBondTypeUp : cBondTypeDown;
+
+			/*
+			 * // original handling where parity depended solely on the
+			 * clockwise/anti-clockwise of three angles bondType = ((getAtomParity(atom) ==
+			 * cAtomParity1) ^ (angle[1] > angle[2])) ? cBondTypeDown : cBondTypeUp;
+			 */
+		} else {
+			if (angle[1] <= angle[2] && angle[2] <= angle[3])
+				order = 0;
+			else if (angle[1] <= angle[3] && angle[3] <= angle[2])
+				order = 1;
+			else if (angle[2] <= angle[1] && angle[1] <= angle[3])
+				order = 2;
+			else if (angle[2] <= angle[3] && angle[3] <= angle[1])
+				order = 3;
+			else if (angle[3] <= angle[1] && angle[1] <= angle[2])
+				order = 4;
+			else if (angle[3] <= angle[2] && angle[2] <= angle[1])
+				order = 5;
+			bondType = ((getAtomParity(atom) == cAtomParity1) ^ (up_down[order][preferredBondIndex] == 1))
+					? cBondTypeDown
+					: cBondTypeUp;
 		}
-
+		mBondType[preferredBond] = bondType;
+	}
 
 	private boolean setFisherProjectionStereoBondsFromParity(int atom, int[] sortedConnMap, double[] angle) {
 		int allConnAtoms = mAllConnAtoms[atom];

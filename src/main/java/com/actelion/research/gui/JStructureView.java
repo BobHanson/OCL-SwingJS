@@ -870,8 +870,10 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 	public static JStructureView createView(StereoMolecule mol, int mode, double scaling, Color bg) {		
 		JStructureView mArea = new JStructureView(mol);
 		if (mode == 0)
-			mode = AbstractDepictor.cDModeSuppressCIPParity 
-			    | AbstractDepictor.cDModeSuppressESR
+			mode = 
+			//AbstractDepictor.cDModeSuppressCIPParity 
+			  //  | 
+			    AbstractDepictor.cDModeSuppressESR
 				| AbstractDepictor.cDModeSuppressChiralText
 				| AbstractDepictor.cDModeBHNoSimpleHydrogens
 				;

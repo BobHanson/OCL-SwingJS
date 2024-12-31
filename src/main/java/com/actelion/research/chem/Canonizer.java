@@ -246,17 +246,15 @@ public class Canonizer {
 
 		mMol = mol;
 		mMode = mode;
-
 		mMol.ensureHelperArrays(Molecule.cHelperRings);
 		mAtomBits = getNeededBits(mMol.getAtoms());
 
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0)
 			canFindNitrogenQualifyingForParity();
 
-		mZCoordinatesAvailable = ((mode & COORDS_ARE_3D) != 0) || mMol.is3D();
+		mZCoordinatesAvailable = (mMol.mPrioritiesPreset || (mode & COORDS_ARE_3D) != 0) || mMol.is3D();
 
 		mAllHydrogensAreExplicit = (mMol.getImplicitHydrogens() == 0);
-
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0) {
 			mTHParity = new byte[mMol.getAtoms()];
 			mTHParityIsPseudo = new boolean[mMol.getAtoms()];
@@ -532,7 +530,6 @@ public class Canonizer {
 		// tie-breaking
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0) {
 			canNormalizeGroupParities();
-
 			// detect all not yet discovered pseudo-parities
 			canFindPseudoParities();
 			flagStereoProblems();
@@ -1695,7 +1692,7 @@ public class Canonizer {
 		if (mode != CALC_PARITY_MODE_PARITY && !proTHAtomsFound)
 			return false;
 
-		byte atomTHParity = (mZCoordinatesAvailable) ? canCalcTHParity3D(atom, remappedConn)
+		byte atomTHParity = (mZCoordinatesAvailable) ? canCalcTHParity3D(atom, remappedConn, remappedRank)
 				: canCalcTHParity2D(atom, remappedConn);
 
 		if (mode == CALC_PARITY_MODE_PARITY) {
@@ -1711,14 +1708,14 @@ public class Canonizer {
 		return true;
 	}
 
-	private byte canCalcTHParity2D(int atom, int[] remappedConn) {
-		final int[][] up_down = { { 2, 1, 2, 1 }, // direction of stereobond
-				{ 1, 2, 2, 1 }, // for parity = 1
-				{ 1, 1, 2, 2 }, // first dimension: order of
-				{ 2, 1, 1, 2 }, // angles to connected atoms
-				{ 2, 2, 1, 1 }, // second dimension: number of
-				{ 1, 2, 1, 2 } };// mMol.getConnAtom that has stereobond
+	final static int[][] up_down = { { 2, 1, 2, 1 }, // direction of stereobond
+			{ 1, 2, 2, 1 }, // for parity = 1
+			{ 1, 1, 2, 2 }, // first dimension: order of
+			{ 2, 1, 1, 2 }, // angles to connected atoms
+			{ 2, 2, 1, 1 }, // second dimension: number of
+			{ 1, 2, 1, 2 } };// mMol.getConnAtom that has stereobond
 
+	private byte canCalcTHParity2D(int atom, int[] remappedConn) {
 		double[] angle = new double[mMol.getAllConnAtoms(atom)];
 		for (int i = 0; i < mMol.getAllConnAtoms(atom); i++)
 			angle[i] = mMol.getBondAngle(mMol.getConnAtom(atom, remappedConn[i]), atom);
@@ -1800,34 +1797,62 @@ public class Canonizer {
 		return (up_down[order][stereoBond] == stereoType) ? (byte) Molecule.cAtomParity2 : Molecule.cAtomParity1;
 	}
 
-	private byte canCalcTHParity3D(int atom, int[] remappedConn) {
+	private byte canCalcTHParity3D(int atom, int[] remappedConn, int[] remappedRank) {
 		int[] atomList = new int[4];
-		for (int i = 0; i < mMol.getAllConnAtoms(atom); i++)
+		//System.out.println("CTHP for " + atom + " " + mMol.getAtomLabel(atom) + " " + mMol.mCoordinates[atom]);
+		for (int i = 0; i < mMol.getAllConnAtoms(atom); i++) {
 			atomList[i] = mMol.getConnAtom(atom, remappedConn[i]);
+			//System.out.println("CTHP " + i + " " + atomList[i] + mMol.getAtomLabel(atomList[i]) + " " + mMol.mCoordinates[atomList[i]]);
+		}
 		if (mMol.getAllConnAtoms(atom) == 3)
 			atomList[3] = atom;
 
+		//System.out.println("CANcanCalcP atom " + atom + " " +
+		// Arrays.toString(atomList) + Arrays.toString(remappedRank));
 		double[][] coords = new double[3][3];
-		double cosa;
 		int parity = mMol.getAtomParity(atom);
-		// allow inchi-determined parity
-		if (parity == Molecule.cAtomParityNone) {
-			// calculate the normal vector (vector product of coords[0] and coords[1])
-			double[] n = new double[3];
-			n[0] = coords[0][1] * coords[1][2] - coords[0][2] * coords[1][1];
-			n[1] = coords[0][2] * coords[1][0] - coords[0][0] * coords[1][2];
-			n[2] = coords[0][0] * coords[1][1] - coords[0][1] * coords[1][0];
+		if (parity != Molecule.cAtomParityNone && parity != Molecule.cAtomParityUnknown) {
+			// allow predetermined InChI-derived parity
+			parity = (!isOrdered(atomList) ? parity : parity == Molecule.cAtomParity2 ? Molecule.cAtomParity1 : Molecule.cAtomParity2);
+			//System.out.println("CAN atomList=" + Arrays.toString(atomList) + " " + parity);
+			return (byte) parity;
+		}
+		// calculate the normal vector (vector product of coords[0] and coords[1])
+		double cosa;
+		double[] n = new double[3];
+		n[0] = coords[0][1] * coords[1][2] - coords[0][2] * coords[1][1];
+		n[1] = coords[0][2] * coords[1][0] - coords[0][0] * coords[1][2];
+		n[2] = coords[0][0] * coords[1][1] - coords[0][1] * coords[1][0];
 
 		// calculate cos(angle) of coords[2] to normal vector
-			cosa = (coords[2][0] * n[0] + coords[2][1] * n[1] + coords[2][2] * n[2]) / (Math
-					.sqrt(coords[2][0] * coords[2][0] + coords[2][1] * coords[2][1] + coords[2][2] * coords[2][2])
+		cosa = (coords[2][0] * n[0] + coords[2][1] * n[1] + coords[2][2] * n[2])
+				/ (Math.sqrt(coords[2][0] * coords[2][0] + coords[2][1] * coords[2][1] + coords[2][2] * coords[2][2])
 						* Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]));
-		} else {
-			cosa = (parity == Molecule.cAtomParity1 ? 1 : -1);
-		}
 		return (cosa > 0.0) ? (byte) Molecule.cAtomParity1 : Molecule.cAtomParity2;
 	}
 
+	/**
+	 * Determine whether this list is a permutation of an ordered list.
+	 * 
+	 * @param list
+	 * @return
+	 */
+	private static boolean isOrdered(int[] list) {
+		boolean ok = true;
+		for (int i = 0; i < list.length - 1; i++) {
+			int l1 = list[i];
+			for (int j = i + 1; j < list.length; j++) {
+				int l2 = list[j];
+				if (l1 > l2) {
+					list[j] = l1;
+					l1 = list[i] = l2;
+					ok = !ok;
+				}
+			}
+		}
+		return ok;
+	}
+	
 	private boolean canCalcAlleneParity(int atom, int mode) {
 		if (mMol.getAtomicNo(atom) != 6 && mMol.getAtomicNo(atom) != 7)
 			return false;
@@ -3816,7 +3841,7 @@ public class Canonizer {
 	 */
 	public void setParities() {
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
-			if (mTHParity[atom] == Molecule.cAtomParity1 || mTHParity[atom] == Molecule.cAtomParity2) {
+			if (mTHParity[atom] != Molecule.cAtomParity1 && mTHParity[atom] != Molecule.cAtomParity2) {
 				boolean inversion = false;
 				if (mMol.isCentralAlleneAtom(atom)) { // allene parities
 					for (int i = 0; i < mMol.getConnAtoms(atom); i++) {

@@ -12,12 +12,12 @@ import java.io.OutputStreamWriter;
 
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.MolfileCreator;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
+import com.actelion.research.chem.inchi.InChIJNI;
 import com.actelion.research.chem.moreparsers.CDXParser;
 import com.actelion.research.chem.moreparsers.InChIKeyParser;
 import com.actelion.research.chem.moreparsers.InChIParser;
@@ -33,21 +33,24 @@ public class OCLSwingTest {
 	public static int nFrame;
 
 	public static void main(String[] args) {
-		String outdir = null;//"C:/temp/";
+		String outdir = "C:/temp/";
 		testCDXParsers(outdir);
 		testInChIParsers(outdir);
 		testSmilesParser(outdir);
 
-		SwingUtilities.invokeLater(()->{showDialogTest(args);});
+//		SwingUtilities.invokeLater(()->{showDialogTest(args);});
 	}
 
 	private static void testSmilesParser(String outdir) {
 		String smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
-		String fileout = "tsmiles.png";
+		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
+		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
+		String fileout = "tsmiles";
 		System.out.println(smiles + " => " + fileout);
 		StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
 		JStructureView view = JStructureView.getStandardView(mol);
-		writeViewImage(view, fileout, outdir);
+		writeViewImage(view, fileout + ".png", outdir);
+		writeMolFile(mol, fileout + ".mol", outdir);
 		view.showInFrame(smiles, nextLoc());
 	}
 
@@ -57,38 +60,68 @@ public class OCLSwingTest {
 		JStructureView view;
 		String fileout;
 
-		fileout = "tinchi.png";
-		String inchi = "InChI=1S/C4H11N/c1-3-5-4-2/h5H,3-4H2,1-2H3";
-		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-		// inchi = "InChI=1S/C4H10O/c1-3-4(2)5/h4-5H,3H2,1-2H3/t4-/m0/s1";
-		System.out.println(inchi + " => " + fileout);
-		mol = new StereoMolecule();
-		if (new InChIParser().parse(mol, inchi)) {
-			view = JStructureView.getStandardView(mol);
-			writeViewImage(view, fileout, outdir);
-			view.showInFrame(inchi, nextLoc());
-			writeMolFile(mol, fileout + ".mol", outdir);
-		}
+		String[] tests = new String[] {
+				// inchi = "InChI=1S/C4H11N/c1-3-5-4-2/h5H,3-4H2,1-2H3";
+				// note that this next one is nonstandard, as it indicates the "higher" 5+6- not
+				// the "lower" 5-6+ option
+				// the inchi will be accepted, but it will be corrected if output
+				// inchi = "InChI=1S/C6H10BrCl/c7-5-3-1-2-4-6(5)8/h5-6H,1-4H2/t5+,6-/m0/s1";
+				"InChI=1S/C4H10O/c1-3-4(2)5/h4-5H,3H2,1-2H3/t4-/m0/s1",
+				"InChI=1S/C4H8BrCl/c1-3-4(2,5)6/h3H2,1-2H3/t4-/m1/s1",
+				"InChI=1S/C6H10BrCl/c7-5-3-1-2-4-6(5)8/h5-6H,1-4H2/t5-,6+/m1/s1",
+				"InChI=1S/C12H22Br4/c1-3-5-10(14)7-12(16)8-11(15)6-9(13)4-2/h9-12H,3-8H2,1-2H3/t9-,10+,11-,12+/m1/s1",
+				"InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1",
+		};
 
-		fileout = "tinchipc.png";
-		inchi = "PubChem:" + inchi;
-		System.out.println(inchi + " => " + fileout);
-		mol = new StereoMolecule();
-		if (new InChIParser().parse(mol, inchi)) {
-			view = JStructureView.getStandardView(mol);
-			writeViewImage(view, fileout, outdir);
-			view.showInFrame(inchi, nextLoc());
-		}
+		for (int i = 0; i < tests.length; i++)
+			testInchi(tests[i], outdir);
 
-		fileout = "tinchikey.png";
+		fileout = "tinchikey";
 		String inchiKey = "BQJCRHHNABKAKU-KBQPJGBKSA-N";
 		System.out.println(inchiKey + " => " + fileout);
 		mol = new StereoMolecule();
 		if (new InChIKeyParser().parse(mol, inchiKey)) {
 			view = JStructureView.getStandardView(mol);
-			writeViewImage(view, fileout, outdir);
+			writeViewImage(view, fileout + ".png", outdir);
+			writeMolFile(mol, fileout + ".mol", outdir);
 			view.showInFrame(inchiKey, nextLoc());
 		}
+	}
+
+	private static void testInchi(String inchi, String outdir) {
+		String fileout = "tinchi";
+		System.out.println(inchi + " => " + fileout);
+ 		StereoMolecule mol = new StereoMolecule();
+		if (new InChIParser().parse(mol, inchi)) {
+			JStructureView view = JStructureView.getStandardView(mol);
+			writeViewImage(view, fileout + ".png", outdir);
+			view.showInFrame(inchi, nextLoc());
+			writeMolFile(mol, fileout + ".mol", outdir);
+			testInChIOut(mol, inchi);
+			//System.exit(0);
+		}
+
+		fileout = "tinchipc";
+		System.out.println("PubChem:" + inchi + " => " + fileout);
+		mol = new StereoMolecule();
+		if (new InChIParser().parse(mol, "PubChem:" + inchi)) {
+			JStructureView view = JStructureView.getStandardView(mol);
+			writeViewImage(view, fileout + ".png", outdir);
+			writeMolFile(mol, fileout + ".mol", outdir);
+			view.showInFrame(inchi, nextLoc());
+			testInChIOut(mol, inchi);
+		}
+
+	}
+
+	private static void testInChIOut(StereoMolecule mol, String inchi) {
+		String s = InChIJNI.getInChI(mol, null);
+		boolean ok = inchi.equals(s);
+		System.out.println(inchi);
+		System.out.println(s);
+		System.out.println(ok);
+		if (!ok)
+			throw new RuntimeException("inchi roundtrip failure for " + inchi);
 	}
 
 	private static void testCDXParsers(String outdir) {
@@ -97,28 +130,28 @@ public class OCLSwingTest {
 		String filein, fileout;
 
 		filein = "3aa.cdxml";
-		fileout = "t3aa.png";
+		fileout = "t3aa";
 		testCDXML(filein, fileout, outdir);
 
 		filein = "t.cdxml";
-		fileout = "tcdxml.png";
+		fileout = "tcdxml";
 		testCDXML(filein, fileout, outdir);
 		
 		filein = "t.cdx";
-		fileout = "tcdx.png";
+		fileout = "tcdx";
 		testCDX(filein, fileout, outdir);
 
 		// the CDX byte[] reader can also be used for cdxml data
 		filein = "tout.cdxml";
-		fileout = "tout.png";
+		fileout = "tout";
 		testCDX(filein, fileout, outdir);
 
 		filein = "t-acs.cdxml";
-		fileout = "t-acs-cdxml.png";
+		fileout = "t-acs-cdxml";
 		testCDXML(filein, fileout, outdir);
 
 		filein = "t-acs.cdx";
-		fileout = "t-acs-cdx.png";
+		fileout = "t-acs-cdx";
 		testCDX(filein, fileout, outdir);
 	}
 
@@ -132,7 +165,8 @@ public class OCLSwingTest {
 		if (new CDXParser().parse(mol, cdxml)) {
 			JStructureView view = JStructureView.getStandardView(mol);
 			view.showInFrame(filein, nextLoc());
-			writeViewImage(view, fileout, dir);
+			writeViewImage(view, fileout + ".png", dir);
+			writeMolFile(mol, fileout + ".mol", dir);
 		}
 
 	}
@@ -230,6 +264,9 @@ public class OCLSwingTest {
 						"" + "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[NH]C1=CC=CC2=CC=CC=C12"
 //			+ "CC(CCCC(C1CCC2C1(C)CCC1C2CC=C2C1(C)CCC(C2)O)C)C"
 //						+ "CCN.[b]12-c3ccccc3.o1[b]4-c5ccccc5.o4[b]6-c7ccccc7.o62"
+
+
+				
 				);
 				title = smiles;
 				mol = new SmilesParser().parseMolecule(smiles); // Nc1cc(OCCO)cc(N)c1

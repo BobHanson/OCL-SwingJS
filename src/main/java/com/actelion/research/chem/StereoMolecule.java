@@ -55,6 +55,10 @@ public class StereoMolecule extends ExtendedMolecule {
     transient private Canonizer mCanonizer;
     transient private boolean mAssignParitiesToNitrogen;
 
+    public void setPrioritiesPreset(boolean b) {
+    	mPrioritiesPreset = b;
+    }
+
 	public StereoMolecule() {
 		}
 
@@ -197,7 +201,6 @@ public class StereoMolecule extends ExtendedMolecule {
 	 */
 	public void ensureHelperArrays(int required) {
         super.ensureHelperArrays(required);
-
         if ((required & ~mValidHelperArrays) == 0)
 			return;
 
@@ -210,12 +213,11 @@ public class StereoMolecule extends ExtendedMolecule {
 
         if (mAssignParitiesToNitrogen)
         	required |= cHelperBitIncludeNitrogenParities;
-
+        int mask = (mPrioritiesPreset ? (cAtomFlagsHelper3 & ~3) : cAtomFlagsHelper3);
 		for (int atom=0; atom<getAllAtoms(); atom++)
-			mAtomFlags[atom] &= ~cAtomFlagsHelper3;
+			mAtomFlags[atom] &= ~mask;
 		for (int bond=0; bond<getBonds(); bond++)
 			mBondFlags[bond] &= ~cBondFlagsHelper3;
-
 		int rankBits = 0;
 		int rankMode = 0;
 		if ((required & cHelperBitSymmetrySimple) != 0) {
@@ -231,6 +233,11 @@ public class StereoMolecule extends ExtendedMolecule {
 		    rankBits |= cHelperBitIncludeNitrogenParities;
             rankMode |= Canonizer.ASSIGN_PARITIES_TO_TETRAHEDRAL_N;
 		    }
+		
+		if (mPrioritiesPreset) {
+			// InChI parser will set this
+			rankMode |= Canonizer.COORDS_ARE_3D;
+		}
 
 		mCanonizer = new Canonizer(this, rankMode);
 		mCanonizer.setParities();
@@ -243,7 +250,7 @@ public class StereoMolecule extends ExtendedMolecule {
 		mValidHelperArrays |= (cHelperBitParities | cHelperBitCIP | rankBits);
 		}
 
-    private boolean validateESR() {
+	private boolean validateESR() {
         boolean paritiesUpdated = false;
 
         for (int atom=0; atom<getAtoms(); atom++)

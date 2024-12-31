@@ -486,6 +486,13 @@ public class Molecule implements Serializable {
 	transient private String mName;
 	transient private Object mUserData;
 
+	/**
+	 * atom priorities set by InChI already applied to structure.
+	 * 
+	 * Prevents clearing of the priority flags in StereoMolecule; used in Canonizer
+	 */
+	public boolean mPrioritiesPreset;
+
     public static int getAtomicNoFromLabel(String atomLabel) {
 	    return getAtomicNoFromLabel(atomLabel, cDefaultAllowedPseudoAtoms);
 		}
@@ -1369,6 +1376,7 @@ public class Molecule implements Serializable {
 	public void copyMolecule(Molecule destMol) {
 		destMol.mAtomList = null;
 		destMol.mAtomCustomLabel = null;
+		destMol.mPrioritiesPreset = mPrioritiesPreset;
 
 		destMol.mIsFragment = mIsFragment;	// to allow copying of atom/bond query features
 
