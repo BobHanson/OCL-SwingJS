@@ -248,18 +248,18 @@ public abstract class CompoundFileHelper {
 		mErrorCount = 0;
 		String filename = file.getName();
 		int index = filename.lastIndexOf('.');
-		String extention = (index == -1) ? "" : filename.substring(index).toLowerCase();
+		String extension = (index == -1) ? "" : filename.substring(index).toLowerCase();
 
 		CompoundFileParser parser = null;
 		StereoMolecule mol = null;
-		switch (extention) {
+		switch (extension) {
 		case ".cdx":
 		case ".cdxml":
 			mol = CDXParser.parseFile(file.getAbsolutePath());
 			break;
 		case ".mol":
 		case ".mol2":
-			if (extention.equals(".mol")) {
+			if (extension.equals(".mol")) {
 				mol = new MolfileParser().getCompactMolecule(file);
 			} else {
 				try {
