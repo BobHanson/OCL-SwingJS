@@ -45,6 +45,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import net.sf.jniinchi.JniInchiAtom;
+import net.sf.jniinchi.JniInchiStereo0D;
+
 public class Canonizer {
 	public static final int CREATE_SYMMETRY_RANK = 1;
 
@@ -1692,7 +1695,7 @@ public class Canonizer {
 		if (mode != CALC_PARITY_MODE_PARITY && !proTHAtomsFound)
 			return false;
 
-		byte atomTHParity = (mZCoordinatesAvailable) ? canCalcTHParity3D(atom, remappedConn, remappedRank)
+		byte atomTHParity = (mZCoordinatesAvailable) ? canCalcTHParity3D(atom, remappedConn)
 				: canCalcTHParity2D(atom, remappedConn);
 
 		if (mode == CALC_PARITY_MODE_PARITY) {
@@ -1797,26 +1800,36 @@ public class Canonizer {
 		return (up_down[order][stereoBond] == stereoType) ? (byte) Molecule.cAtomParity2 : Molecule.cAtomParity1;
 	}
 
-	private byte canCalcTHParity3D(int atom, int[] remappedConn, int[] remappedRank) {
+	/**
+	 * Calculate the relative parity for the list of atom connections sorted by
+	 * priority. In the case of InChI-derived or otherwise predetermined atom
+	 * priorities, just check to see if the priority list is (also) an even
+	 * permutation of an ordered list.
+	 * 
+	 * Note that the InChI list is from low to high, not high to low, but that does
+	 * not matter.
+	 * 
+	 * -Bob Hanson 2024.12.30
+	 * 
+	 * @param atom
+	 * @param remappedConn
+	 * @return
+	 */
+	private byte canCalcTHParity3D(int atom, int[] remappedConn) {
 		int[] atomList = new int[4];
-		//System.out.println("CTHP for " + atom + " " + mMol.getAtomLabel(atom) + " " + mMol.mCoordinates[atom]);
 		for (int i = 0; i < mMol.getAllConnAtoms(atom); i++) {
 			atomList[i] = mMol.getConnAtom(atom, remappedConn[i]);
-			//System.out.println("CTHP " + i + " " + atomList[i] + mMol.getAtomLabel(atomList[i]) + " " + mMol.mCoordinates[atomList[i]]);
 		}
 		if (mMol.getAllConnAtoms(atom) == 3)
 			atomList[3] = atom;
-
-		//System.out.println("CANcanCalcP atom " + atom + " " +
-		// Arrays.toString(atomList) + Arrays.toString(remappedRank));
 		double[][] coords = new double[3][3];
 		int parity = mMol.getAtomParity(atom);
+		// allow predetermined InChI-derived parity
 		if (parity != Molecule.cAtomParityNone && parity != Molecule.cAtomParityUnknown) {
-			// allow predetermined InChI-derived parity
 			parity = (!isOrdered(atomList) ? parity : parity == Molecule.cAtomParity2 ? Molecule.cAtomParity1 : Molecule.cAtomParity2);
-			//System.out.println("CAN atomList=" + Arrays.toString(atomList) + " " + parity);
 			return (byte) parity;
 		}
+		// original non-InChI
 		// calculate the normal vector (vector product of coords[0] and coords[1])
 		double cosa;
 		double[] n = new double[3];
@@ -1834,8 +1847,14 @@ public class Canonizer {
 	/**
 	 * Determine whether this list is a permutation of an ordered list.
 	 * 
+	 * This same method is in InChIJNI, where is it similarly used on the list
+	 * returned by JniInchiOutputStructure.getStereo0D(i).getNeighbors().
+	 * 
+	 * I don't doubt that there is a slicker way of doing this.
+	 * 
 	 * @param list
-	 * @return
+	 * @return true if an even number of binary permutations returns orders the list.
+	 * @author Bob Hanson 
 	 */
 	private static boolean isOrdered(int[] list) {
 		boolean ok = true;
