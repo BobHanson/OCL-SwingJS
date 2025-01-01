@@ -513,11 +513,12 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	 * @return -1 or the bond that connects atom1 with atom2
 	 */
 	public int getBond(int atom1, int atom2) {
-		for (int i=0; i<getAllConnAtomsPlusMetalBonds(atom1); i++)
+		// BH 2024.12.31 for reversed to ensure method called only once
+		for (int i = getAllConnAtomsPlusMetalBonds(atom1); --i >= 0;)
 			if (mConnAtom[atom1][i] == atom2)
 				return mConnBond[atom1][i];
 		return -1;
-		}
+	}
 
 
 	/**
@@ -2252,74 +2253,74 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 	
 	private void setAlleneStereoBondFromParity(int atom) {
-			// find preferred bond to serve as stereobond
-		if (mConnAtoms[atom] != 2
-		 || mConnBondOrder[atom][0] != 2
-		 || mConnBondOrder[atom][1] != 2
-		 || mConnAtoms[mConnAtom[atom][0]] < 2
-		 || mConnAtoms[mConnAtom[atom][1]] < 2
-		 || mPi[mConnAtom[atom][0]] != 1
-		 || mPi[mConnAtom[atom][1]] != 1) {
+		// find preferred bond to serve as stereobond
+		if (mConnAtoms[atom] != 2 || mConnBondOrder[atom][0] != 2 || mConnBondOrder[atom][1] != 2
+				|| mConnAtoms[mConnAtom[atom][0]] < 2 || mConnAtoms[mConnAtom[atom][1]] < 2
+				|| mPi[mConnAtom[atom][0]] != 1 || mPi[mConnAtom[atom][1]] != 1) {
 			setAtomParity(atom, cAtomParityNone, false);
 			return;
-			}
+		}
 
 		int preferredBond = -1;
 		int preferredAtom = -1;
 		int preferredAlleneAtom = -1;
 		int oppositeAlleneAtom = -1;
 		int bestScore = 0;
-		for (int i=0; i<2; i++) {
+		for (int i = 0; i < 2; i++) {
 			int alleneAtom = mConnAtom[atom][i];
-			for (int j=0; j<mAllConnAtoms[alleneAtom]; j++) {
+			for (int j = 0; j < mAllConnAtoms[alleneAtom]; j++) {
 				int connAtom = mConnAtom[alleneAtom][j];
 				if (connAtom != atom) {
 					int connBond = mConnBond[alleneAtom][j];
-					int score = getStereoBondScore(connBond,connAtom);
+					int score = getStereoBondScore(connBond, connAtom);
 					if (bestScore < score) {
 						bestScore = score;
 						preferredAtom = connAtom;
 						preferredBond = connBond;
 						preferredAlleneAtom = alleneAtom;
-						oppositeAlleneAtom = mConnAtom[atom][1-i];
-						}
+						oppositeAlleneAtom = mConnAtom[atom][1 - i];
 					}
 				}
 			}
+		}
 
 		if (preferredAtom == -1)
 			return;
 
-		for (int i=0; i<2; i++) {
+		for (int i = 0; i < 2; i++) {
 			int alleneAtom = mConnAtom[atom][i];
-			for (int j = 0; j<mAllConnAtoms[alleneAtom]; j++) {
+			for (int j = 0; j < mAllConnAtoms[alleneAtom]; j++) {
 				int connAtom = mConnAtom[alleneAtom][j];
 				int connBond = mConnBond[alleneAtom][j];
-				if (connAtom != atom
-				 && mBondAtom[0][connBond] == alleneAtom)
+				if (connAtom != atom && mBondAtom[0][connBond] == alleneAtom)
 					mBondType[connBond] = cBondTypeSingle;
-				}
 			}
+		}
 
 		if (mBondAtom[1][preferredBond] != preferredAtom) {
 			mBondAtom[0][preferredBond] = mBondAtom[1][preferredBond];
 			mBondAtom[1][preferredBond] = preferredAtom;
-			}
+		}
 
 		int highPriorityAtom = Integer.MAX_VALUE;
-		for (int i = 0; i< mConnAtoms[preferredAlleneAtom]; i++) {
+		int otherAtom = -1;
+		for (int i = 0; i < mConnAtoms[preferredAlleneAtom]; i++) {
 			int connAtom = mConnAtom[preferredAlleneAtom][i];
-			if ((connAtom != atom) && (highPriorityAtom > connAtom))
-				highPriorityAtom = connAtom;
+			if (connAtom != atom) {
+				otherAtom = connAtom;
+				if (highPriorityAtom > connAtom)
+					highPriorityAtom = connAtom;
 			}
+		}
 
 		int[] oppositeAtom = new int[2];
 		int oppositeAtoms = 0;
-		for (int i = 0; i< mConnAtoms[oppositeAlleneAtom]; i++) {
+		for (int i = 0; i < mConnAtoms[oppositeAlleneAtom]; i++) {
 			int connAtom = mConnAtom[oppositeAlleneAtom][i];
-			if (connAtom != atom)
+			if (connAtom != atom) {
 				oppositeAtom[oppositeAtoms++] = connAtom;
 			}
+		}
 
 		double alleneAngle = getBondAngle(atom, oppositeAlleneAtom);
 		double angleDif = 0.0;
@@ -2329,23 +2330,32 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 				int temp = oppositeAtom[0];
 				oppositeAtom[0] = oppositeAtom[1];
 				oppositeAtom[1] = temp;
-				}
+			}
 
 			double hpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
 			double lpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[1]));
 			angleDif = hpAngleDif - lpAngleDif;
-			}
-		else {
+		} else {
 			angleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
-			}
-
-		if ((angleDif < 0.0)
-		  ^ (getAtomParity(atom) == cAtomParity1)
-		  ^ (highPriorityAtom == preferredAtom))
-			mBondType[preferredBond] = cBondTypeUp;
-		else
-			mBondType[preferredBond] = cBondTypeDown;
 		}
+
+		boolean isUp = ((angleDif < 0.0) ^ (getAtomParity(atom) == cAtomParity1) ^ (highPriorityAtom == preferredAtom));
+		mBondType[preferredBond] = (isUp ? cBondTypeUp : cBondTypeDown);
+		// BH need second wedge/hash for InChI
+		int bond = getBond(preferredAlleneAtom, otherAtom);
+		if (getBondType(bond) == cBondTypeSingle) {
+			mBondType[bond] = (isUp ? cBondTypeDown : cBondTypeUp);
+			if (getBondAtom(0, bond) == otherAtom) {
+				switchBondAtoms(bond);
+			}
+		}
+	}
+
+	private void switchBondAtoms(int bond) {
+		int a = mBondAtom[0][bond];
+		mBondAtom[0][bond] = mBondAtom[1][bond];
+		mBondAtom[1][bond] = a;
+	}
 
 
 	/**
