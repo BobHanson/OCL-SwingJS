@@ -1,5 +1,6 @@
 package test;
 
+import java.awt.Color;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -12,9 +13,11 @@ import java.io.OutputStreamWriter;
 
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.MolfileCreator;
+import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.inchi.InChIJNI;
@@ -28,17 +31,69 @@ import com.actelion.research.gui.editor.SwingEditorArea;
 import com.actelion.research.gui.editor.SwingEditorPanel;
 import com.actelion.research.gui.swing.SwingDialog;
 
-public class OCLSwingTest {
+public class OCLSwingJSTest {
 
 	public static int nFrame;
 
 	public static void main(String[] args) {
-		String outdir = "C:/temp/";
-		testCDXParsers(outdir);
-		testInChIParsers(outdir);
-		testSmilesParser(outdir);
+		String outdir = null;//"C:/temp/";
+		testParsers(outdir);
+		testAllene(outdir);
+		testEne(outdir);
+		//testDialog(args);
+	}
 
-//		SwingUtilities.invokeLater(()->{showDialogTest(args);});
+	private static void testEne(String outdir) {
+		String inchi;
+		inchi = "InChI=1S/C4H8/c1-3-4-2/h3-4H,1-2H3/b4-3-";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C4H8/c1-3-4-2/h3-4H,1-2H3/b4-3+";
+		testInChI(inchi, outdir);		
+		inchi = "InChI=1S/C20H32O2/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20(21)22/h6-7,9-10,12-13,15-16H,2-5,8,11,14,17-19H2,1H3,(H,21,22)/b7-6-,10-9-,13-12-,16-15-";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C13H18BBrCl2O/c1-4-10(15)7-8(2)5-6-11(14)13(18)12(17)9(3)16/h4-6,9,18H,7,14H2,1-3H3/b8-5+,10-4-,11-6+,13-12+/t9-/m0/s1";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C13H19BBrClO/c1-4-10(15)8-9(3)6-7-11(14)13(17)12(16)5-2/h4,6-7,17H,5,8,14H2,1-3H3/b9-6+,10-4-,11-7-,13-12+";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C13H19BBrClO/c1-4-10(15)8-9(3)6-7-11(14)13(17)12(16)5-2/h4,6-7,17H,5,8,14H2,1-3H3/b9-6+,10-4-,11-7+,13-12+";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C4H9BO/c1-2-4(5)3-6/h2,6H,3,5H2,1H3/b4-2+";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C5H7BBrClO/c6-4(3-9)1-5(7)2-8/h1-2,9H,3,6H2/b4-1+,5-2+";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C6H5BBr2ClFO/c7-3(2-12)5(6(9)11)4(8)1-10/h1-2,12H,7H2/b3-2-,4-1+,6-5-";
+		testInChI(inchi, outdir);
+
+	}
+
+	private static void testDialog(String[] args) {
+		SwingUtilities.invokeLater(()->{showDialogTest(args);});
+	}
+
+	private static void testAllene(String outdir) {
+		
+		// note that PubChem will return allene structures with no stereochemistry
+		String inchi;
+		// InChI to mol and back
+		inchi = "InChI=1S/C9H5BBr2ClFO/c10-7(2-4-15)6(5-9(12)14)8(11)1-3-13/h3-4,15H,10H2/t1-,2+,5-/m1/s1";
+		testInChI(inchi, outdir);
+		inchi = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
+		testInChI(inchi, outdir);
+		// mol to InChI
+		String filein = "tallene.mol";
+		String fileout = "tallene";
+		String moldata = getString(filein, outdir);
+		StereoMolecule mol = new StereoMolecule();
+		new MolfileParser().parse(mol, moldata);
+		testShowAndWriteMol(mol, "allene", fileout, outdir);
+		testInChIOut(mol, inchi, true);
+		
+	}
+
+	private static void testParsers(String outdir) {
+		//testCDXParsers(outdir);
+		testInChIParsers(outdir);
+		//testSmilesParser(outdir);
 	}
 
 	private static void testSmilesParser(String outdir) {
@@ -48,16 +103,19 @@ public class OCLSwingTest {
 		String fileout = "tsmiles";
 		System.out.println(smiles + " => " + fileout);
 		StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
-		JStructureView view = JStructureView.getStandardView(mol);
+		testShowAndWriteMol(mol, "smiles", fileout, outdir);
+	}
+
+	private static JStructureView testShowAndWriteMol(StereoMolecule mol, String title, String fileout, String outdir) {
+		JStructureView view = JStructureView.getStandardView(JStructureView.classicView, mol);
+		view.showInFrame(title, nextLoc());
 		writeViewImage(view, fileout + ".png", outdir);
 		writeMolFile(mol, fileout + ".mol", outdir);
-		view.showInFrame(smiles, nextLoc());
+		return view;
 	}
 
 	private static void testInChIParsers(String outdir) {
-
 		StereoMolecule mol;
-		JStructureView view;
 		String fileout;
 
 		String[] tests = new String[] {
@@ -74,59 +132,50 @@ public class OCLSwingTest {
 		};
 
 		for (int i = 0; i < tests.length; i++)
-			testInchi(tests[i], outdir);
+			testInChI(tests[i], outdir);
 
 		fileout = "tinchikey";
 		String inchiKey = "BQJCRHHNABKAKU-KBQPJGBKSA-N";
 		System.out.println(inchiKey + " => " + fileout);
 		mol = new StereoMolecule();
 		if (new InChIKeyParser().parse(mol, inchiKey)) {
-			view = JStructureView.getStandardView(mol);
-			writeViewImage(view, fileout + ".png", outdir);
-			writeMolFile(mol, fileout + ".mol", outdir);
-			view.showInFrame(inchiKey, nextLoc());
+			testShowAndWriteMol(mol, "inchikey", fileout, outdir);
 		}
 	}
 
-	private static void testInchi(String inchi, String outdir) {
+	private static void testInChI(String inchi, String outdir) {
 		String fileout = "tinchi";
 		System.out.println(inchi + " => " + fileout);
  		StereoMolecule mol = new StereoMolecule();
 		if (new InChIParser().parse(mol, inchi)) {
-			JStructureView view = JStructureView.getStandardView(mol);
-			writeViewImage(view, fileout + ".png", outdir);
-			view.showInFrame(inchi, nextLoc());
-			writeMolFile(mol, fileout + ".mol", outdir);
-			testInChIOut(mol, inchi);
-			//System.exit(0);
+			testShowAndWriteMol(mol, "inchi", fileout, outdir);
+			testInChIOut(mol, inchi, true);
 		}
 
 		fileout = "tinchipc";
 		System.out.println("PubChem:" + inchi + " => " + fileout);
 		mol = new StereoMolecule();
 		if (new InChIParser().parse(mol, "PubChem:" + inchi)) {
-			JStructureView view = JStructureView.getStandardView(mol);
-			writeViewImage(view, fileout + ".png", outdir);
-			writeMolFile(mol, fileout + ".mol", outdir);
-			view.showInFrame(inchi, nextLoc());
-			testInChIOut(mol, inchi);
+			JStructureView view = testShowAndWriteMol(mol, "PubChem-inchi", fileout, outdir);
+			if (!testInChIOut(mol, inchi, false)) {
+			  view.setBackground(Color.LIGHT_GRAY);
+			}
 		}
 
 	}
 
-	private static void testInChIOut(StereoMolecule mol, String inchi) {
+	private static boolean testInChIOut(StereoMolecule mol, String inchi, boolean throwError) {
 		String s = InChIJNI.getInChI(mol, null);
 		boolean ok = inchi.equals(s);
 		System.out.println(inchi);
 		System.out.println(s);
 		System.out.println(ok);
-		if (!ok)
+		if (!ok && throwError)
 			throw new RuntimeException("inchi roundtrip failure for " + inchi);
+		return ok;
 	}
 
 	private static void testCDXParsers(String outdir) {
-		StereoMolecule mol;
-		JStructureView view;
 		String filein, fileout;
 
 		filein = "3aa.cdxml";
@@ -155,32 +204,25 @@ public class OCLSwingTest {
 		testCDX(filein, fileout, outdir);
 	}
 
-	private static void testCDXML(String filein, String fileout, String dir) {
+	private static void testCDXML(String filein, String fileout, String outdir) {
 		String cdxml;
 		System.out.println(filein + " => " + fileout);
 		// one can also use tye parseFile method with CDX or CDXML
 		//		mol = CDXParser.parseFile(filein);
 		StereoMolecule mol = new StereoMolecule();
-		cdxml = getString(filein, dir);
+		cdxml = getString(filein, outdir);
 		if (new CDXParser().parse(mol, cdxml)) {
-			JStructureView view = JStructureView.getStandardView(mol);
-			view.showInFrame(filein, nextLoc());
-			writeViewImage(view, fileout + ".png", dir);
-			writeMolFile(mol, fileout + ".mol", dir);
+			testShowAndWriteMol(mol, "cdxml", fileout, outdir);
 		}
 
 	}
 
-	private static void testCDX(String filein, String fileout, String dir) {
+	private static void testCDX(String filein, String fileout, String outdir) {
 		System.out.println(filein + " => " + fileout);
 		StereoMolecule mol = new StereoMolecule();
-		byte[] cdx = getBytes(filein, dir);
+		byte[] cdx = getBytes(filein, outdir);
 		if (new CDXParser().parse(mol, cdx)) {
-			JStructureView view = JStructureView.getStandardView(mol);
-			view.showInFrame(filein, nextLoc());
-			writeViewImage(view, fileout, dir);
-			// showEditFrame(mol);
-			writeMolFile(mol, filein + ".mol", dir);
+			testShowAndWriteMol(mol, "cdx", fileout, outdir);
 		}
 	}
 
@@ -191,7 +233,7 @@ public class OCLSwingTest {
 	private static byte[] getBytes(String filein, String dir) {
 		try {
 			if (dir == null) {
-				return ParserUtils.getResourceBytes(OCLSwingTest.class, filein);
+				return ParserUtils.getResourceBytes(OCLSwingJSTest.class, filein);
 			} else {
 				if (!dir.endsWith("/"))
 					dir += "/";
@@ -225,10 +267,12 @@ public class OCLSwingTest {
 		}
 	}
 
-	static int frameY = 0;
+	static int frameY = -1;
 	private static Point nextLoc() {
-		if (nFrame % 5 == 0) {
-			frameY += 200;
+		if (frameY == -1) {
+			frameY = 0;
+		} else if (nFrame % 8 == 0) {
+			frameY += 150;
 			nFrame = 0;
 		}
 		return new Point(150 * nFrame++, frameY);
