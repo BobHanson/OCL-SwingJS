@@ -1535,34 +1535,54 @@ public class SmilesParser {
 			if (mError)
 				return Molecule.cAtomParityUnknown;
 
-			// We need to translate smiles-parse-time atom indexes to those that the molecule
-			// uses after calling handleHydrogens, which is called from ensureHelperArrays().
-			for (ParityNeighbour neighbour:mNeighbourList)
+			// We need to translate smiles-parse-time atom indexes to those that the
+			// molecule
+			// uses after calling handleHydrogens, which is called from
+			// ensureHelperArrays().
+			for (ParityNeighbour neighbour : mNeighbourList)
 				if (neighbour.mAtom != PSEUDO_ATOM_HYDROGEN && neighbour.mAtom != PSEUDO_ATOM_LONE_PAIR)
 					neighbour.mAtom = handleHydrogenAtomMap[neighbour.mAtom];
 
-			if (mNeighbourList.size() == 3)
-				// All hydrogens atoms within SMILES all stereo centers all hydrogens must be explicit (as explicit atoms or as H count in square brackets).
-				// Therefore, three neighbour atoms is a rare situation, e.g. CC[S@](=O)C or frozen out CC[N@H]C
+			boolean isInverse = false;
+			switch (mNeighbourList.size()) {
+			case 2:
+				isInverse = isInverseOrderAllene();
+				// allene?
+				break;
+			case 3:
+				// All hydrogens atoms within SMILES all stereo centers all hydrogens must be
+				// explicit (as explicit atoms or as H count in square brackets).
+				// Therefore, three neighbour atoms is a rare situation, e.g. CC[S@](=O)C or
+				// frozen out CC[N@H]C
 				// In these cases we add the electron pair as pseudo neighbour
 				mNeighbourList.add(new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
-			else if (mNeighbourList.size() != 4)
+				break;
+			case 4:
+				isInverse = isInverseOrderTH();
+				break;
+			default:
 				return Molecule.cAtomParityUnknown;
-
+			}
+			return (mIsClockwise ^ isInverse) ? Molecule.cAtomParity1 : Molecule.cAtomParity2;
 			/*
-System.out.println();
-System.out.println("central:"+mCentralAtom+(mIsClockwise?" @@":" @")+" from:"
-				+((mFromAtom == -1)?"none":Integer.toString(mFromAtom))+" with "+mImplicitHydrogen+" hydrogens");
-System.out.print("neighbors: "+mNeighborAtom[0]+"("+mNeighborPosition[0]+(mNeighborIsHydrogen[0]?",H":",non-H")+")");
-for (int i=1; i<mNeighborCount; i++)
-	System.out.print(", "+mNeighborAtom[i]+"("+mNeighborPosition[i]+(mNeighborIsHydrogen[i]?",H":",non-H")+")");
-System.out.println();
-System.out.println("parity:"+parity);
-*/
-			return (mIsClockwise ^ isInverseOrder()) ? Molecule.cAtomParity1 : Molecule.cAtomParity2;
+			 * System.out.println();
+			 * System.out.println("central:"+mCentralAtom+(mIsClockwise?" @@":" @")+" from:"
+			 * +((mFromAtom == -1)?"none":Integer.toString(mFromAtom))+" with "
+			 * +mImplicitHydrogen+" hydrogens");
+			 * System.out.print("neighbors: "+mNeighborAtom[0]+"("+mNeighborPosition[0]+(
+			 * mNeighborIsHydrogen[0]?",H":",non-H")+")"); for (int i=1; i<mNeighborCount;
+			 * i++) System.out.print(", "+mNeighborAtom[i]+"("+mNeighborPosition[i]+(
+			 * mNeighborIsHydrogen[i]?",H":",non-H")+")"); System.out.println();
+			 * System.out.println("parity:"+parity);
+			 */
 		}
 
-		private boolean isInverseOrder() {
+		private boolean isInverseOrderAllene() {
+			System.err.println("SmilesParser allene chirality check not implemented!");
+			return false;
+		}
+
+		private boolean isInverseOrderTH() {
 			boolean inversion = false;
 			for (int i=1; i<mNeighbourList.size(); i++) {
 				for (int j=0; j<i; j++) {

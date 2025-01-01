@@ -37,7 +37,9 @@ public class OCLSwingJSTest {
 
 	public static void main(String[] args) {
 		String outdir = null;//"C:/temp/";
-		testParsers(outdir);
+		testSmilesParser(outdir);
+		testCDXParsers(outdir);
+		testInChIParsers(outdir);
 		testAllene(outdir);
 		testEne(outdir);
 		//testDialog(args);
@@ -90,27 +92,44 @@ public class OCLSwingJSTest {
 		
 	}
 
-	private static void testParsers(String outdir) {
-		//testCDXParsers(outdir);
-		testInChIParsers(outdir);
-		//testSmilesParser(outdir);
+	private static void testSmilesParser(String outdir) {
+		String smiles, inchi;
+
+		// THIS ONE IS FAILING
+		smiles = "FC(Cl)=[C@@]=CBr";
+		inchi = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
+		testSmilesInChI(smiles, inchi, false);		
+
+		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
+		inchi = "InChI=1S/C23H30N2O3/c1-5-15-24(19-13-8-11-17-10-6-7-12-18(17)19)21(26)20-14-9-16-25(20)22(27)28-23(2,3)4/h6-8,10-13,20H,5,9,14-16H2,1-4H3/t20-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+
+		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
+		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+
+		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
+		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+		
 	}
 
-	private static void testSmilesParser(String outdir) {
-		String smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
-		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
-		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
-		String fileout = "tsmiles";
-		System.out.println(smiles + " => " + fileout);
+	private static void testSmilesInChI(String smiles, String inchi, boolean throwError) {
 		StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
-		testShowAndWriteMol(mol, "smiles", fileout, outdir);
+		JStructureView view = testShowAndWriteMol(mol, "smiles", null, null);
+		if (!testInChIOut(mol, inchi, false)) {
+			view.setBackground(Color.yellow);
+		}
+		return;
 	}
 
 	private static JStructureView testShowAndWriteMol(StereoMolecule mol, String title, String fileout, String outdir) {
 		JStructureView view = JStructureView.getStandardView(JStructureView.classicView, mol);
 		view.showInFrame(title, nextLoc());
-		writeViewImage(view, fileout + ".png", outdir);
-		writeMolFile(mol, fileout + ".mol", outdir);
+		if (fileout != null) {
+			writeViewImage(view, fileout + ".png", outdir);
+			writeMolFile(mol, fileout + ".mol", outdir);
+		}
 		return view;
 	}
 
@@ -268,11 +287,12 @@ public class OCLSwingJSTest {
 	}
 
 	static int frameY = -1;
+	
 	private static Point nextLoc() {
 		if (frameY == -1) {
 			frameY = 0;
-		} else if (nFrame % 8 == 0) {
-			frameY += 150;
+		} else if (nFrame % 9 == 0) {
+			frameY += 120;
 			nFrame = 0;
 		}
 		return new Point(150 * nFrame++, frameY);
