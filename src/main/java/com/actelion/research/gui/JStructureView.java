@@ -737,6 +737,19 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		}
 	}
 	
+	/**
+	 * Carry out the depiction for this view with given dimensions and insets.
+	 * 
+	 * Allows for scaling the image prior to setting the dimensions.
+	 * 
+	 * Code culled from paintComponent, as it is used also for image creation.
+	 * 
+	 * @param g2
+	 * @param theSize
+	 * @param insets
+	 * @return GenericDepictor for further processing
+	 * @author Bob Hanson
+	 */
 	public GenericDepictor depict(Graphics2D g2, Dimension theSize, Insets insets) {
 		if (mDisplayMol == null && mDisplayMol.getAllAtoms() == 0)
 			return null;
@@ -771,8 +784,18 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		return depictor;
 	}
 
+	/**
+	 * a temporary image for creating PNG images
+	 * @author Bob Hanson
+	 */
 	private BufferedImage tempImage;
 
+	/**
+	 * Get a singleton temporary 1000x1000 pixel image.
+	 * This is used for preliminary depiction; probably a better way of doing this.
+	 * @return Ggraphics2D of the buffered image. User should dispose of this.
+	 * @author Bob Hanson
+	 */
 	private Graphics2D getTempGraphics() {
 		if (tempImage == null)
 			tempImage = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_ARGB);
@@ -784,17 +807,16 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 	 */
 	private boolean setSizeToStructure = false;
 
-	private double scaling = 1;
-	
 	public Dimension setSizeToStructure(boolean TF) {
 		setSizeToStructure = TF;
 			return getPreferredSize();
 	}
 	
-	public void setScaling(double scaling) {
-		this.scaling  = scaling;
-	}
-
+	/**
+	 * Allow the structure to define the preferred size of the panel (and thus also the frame size)
+	 * 
+	 * @author Bob Hanson
+	 */
 	@Override
 	public Dimension getPreferredSize() {
 		if (!isPreferredSizeSet()) {
@@ -809,53 +831,56 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		}
 		return super.getPreferredSize();
 	}
-/*	public java.awt.datatransfer.FlavorMap getSystemFlavorMap() {
-	    return new OurFlavorMap();
-	    }
 
-    // This class is needed for inter-jvm drag&drop. Although not neccessary for standard environments, it prevents
-    // nasty "no native data was transfered" errors. It still might create ClassNotFoundException in the first place by
-    // the SystemFlavorMap, but as I found it does not hurt, since the context classloader will be installed after
-    // the first call. I know, that this depends heavely on a specific behaviour of the systemflavormap, but for now
-    // there's nothing I can do about it.
-    static class OurFlavorMap implements FlavorMap, FlavorTable {
-    	public java.util.Map<DataFlavor,String> getNativesForFlavors(DataFlavor[] dfs) {
-    //	    System.out.println("getNativesForFlavors " + dfs.length);
-    //	    for (int i = 0; i < dfs.length; i++)
-    //		    System.out.println(" -> " + dfs[i]);
-    //
-    	    return SystemFlavorMap.getDefaultFlavorMap().getNativesForFlavors(dfs);
-    	    }
-    
-    	public java.util.Map<String,DataFlavor> getFlavorsForNatives(String[] natives) {
-    //	    System.out.println("getFlavorsForNatives " + natives.length);
-    //	    for (int i = 0; i < natives.length; i++)
-    //	        System.out.println(" -> " + natives[i]);
-    //
-    	    return SystemFlavorMap.getDefaultFlavorMap().getFlavorsForNatives(natives);
-    	    }
-    
-    	public synchronized java.util.List<DataFlavor> getFlavorsForNative(String nat) {
-    //	    System.out.println("getFlavorsForNative " + nat);
-    	    
-    	    return ((SystemFlavorMap)SystemFlavorMap.getDefaultFlavorMap()).getFlavorsForNative(nat);
-    	    }
-    
-    	public synchronized java.util.List<String> getNativesForFlavor(DataFlavor flav) {
-    //	    System.out.println("getNativesForFlavor " + flav);
-    	    return ((SystemFlavorMap)SystemFlavorMap.getDefaultFlavorMap()).getNativesForFlavor(flav);
-    	    }
-        }*/
+	/**
+	 * allow for image scaling
+	 * 
+	 * @author Bob Hanson 
+	 */
+	private double scaling = 1;
+
+	/**
+	 * Set the structure scaling factor for depict().
+	 * 
+	 * @param scaling
+	 * @author Bob Hanson
+	 */
+	public void setScaling(double scaling) {
+		this.scaling  = scaling;
+	}
 
 	/**
 	 * Creates a standard "chemist's" view of the molecule, with H atoms on heteroatoms, but otherwise absent.
+	 * @param mode tweaks for the view. Default is 
 	 * 
 	 * @param mol
+	 * 
 	 * @return a JStructureView
+	 * @author Bob Hanson
 	 */
-	public static JStructureView getStandardView(StereoMolecule mol) {
+	public static JStructureView getStandardView(int mode, StereoMolecule mol) {
 		return createView(mol, 0, 1, Color.white);
 	}
+
+	/**
+	 * @author Bob Hanson
+	 */
+	
+	public final static int defaultChemistsMode = 
+			  AbstractDepictor.cDModeSuppressCIPParity 
+		    | AbstractDepictor.cDModeSuppressESR
+			| AbstractDepictor.cDModeSuppressChiralText
+			| AbstractDepictor.cDModeBHNoSimpleHydrogens
+			;
+
+	public final static int chemistsModeWithCIP = 
+			  AbstractDepictor.cDModeSuppressCIPParity 
+		    | AbstractDepictor.cDModeSuppressESR
+			| AbstractDepictor.cDModeSuppressChiralText
+			| AbstractDepictor.cDModeBHNoSimpleHydrogens
+			;
+
+	public final static int classicView = 1234567890;
 
 	/**
 	 * Creates a JStructureView for this molecule, allowing for adjustments for 
@@ -866,17 +891,18 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 	 * @param scaling factor; 0 will be treats as 1
 	 * @param bg background color (or null for transparent)
 	 * @return a JStructureView
+	 * @author Bob Hanson
 	 */
-	public static JStructureView createView(StereoMolecule mol, int mode, double scaling, Color bg) {		
+	public static JStructureView createView(StereoMolecule mol, int mode, double scaling, Color bg) {
 		JStructureView mArea = new JStructureView(mol);
-		if (mode == 0)
-			mode = 
-			//AbstractDepictor.cDModeSuppressCIPParity 
-			  //  | 
-			    AbstractDepictor.cDModeSuppressESR
-				| AbstractDepictor.cDModeSuppressChiralText
-				| AbstractDepictor.cDModeBHNoSimpleHydrogens
-				;
+		switch (mode) {
+		case 0:
+			mode = defaultChemistsMode;
+			break;
+		case classicView:
+			mode = 0;
+			break;
+		}
 		mArea.setDisplayMode(mode);
 		mArea.setBackground(bg);
 		mArea.setScaling(scaling);
@@ -888,6 +914,7 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 	 * Shows the view in a frame scaled to the molecule. 
 	 * @param mArea
 	 * @param title
+	 * @author Bob Hanson
 	 */
 	public void showInFrame(String title, Point loc) {
 		JFrame frame = new JFrame(title);
@@ -916,4 +943,4 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		depict(g, d, null);
 		return bi;
 	}
-    }
+}
