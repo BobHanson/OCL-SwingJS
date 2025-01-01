@@ -52,6 +52,8 @@ public class FileHelper extends CompoundFileHelper {
 
 	private Component mParent;
 
+	protected File fileOpened;
+
 	public FileHelper(Component parent) {
 		mParent = parent;
 		}
@@ -196,6 +198,7 @@ public class FileHelper extends CompoundFileHelper {
 
 		fileChooser.showOpenDialog(mParent, (selectedFile) -> {
 			if (selectedFile != null) {
+				fileOpened = selectedFile;
 				setCurrentDirectory(fileChooser.getCurrentDirectory());
 				out: while (true) {
 					if (selectedFile.exists())
@@ -297,6 +300,10 @@ public class FileHelper extends CompoundFileHelper {
 			} while (!done.get() && System.currentTimeMillis() < start + timeOutMillis);
 
 		return exists.get();
+		}
+
+		public File getFileOpened() {
+			return fileOpened;
 		}
 
 
