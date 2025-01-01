@@ -45,8 +45,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import net.sf.jniinchi.JniInchiAtom;
-import net.sf.jniinchi.JniInchiStereo0D;
 
 public class Canonizer {
 	public static final int CREATE_SYMMETRY_RANK = 1;
@@ -1817,28 +1815,40 @@ public class Canonizer {
 	 */
 	private byte canCalcTHParity3D(int atom, int[] remappedConn) {
 		int[] atomList = new int[4];
-		for (int i = 0; i < mMol.getAllConnAtoms(atom); i++) {
+		for (int i = 0; i < mMol.getAllConnAtoms(atom); i++)
 			atomList[i] = mMol.getConnAtom(atom, remappedConn[i]);
-		}
 		if (mMol.getAllConnAtoms(atom) == 3)
 			atomList[3] = atom;
-		double[][] coords = new double[3][3];
+		
 		int parity = mMol.getAtomParity(atom);
-		// allow predetermined InChI-derived parity
-		if (parity != Molecule.cAtomParityNone && parity != Molecule.cAtomParityUnknown) {
-			parity = (!isOrdered(atomList) ? parity : parity == Molecule.cAtomParity2 ? Molecule.cAtomParity1 : Molecule.cAtomParity2);
+		switch (parity) {
+		case Molecule.cAtomParityNone:
+			break;
+		case Molecule.cAtomParityUnknown:
+			return (byte) parity;
+		default:
+			parity = (!isOrdered(atomList) ? parity 
+					: parity == Molecule.cAtomParity2 ? Molecule.cAtomParity1 
+					: Molecule.cAtomParity2);
 			return (byte) parity;
 		}
+		
 		// original non-InChI
+		double[][] coords = new double[3][3];
+		for (int i = 0; i < 3; i++) {
+			coords[i][0] = mMol.getAtomX(atomList[i + 1]) - mMol.getAtomX(atomList[0]);
+			coords[i][1] = mMol.getAtomY(atomList[i + 1]) - mMol.getAtomY(atomList[0]);
+			coords[i][2] = mMol.getAtomZ(atomList[i + 1]) - mMol.getAtomZ(atomList[0]);
+		}
+
 		// calculate the normal vector (vector product of coords[0] and coords[1])
-		double cosa;
 		double[] n = new double[3];
 		n[0] = coords[0][1] * coords[1][2] - coords[0][2] * coords[1][1];
 		n[1] = coords[0][2] * coords[1][0] - coords[0][0] * coords[1][2];
 		n[2] = coords[0][0] * coords[1][1] - coords[0][1] * coords[1][0];
 
 		// calculate cos(angle) of coords[2] to normal vector
-		cosa = (coords[2][0] * n[0] + coords[2][1] * n[1] + coords[2][2] * n[2])
+		double cosa = (coords[2][0] * n[0] + coords[2][1] * n[1] + coords[2][2] * n[2])
 				/ (Math.sqrt(coords[2][0] * coords[2][0] + coords[2][1] * coords[2][1] + coords[2][2] * coords[2][2])
 						* Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]));
 		return (cosa > 0.0) ? (byte) Molecule.cAtomParity1 : Molecule.cAtomParity2;
@@ -1872,6 +1882,32 @@ public class Canonizer {
 		return ok;
 	}
 	
+	/**
+	 * For allenes and EZ checks with preset parities (InChI).
+	 * 
+	 * @param parity
+	 * @param p1
+	 * @param p2
+	 * @return parity check
+	 * @author Bob Hanson
+	 */
+	private static int checkPresetParity(int parity, EZHalfParity p1, EZHalfParity p2) {
+		// note that cAtom... and cBond... are the same
+		boolean indexMatchesPriority = (parity == Molecule.cAtomParity2); // InChI "EVEN"
+		// InChI reports the configuration of higherIndex1 ----- lowerIndex2
+		// We need to determine if this is consistent or not 
+		// with what we have here. 
+		boolean highIsLater1 = (p1.mHighConn > p1.mLowConn);
+		boolean highIsLater2 = (p2.mHighConn > p2.mLowConn);
+		boolean indexForPriority = (highIsLater1 == highIsLater2);	
+		if (indexForPriority == indexMatchesPriority) {
+			// a match
+			return parity;
+		}
+		// must be opposite
+		return (parity == Molecule.cAtomParity2 ? Molecule.cAtomParity1 : Molecule.cAtomParity2);
+	}
+
 	private boolean canCalcAlleneParity(int atom, int mode) {
 		if (mMol.getAtomicNo(atom) != 6 && mMol.getAtomicNo(atom) != 7)
 			return false;
@@ -1888,10 +1924,10 @@ public class Canonizer {
 		if ((mMol.getAllConnAtoms(atom1) > 3) || (mMol.getAllConnAtoms(atom2) > 3))
 			return false;
 
-		EZHalfParity halfParity1 = new EZHalfParity(mMol, mCanRank, atom, atom1);
+		EZHalfParity halfParity1 = new EZHalfParity(mMol, mCanRank, atom, atom1, false);
 		if (halfParity1.mRanksEqual && mode == CALC_PARITY_MODE_PARITY)
 			return false;
-		EZHalfParity halfParity2 = new EZHalfParity(mMol, mCanRank, atom, atom2);
+		EZHalfParity halfParity2 = new EZHalfParity(mMol, mCanRank, atom, atom2, false);
 		if (halfParity2.mRanksEqual && mode == CALC_PARITY_MODE_PARITY)
 			return false;
 
@@ -1905,7 +1941,7 @@ public class Canonizer {
 				mProTHAtomsInSameFragment[atom] = true;
 		}
 
-		byte alleneParity = mZCoordinatesAvailable ? canCalcAlleneParity3D(halfParity1, halfParity2)
+		byte alleneParity = mZCoordinatesAvailable ? canCalcAlleneParity3D(atom, halfParity1, halfParity2)
 				: canCalcAlleneParity2D(halfParity1, halfParity2);
 
 		if (mode == CALC_PARITY_MODE_PARITY) { // increment mProParity[] for atoms that are Pro-Parity1
@@ -1949,12 +1985,27 @@ public class Canonizer {
 		return alleneParity;
 	}
 
-	private byte canCalcAlleneParity3D(EZHalfParity halfParity1, EZHalfParity halfParity2) {
-		int[] atom = new int[4];
+	private byte canCalcAlleneParity3D(int a, EZHalfParity halfParity1, EZHalfParity halfParity2) {
+		int parity = mMol.getAtomParity(a);
+		switch (parity) {
+		case Molecule.cAtomParityNone:
+			// not InChI
+			break;
+		case Molecule.cAtomParityUnknown:
+			return (byte) parity;
+		default:
+			// allow predetermined InChI-derived parity
+			// InChI parity is normalized to ordered list of indices
+			parity = checkPresetParity(parity, halfParity1, halfParity2);
+			return (byte) parity;
+		}
+
+		int[] atom = new int[6];
 		atom[0] = halfParity1.mHighConn;
 		atom[1] = halfParity1.mCentralAxialAtom;
 		atom[2] = halfParity2.mCentralAxialAtom;
 		atom[3] = halfParity2.mHighConn;
+
 		double torsion = mMol.calculateTorsion(atom);
 		// if the torsion is not significant (less than ~10 degrees) then return
 		// cAtomParityUnknown
@@ -1973,10 +2024,10 @@ public class Canonizer {
 		int atom1 = mMol.getBondAtom(0, bond);
 		int atom2 = mMol.getBondAtom(1, bond);
 
-		EZHalfParity halfParity1 = new EZHalfParity(mMol, mCanRank, atom1, atom2);
+		EZHalfParity halfParity1 = new EZHalfParity(mMol, mCanRank, atom1, atom2, false);
 		if (halfParity1.mRanksEqual && mode == CALC_PARITY_MODE_PARITY)
 			return false;
-		EZHalfParity halfParity2 = new EZHalfParity(mMol, mCanRank, atom2, atom1);
+		EZHalfParity halfParity2 = new EZHalfParity(mMol, mCanRank, atom2, atom1, false);
 		if (halfParity2.mRanksEqual && mode == CALC_PARITY_MODE_PARITY)
 			return false;
 
@@ -2119,10 +2170,10 @@ public class Canonizer {
 		if (mMol.getAtomPi(dbAtom1) == 2 || mMol.getAtomPi(dbAtom2) == 2) // allene
 			return false;
 
-		EZHalfParity halfParity1 = new EZHalfParity(mMol, mCanRank, dbAtom2, dbAtom1);
+		EZHalfParity halfParity1 = new EZHalfParity(mMol, mCanRank, dbAtom2, dbAtom1, true);
 		if (halfParity1.mRanksEqual && mode == CALC_PARITY_MODE_PARITY)
 			return false;
-		EZHalfParity halfParity2 = new EZHalfParity(mMol, mCanRank, dbAtom1, dbAtom2);
+		EZHalfParity halfParity2 = new EZHalfParity(mMol, mCanRank, dbAtom1, dbAtom2, true);
 		if (halfParity2.mRanksEqual && mode == CALC_PARITY_MODE_PARITY)
 			return false;
 
@@ -2137,7 +2188,7 @@ public class Canonizer {
 		}
 
 		byte bondDBParity = mMol.isBondParityUnknownOrNone(bond) ? Molecule.cBondParityUnknown
-				: (mZCoordinatesAvailable) ? canCalcEZParity3D(halfParity1, halfParity2)
+				: (mZCoordinatesAvailable) ? canCalcEZParity3D(bond, halfParity1, halfParity2)
 						: canCalcEZParity2D(halfParity1, halfParity2);
 
 		if (mode == CALC_PARITY_MODE_PARITY) {
@@ -2173,21 +2224,39 @@ public class Canonizer {
 				: Molecule.cBondParityZor2;
 	}
 
-	private byte canCalcEZParity3D(EZHalfParity halfParity1, EZHalfParity halfParity2) {
+	private byte canCalcEZParity3D(int bond, EZHalfParity halfParity1, EZHalfParity halfParity2) {		
+		int parity = mMol.getBondParity(bond);
+		switch (parity) {
+		case Molecule.cBondParityNone:
+			// not InChI
+			break;
+		case Molecule.cBondParityUnknown:
+			return (byte) parity;
+		default:
+			// allow predetermined InChI-derived parity
+			// InChI parity is normalized to ordered list of indices
+			parity = checkPresetParity(parity, halfParity1, halfParity2);
+			return (byte) parity;
+		}
+
+		int a1 = halfParity1.mCentralAxialAtom;
+		int a2 = halfParity2.mCentralAxialAtom;
+		int c1 = halfParity1.mHighConn;
+		int c2 = halfParity2.mHighConn;
 		double[] db = new double[3];
-		db[0] = mMol.getAtomX(halfParity2.mCentralAxialAtom) - mMol.getAtomX(halfParity1.mCentralAxialAtom);
-		db[1] = mMol.getAtomY(halfParity2.mCentralAxialAtom) - mMol.getAtomY(halfParity1.mCentralAxialAtom);
-		db[2] = mMol.getAtomZ(halfParity2.mCentralAxialAtom) - mMol.getAtomZ(halfParity1.mCentralAxialAtom);
+		db[0] = mMol.getAtomX(a2) - mMol.getAtomX(a1);
+		db[1] = mMol.getAtomY(a2) - mMol.getAtomY(halfParity1.mCentralAxialAtom);
+		db[2] = mMol.getAtomZ(a2) - mMol.getAtomZ(halfParity1.mCentralAxialAtom);
 
 		double[] s1 = new double[3];
-		s1[0] = mMol.getAtomX(halfParity1.mHighConn) - mMol.getAtomX(halfParity1.mCentralAxialAtom);
-		s1[1] = mMol.getAtomY(halfParity1.mHighConn) - mMol.getAtomY(halfParity1.mCentralAxialAtom);
-		s1[2] = mMol.getAtomZ(halfParity1.mHighConn) - mMol.getAtomZ(halfParity1.mCentralAxialAtom);
+		s1[0] = mMol.getAtomX(c1) - mMol.getAtomX(a1);
+		s1[1] = mMol.getAtomY(c1) - mMol.getAtomY(a1);
+		s1[2] = mMol.getAtomZ(c1) - mMol.getAtomZ(a1);
 
 		double[] s2 = new double[3];
-		s2[0] = mMol.getAtomX(halfParity2.mHighConn) - mMol.getAtomX(halfParity2.mCentralAxialAtom);
-		s2[1] = mMol.getAtomY(halfParity2.mHighConn) - mMol.getAtomY(halfParity2.mCentralAxialAtom);
-		s2[2] = mMol.getAtomZ(halfParity2.mHighConn) - mMol.getAtomZ(halfParity2.mCentralAxialAtom);
+		s2[0] = mMol.getAtomX(c2) - mMol.getAtomX(a2);
+		s2[1] = mMol.getAtomY(c2) - mMol.getAtomY(a2);
+		s2[2] = mMol.getAtomZ(c2) - mMol.getAtomZ(a2);
 
 		// calculate the normal vector n1 of plane from db and s1 (vector product)
 		double[] n1 = new double[3];
@@ -3860,7 +3929,7 @@ public class Canonizer {
 	 */
 	public void setParities() {
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
-			if (mTHParity[atom] != Molecule.cAtomParity1 && mTHParity[atom] != Molecule.cAtomParity2) {
+			if (mTHParity[atom] == Molecule.cAtomParity1 || mTHParity[atom] == Molecule.cAtomParity2) {
 				boolean inversion = false;
 				if (mMol.isCentralAlleneAtom(atom)) { // allene parities
 					for (int i = 0; i < mMol.getConnAtoms(atom); i++) {
@@ -4514,7 +4583,7 @@ class EZHalfParity {
 	boolean mRanksEqual;
 	boolean mInSameFragment;
 
-	protected EZHalfParity(ExtendedMolecule mol, int[] rank, int atom1, int atom2) {
+	protected EZHalfParity(ExtendedMolecule mol, int[] rank, int atom1, int atom2, boolean isAlkene) {
 		mMol = mol;
 		mRemoteAxialAtom = atom1;
 		mCentralAxialAtom = atom2;
@@ -4530,7 +4599,7 @@ class EZHalfParity {
 			}
 
 			if (mMol.isStereoBond(connBond, mCentralAxialAtom)) {
-				if (mStereoBondFound)
+				if (isAlkene && mStereoBondFound && mMol.getBondAtom(0, connBond) != mCentralAxialAtom)
 					mol.setStereoProblem(atom2);
 				mStereoBondFound = true;
 			}
