@@ -217,7 +217,7 @@ public class StereoMolecule extends ExtendedMolecule {
 		for (int atom=0; atom<getAllAtoms(); atom++)
 			mAtomFlags[atom] &= ~mask;
 		for (int bond=0; bond<getBonds(); bond++)
-			mBondFlags[bond] &= ~cBondFlagsHelper3;
+			mBondFlags[bond] &= ~mask;
 		int rankBits = 0;
 		int rankMode = 0;
 		if ((required & cHelperBitSymmetrySimple) != 0) {
