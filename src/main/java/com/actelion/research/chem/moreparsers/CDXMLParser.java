@@ -85,7 +85,7 @@ import com.actelion.research.chem.moreparsers.XmlReader.XmlHandler;
  * 
  */
 
-public class CDXMLParser extends XmlHandler  {
+class CDXMLParser extends XmlHandler  {
 
   public interface CDXReaderI {
 
@@ -594,7 +594,11 @@ public class CDXMLParser extends XmlHandler  {
 	    }
 	  }
 
-  public CDXMLParser(CDXReaderI reader) {
+  /**
+   * not public
+   * @param reader
+   */
+  CDXMLParser(CDXReaderI reader) {
     this.rdr = reader;
   }
 
@@ -606,6 +610,12 @@ public class CDXMLParser extends XmlHandler  {
   private Stack<CDNode> nodes = new Stack<CDNode>();
   private List<CDNode> nostereo = new ArrayList<CDNode>();
   Map<String, Object> objectsByID = new HashMap<String, Object>();
+  
+  /**
+   * set true if connected fragments are found, which may need cleaning
+   */
+  private boolean haveConnectedFragments;
+
 
   /**
    * temporary holder of style chunks within text objects
@@ -724,65 +734,71 @@ public class CDXMLParser extends XmlHandler  {
       return Double.NaN;
     }
   }
-  /**
-   * Set the atom information. Reading:
-   * 
-   * NodeType, Warning. Element, Isotope, Charge, xyz, p
-   * 
-   * 3D coordinates xyz is only used if there are no 2D p coordinates. This may
-   * not be possible. I don't know. These aren't real 3D coordinates, just
-   * enhanced z values.
-   * 
-   * @param id
-   * @param atts 
-   * @return thisNode
-   */
-  private CDNode setNode(String id, Map<String, String> atts) {
-    String nodeType = atts.get("nodetype");
-    if (thisNode != null)
-      nodes.push(thisNode);
-    if ("_".equals(nodeType)) {
-      // internal Jmol code for ignored node
-      thisAtom = thisNode = null;
-      return null;
-    }
 
-    thisAtom = thisNode = new CDNode(atoms.size(), id, nodeType, thisFragmentID, thisNode);
-    addAtom(thisNode);
+	/**
+	 * Set the atom information. Reading:
+	 * 
+	 * NodeType, Warning. Element, Isotope, Charge, xyz, p
+	 * 
+	 * 3D coordinates xyz is only used if there are no 2D p coordinates. This may
+	 * not be possible. I don't know. These aren't real 3D coordinates, just
+	 * enhanced z values.
+	 * 
+	 * @param id
+	 * @param atts
+	 * @return thisNode
+	 */
+	private CDNode setNode(String id, Map<String, String> atts) {
+		String nodeType = atts.get("nodetype");
+		if (thisNode != null)
+			nodes.push(thisNode);
+		if (nodeType != null) {
+			switch (nodeType) {
+			case "_":
+				// internal Jmol code for ignored node
+				thisAtom = thisNode = null;
+				return null;
+			case "ExternalConnectionPoint":
+				haveConnectedFragments = true;
+				break;
+			}
+		}
+		thisAtom = thisNode = new CDNode(atoms.size(), id, nodeType, thisFragmentID, thisNode);
+		addAtom(thisNode);
 
-    String w = atts.get("warning");
-    if (w != null) {
-      thisNode.warning = w.replace("&apos;", "'");
-      thisNode.isValid = (w.indexOf("ChemDraw can't interpret") < 0);
-    }
+		String w = atts.get("warning");
+		if (w != null) {
+			thisNode.warning = w.replace("&apos;", "'");
+			thisNode.isValid = (w.indexOf("ChemDraw can't interpret") < 0);
+		}
 
-    String element = atts.get("element");
-    String s = atts.get("genericnickname");
-    if (s != null) {
-      element = s;
-    }
-    thisAtom.element = element;
-    thisAtom.elementNumber = (short) Math.max(0, (!checkWarningOK(w) ? 0
-        : element == null ? 6 : parseInt(element)));
-    thisAtom.isotope = atts.get("isotope");
-    s = atts.get("charge");
-    if (s != null) {
-      thisAtom.formalCharge = parseInt(s);
-    }
+		String element = atts.get("element");
+		String s = atts.get("genericnickname");
+		if (s != null) {
+			element = s;
+		}
+		thisAtom.element = element;
+		thisAtom.elementNumber = (short) Math.max(0,
+				(!checkWarningOK(w) ? 0 : element == null ? 6 : parseInt(element)));
+		thisAtom.isotope = atts.get("isotope");
+		s = atts.get("charge");
+		if (s != null) {
+			thisAtom.formalCharge = parseInt(s);
+		}
 
-    rdr.handleCoordinates(atts);
+		rdr.handleCoordinates(atts);
 
-    s = atts.get("attachments");
-    if (s != null) {
-      thisNode.setMultipleAttachments(split(s.trim(), " "));
-    }
+		s = atts.get("attachments");
+		if (s != null) {
+			thisNode.setMultipleAttachments(split(s.trim(), " "));
+		}
 
-    s = atts.get("bondordering");
-    if (s != null) {
-      thisNode.setBondOrdering(split(s.trim(), " "));
-    }
-    return thisNode;
-  }
+		s = atts.get("bondordering");
+		if (s != null) {
+			thisNode.setBondOrdering(split(s.trim(), " "));
+		}
+		return thisNode;
+	}
 
   private boolean checkWarningOK(String warning) {
     return (warning == null || warning.indexOf("valence") >= 0
@@ -922,6 +938,7 @@ public class CDXMLParser extends XmlHandler  {
 	      String[] ids = getTokens(atts.get("bracketedobjectids"));
 	      int repeatCount = parseInt(atts.get("repeatcount"));
 	      bracketedGroups.add(new BracketedGroup(id, ids, repeatCount));
+		  haveConnectedFragments = true;
 	    }
 	  }
 
@@ -1148,6 +1165,7 @@ public class CDXMLParser extends XmlHandler  {
     reindexAtomsAndBonds();    
   }
 
-  
-  
+	public boolean hasConnectedFragments() {
+		return haveConnectedFragments;
+	}
 }

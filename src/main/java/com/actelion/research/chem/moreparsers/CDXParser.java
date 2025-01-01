@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.util.BitSet;
 import java.util.Map;
 
+import com.actelion.research.chem.Molecule;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.coords.CoordinateInventor;
 import com.actelion.research.chem.moreparsers.CDXMLParser.CDBond;
@@ -69,6 +70,15 @@ public class CDXParser extends XmlReader implements CDXMLParser.CDXReaderI {
 
 	private CDXMLParser parser;
 
+	/**
+	 * settable to true to force coordinate cleaning
+	 */
+	private boolean doCleanCoordinates;
+
+	public void setCleanCoordinates() {
+		doCleanCoordinates = true;
+	}
+	
 	public CDXParser() {
 		parser = new CDXMLParser(this);
 	}
@@ -166,7 +176,7 @@ public class CDXParser extends XmlReader implements CDXMLParser.CDXReaderI {
 		BitSet bs = parser.bsAtoms;
 		for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i + 1)) {
 			CDNode a = parser.getAtom(i);
-			int ia = mol.addAtom(a.x, a.y);
+			int ia = mol.addAtom(a.x, -a.y);
 			a.index = ia;
 			mol.setAtomCharge(ia, a.formalCharge);
 			mol.setAtomicNo(ia, a.elementNumber);
@@ -179,7 +189,11 @@ public class CDXParser extends XmlReader implements CDXMLParser.CDXReaderI {
 			int ib = mol.addBond(bond.atom1.index, bond.atom2.index);
 			mol.setBondType(ib, bond.order);
 		}
-		new CoordinateInventor(0).invent(mol);
+		
+		if (doCleanCoordinates || parser.hasConnectedFragments()) {
+			mol.ensureHelperArrays(Molecule.cHelperParities);
+			new CoordinateInventor(0).invent(mol);
+		}
 	}
 
 	@Override
