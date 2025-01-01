@@ -33,6 +33,7 @@ import com.actelion.research.chem.coords.CoordinateInventor;
 import net.sf.jniinchi.INCHI_BOND_STEREO;
 import net.sf.jniinchi.INCHI_BOND_TYPE;
 import net.sf.jniinchi.INCHI_PARITY;
+import net.sf.jniinchi.INCHI_STEREOTYPE;
 import net.sf.jniinchi.JniInchiAtom;
 import net.sf.jniinchi.JniInchiBond;
 import net.sf.jniinchi.JniInchiInput;
@@ -74,86 +75,12 @@ public class InChIJNI {
 		}
 	}
 
-	static String toJSON(JniInchiStructure mol) {
-		int na = mol.getNumAtoms();
-		int nb = mol.getNumBonds();
-		int ns = mol.getNumStereo0D();
-		Map<JniInchiAtom, Integer> mapAtoms = new HashMap<>();
-		String s = "{\"atoms\":[\n";
-		for (int i = 0; i < na; i++) {
-			JniInchiAtom a = mol.getAtom(i);
-			mapAtoms.put(a, Integer.valueOf(i));
-			if (i > 0)
-				s += ",\n";
-			s += "{\n";
-			s += toJSON("index", Integer.valueOf(i), ",");
-			s += toJSON("elementType", a.getElementType(), ",");
-			s += toJSON("charge", a.getCharge(), ",");
-			s += toJSON("isotopeMass", a.getIsotopicMass(), ",");
-			s += toJSON("implicitH", a.getImplicitH(), ",");
-			s += toJSON("radical", a.getRadical(), ",");
-			s += toJSON("x", a.getX(), ",");
-			s += toJSON("y", a.getY(), ",");
-			s += toJSON("z", a.getZ(), ",");
-			s += toJSON("implicitDeuterium", a.getImplicitDeuterium(), ",");
-			s += toJSON("implicitProtium", a.getImplicitProtium(), ",");
-			s += toJSON("implicitTritium", a.getImplicitTritium(), "");
-			s += "}";
-		}
-		s += "\n],\n\"bonds\":[\n";
-
-		for (int i = 0; i < nb; i++) {
-			if (i > 0)
-				s += ",\n";
-			s += "{\n";
-			JniInchiBond b = mol.getBond(i);
-			s += toJSON("originAtom", mapAtoms.get(b.getOriginAtom()), ",");
-			s += toJSON("targetAtom", mapAtoms.get(b.getTargetAtom()), ",");
-			s += toJSON("bondType", b.getBondType(), ",");
-			s += toJSON("bondStereo", b.getBondStereo(), "");
-			s += "}";
-		}
-		s += "\n],\n\"stereo\":[\n";
-		for (int i = 0; i < ns; i++) {
-			if (i > 0)
-				s += ",\n";
-			s += "{\n";
-			JniInchiStereo0D d = mol.getStereo0D(i);
-			s += toJSON("centralAtomID", mapAtoms.get(d.getCentralAtom()), ",");
-			s += toJSON("debugString", d.getDebugString(), ",");
-			s += toJSON("disconnectedParity", d.getDisconnectedParity(), ",");
-			s += toJSON("parity", d.getParity(), ",");
-			s += toJSON("stereoType", d.getStereoType(), ",");
-			JniInchiAtom[] an = d.getNeighbors();
-			int[] nbs = new int[an.length];
-			for (int j = 0; j < an.length; j++) {
-				nbs[j] = mapAtoms.get(d.getNeighbor(j)).intValue();
-			}
-			s += toJSON("neighbors", nbs, "");
-			s += "}";
-		}
-		s += "\n]}\n";
-		return s;
-	}
-
-	private static String toJSON(String key, Object val, String term) {
-		key = "\"" + key + "\"";
-		String sval = null;
-		if (val instanceof int[]) {
-			sval = "";
-			int[] a = (int[]) val;
-			for (int i = 0; i < a.length; i++) {
-				sval += "," + a[i];
-			}
-			sval = "[" + (sval.length() > 1 ? sval.substring(1) : "") + "]";
-		} else if (val instanceof String) {
-			sval = "\"" + val + "\"";
-		} else {
-			sval = "" + sval;
-		}
-		return key + ":" + sval + term + "\n";
-	}
-
+	/**
+	 * Create an OCL molecule from an InChI output structure.
+	 * 
+	 * @param struc
+	 * @param mol
+	 */
 	private static void getOCLMolecule(JniInchiOutputStructure struc, StereoMolecule mol) {
 		int nAtoms = struc.getNumAtoms();
 		int nBonds = struc.getNumBonds();
@@ -164,24 +91,12 @@ public class InChIJNI {
 			JniInchiAtom a = struc.getAtom(i);
 			atoms.add(a);
 			String sym = a.getElementType();
-			int nH = a.getImplicitH();
-			//System.out.println("inchi " + i + "=" + sym + (nH == 0 ? "" : "H" + nH));
+			//System.out.println("inchi " + i + "=" + sym);
 			int atom = mol.addAtom(Molecule.getAtomicNoFromLabel(sym));
 			mol.setAtomCharge(atom, a.getCharge());
 			map.put(a, Integer.valueOf(i));
 		}
-		for (int i = 0; i < nStereo; i++) {
-			JniInchiStereo0D d = struc.getStereo0D(i);
-			JniInchiAtom atom = d.getCentralAtom();
-			int ia = Integer.valueOf(map.get(atom));
-			int[] neighbors = new int[d.getNeighbors().length];
-			for (int j = neighbors.length; --j >= 0;) {
-				neighbors[j] = Integer.valueOf(map.get(d.getNeighbor(j)));
-			}
-			int p = getOCLParity(ia, d.getParity(), isOrdered(neighbors));
-			//System.out.println("inchi " + ia + " " + Arrays.toString(neighbors) + " " + p);
-			mol.setAtomParity(ia, p, false);
-		}
+		Map<Integer, Integer> doubleBonds = new HashMap<>();
 		for (int i = 0; i < nBonds; i++) {
 			JniInchiBond b = struc.getBond(i);
 			JniInchiAtom a1 = b.getOriginAtom();
@@ -189,19 +104,87 @@ public class InChIJNI {
 			int bt = getOCLSimpleBondType(b);
 			int i1 = map.get(a1);
 			int i2 = map.get(a2);
-			mol.addBond(i1, i2, bt);
+			int bond = mol.addBond(i1, i2, bt);
+			//System.out.println("inchi bond " + i + " " + i1 + " " + i2 + " " + bt);
+			switch (bt) {
+			case Molecule.cBondTypeSingle:
+				break;
+			case Molecule.cBondTypeDouble:
+				doubleBonds.put(getBondKey(i1, i2), bond);
+				break;
+			}	
+		}
+		for (int i = 0; i < nStereo; i++) {
+			JniInchiStereo0D d = struc.getStereo0D(i);
+			JniInchiAtom centralAtom = d.getCentralAtom();
+			int[] neighbors = new int[d.getNeighbors().length];
+			if (neighbors.length != 4)
+				continue;
+			for (int j = neighbors.length; --j >= 0;) {
+				neighbors[j] = Integer.valueOf(map.get(d.getNeighbor(j)));
+			}
+			INCHI_STEREOTYPE type = d.getStereoType();
+			int p = -1;
+			switch (type) {
+			case TETRAHEDRAL:
+				int ia = Integer.valueOf(map.get(centralAtom));
+				p = getOCLAtomParity(d.getParity(), isOrdered(neighbors));
+				mol.setAtomParity(ia, p, false);
+				break;
+			case DOUBLEBOND:
+				int ib = findDoubleBond(doubleBonds, neighbors);
+				if (ib < 0) {
+						System.err.println("InChIJNI cannot find double bond for atoms " + Arrays.toString(neighbors));
+					continue;
+				}
+				p = getOCLBondParity(d.getParity(), (neighbors[0] < neighbors[3]));
+				mol.setBondParity(ib, p, false);
+				//System.out.println("ene " + ib + " " + p + " " + Arrays.toString(neighbors) + " " + d.getParity());
+				break;
+			case ALLENE:
+				// reports low1-a1----a2-low2
+				int ic = Integer.valueOf(map.get(centralAtom));
+				p = getOCLBondParity(d.getParity(), (neighbors[0] > neighbors[3]));
+				mol.setAtomParity(ic, p, false);
+				//System.out.println("allene " + ic + " " + p + " " + Arrays.toString(neighbors) + " " + d.getParity());
+				break;
+			case NONE:
+				continue;
+			}
 		}
 		// temporarily preserve parities
-//		mol.copyMolecule(molOut);
-//		enabled[0] = true;
 		mol.setParitiesValid(0);
-		// coordinates are not 
+		// coordinates are not
 		mol.setPrioritiesPreset(true);
-		new CoordinateInventor(Canonizer.COORDS_ARE_3D | CoordinateInventor.MODE_SKIP_DEFAULT_TEMPLATES).invent(mol);
+		new CoordinateInventor(Canonizer.COORDS_ARE_3D);
+		// | CoordinateInventor.MODE_SKIP_DEFAULT_TEMPLATES).invent(mol);
 		mol.ensureHelperArrays(31);
-		//mol.setPrioritiesPreset(false);
-//		enabled[0] = false;
-		//mol.copyMolecule(molOut);
+		// mol.setPrioritiesPreset(false);
+	}
+
+	private static int getBondKey(int i1, int i2) {
+		return (Math.min(i1, i2) << 16) + Math.max(i1, i2);
+	}
+
+	private static int findDoubleBond(Map<Integer, Integer> doubleBonds, int[] neighbors) {
+		Integer ib = doubleBonds.get(getBondKey(neighbors[1],  neighbors[2]));
+		return (ib == null ? -1 : ib.intValue());
+	}
+
+	private static int getOCLBondParity(INCHI_PARITY parity, boolean isReversed) {
+		switch (parity) {
+		case ODD:
+			// ODD means the high---low does NOT match the desired outcome
+			return (isReversed ? Molecule.cBondParityZor2: Molecule.cBondParityEor1);
+		case EVEN:
+			// EVEN means the high--low DOES match the desired outcome
+			return (isReversed ? Molecule.cBondParityEor1: Molecule.cBondParityZor2);
+		case UNKNOWN:
+			return Molecule.cBondParityUnknown;
+		case NONE:
+		default:
+			return Molecule.cBondParityNone;
+		}
 	}
 
 	/**
@@ -226,7 +209,7 @@ public class InChIJNI {
 		return ok;
 	}
 
-	private static int getOCLParity(int ia, INCHI_PARITY parity, boolean isOrdered) {
+	private static int getOCLAtomParity(INCHI_PARITY parity, boolean isOrdered) {
 		switch (parity) {
 		case ODD:
 		case EVEN:
@@ -279,6 +262,14 @@ public class InChIJNI {
 		return getInChI(mol, options, false);
 	}
 	
+	/**
+	 * OCL molecule to InChI
+	 * 
+	 * @param mol
+	 * @param options
+	 * @param getKey
+	 * @return
+	 */
 	private static String getInChI(StereoMolecule mol, String options, boolean getKey) {
 		try {
 			if (options == null)
@@ -342,7 +333,9 @@ public class InChIJNI {
 				int oclType = mol.getBondType(i);
 				int oclParity = mol.getBondParity(i);
 				INCHI_BOND_STEREO stereo = getInChIStereo(oclOrder, oclType, oclParity);
-				struc.addBond(new JniInchiBond(atoms[atom1], atoms[atom2], order, stereo));
+				//System.out.println("Inchi-out bond " + i + " " + order + " " + oclType + " " + oclParity + " " + stereo);
+				JniInchiBond bond = new JniInchiBond(atoms[atom1], atoms[atom2], order, stereo);
+				struc.addBond(bond);
 			}
 		}
 		return struc;
@@ -373,7 +366,7 @@ public class InChIJNI {
 				return INCHI_BOND_STEREO.SINGLE_1UP;
 			default:
 				if (oclParity == Molecule.cBondParityUnknown) {
-					return INCHI_BOND_STEREO.SINGLE_1EITHER;
+					return (oclOrder ==  Molecule.cBondTypeDouble ? INCHI_BOND_STEREO.DOUBLE_EITHER : INCHI_BOND_STEREO.SINGLE_1EITHER);
 				}
 			}
 		}

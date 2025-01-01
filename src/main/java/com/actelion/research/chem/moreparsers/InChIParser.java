@@ -57,9 +57,7 @@ public class InChIParser {
 		switch (type) {
 		default:
 		case "inchi":
-			if (!code.startsWith("PubChem:")) {
-				return InChIJNI.inchiToMolecule(code, mol);
-			} else {
+			if (code.startsWith("PubChem:")) {
 				code = code.substring(8);
 				code = code.replaceAll("=", "%3D")
 						.replaceAll("/", "%2F")
@@ -72,11 +70,14 @@ public class InChIParser {
 // InChI%3D1S%2FC9H8O4%2Fc1-6%2810%2913-8-5-3-2-4-7%288%299%2811%2912%2Fh2-5H%2C1H3%2C%28H%2C11%2C12%29
 				break;
 			}
+			return InChIJNI.inchiToMolecule(code, mol);
 		case "inchikey":
 			url = pubchemInChIKey.replace("XX", code);
 			break;
 		}
 		String molfile = ParserUtils.getURLContentsAsString(url);
+		System.out.println("InChIParser - PubChem " + code);
+		System.out.println("InChIParser - PubChem " + url);
 		return molfile != null && new MolfileParser(mMode).parse(mol, molfile);
 	}
 
