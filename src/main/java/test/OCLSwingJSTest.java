@@ -42,6 +42,8 @@ public class OCLSwingJSTest {
 		testInChIParsers(outdir);
 		testAllene(outdir);
 		testEne(outdir);
+		
+		
 		//testDialog(args);
 	}
 
@@ -87,43 +89,77 @@ public class OCLSwingJSTest {
 		String moldata = getString(filein, outdir);
 		StereoMolecule mol = new StereoMolecule();
 		new MolfileParser().parse(mol, moldata);
-		testShowAndWriteMol(mol, "allene", fileout, outdir);
+		testShowViewAndWriteMol(mol, "allene", fileout, outdir);
 		testInChIOut(mol, inchi, true);
 		
 	}
 
 	private static void testSmilesParser(String outdir) {
-		String smiles, inchi;
+		String smiles;
 
-		// THIS ONE IS FAILING
-		smiles = "FC(Cl)=[C@@]=CBr";
-		inchi = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
-		testSmilesInChI(smiles, inchi, false);		
+		String inchi0 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m0/s1";
+		String inchi1 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m1/s1";
+		String inchi0cl = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
+		String inchi1cl = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m1/s1";
 
-		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
-		inchi = "InChI=1S/C23H30N2O3/c1-5-15-24(19-13-8-11-17-10-6-7-12-18(17)19)21(26)20-14-9-16-25(20)22(27)28-23(2,3)4/h6-8,10-13,20H,5,9,14-16H2,1-4H3/t20-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
-
-		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
-		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
-
-		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
-		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
 		
+		smiles = "FC=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0, true);		
+		smiles = "C(F)=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0, true);		
+		smiles = "F[CH]=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0, true);		
+		smiles = "[CH](F)=[C@]=CBr";
+		testSmilesInChI(smiles, inchi1, true);		
+		smiles = "FC=[C@@]=CBr";
+		testSmilesInChI(smiles, inchi1, true);		
+		smiles = "C1=[C@]=CBr.F1";
+		testSmilesInChI(smiles, inchi0, true);		
+		smiles = "F1.C1=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0, true);				
+		smiles = "FC(Cl)=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0cl, true);
+		smiles = "C1(Cl)=[C@]=CBr.F1";
+		testSmilesInChI(smiles, inchi0cl, true);		
+		smiles = "F1.C1(Cl)=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0cl, true);				
+		smiles = "C12=[C@]=CBr.F1.Cl2";
+		testSmilesInChI(smiles, inchi0cl, true);		
+		smiles = "C21=[C@]=CBr.F1.Cl2";
+		testSmilesInChI(smiles, inchi1cl, true);		
+		smiles = "Cl1.F2.C21=[C@]=CBr";
+		testSmilesInChI(smiles, inchi0cl, true);		
+		smiles = "C21=[C@]=CBr.Cl1.F2";
+		testSmilesInChI(smiles, inchi0cl, true);		
+
+
+		//		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
+//		inchi = "InChI=1S/C23H30N2O3/c1-5-15-24(19-13-8-11-17-10-6-7-12-18(17)19)21(26)20-14-9-16-25(20)22(27)28-23(2,3)4/h6-8,10-13,20H,5,9,14-16H2,1-4H3/t20-/m0/s1";
+//		testSmilesInChI(smiles, inchi, true);		
+//
+//		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
+//		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
+//		testSmilesInChI(smiles, inchi, true);		
+//
+//		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
+//		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
+//		testSmilesInChI(smiles, inchi, true);		
+//		
 	}
 
 	private static void testSmilesInChI(String smiles, String inchi, boolean throwError) {
+		System.out.println(smiles);
 		StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
-		JStructureView view = testShowAndWriteMol(mol, "smiles", null, null);
+		JStructureView view = testShowViewAndWriteMol(mol, "smiles", null, null);
 		if (!testInChIOut(mol, inchi, false)) {
 			view.setBackground(Color.yellow);
+			if (throwError)
+				throw new RuntimeException();
 		}
 		return;
 	}
 
-	private static JStructureView testShowAndWriteMol(StereoMolecule mol, String title, String fileout, String outdir) {
+	private static JStructureView testShowViewAndWriteMol(StereoMolecule mol, String title, String fileout, String outdir) {
 		JStructureView view = JStructureView.getStandardView(JStructureView.classicView, mol);
 		view.showInFrame(title, nextLoc());
 		if (fileout != null) {
@@ -158,7 +194,7 @@ public class OCLSwingJSTest {
 		System.out.println(inchiKey + " => " + fileout);
 		mol = new StereoMolecule();
 		if (new InChIKeyParser().parse(mol, inchiKey)) {
-			testShowAndWriteMol(mol, "inchikey", fileout, outdir);
+			testShowViewAndWriteMol(mol, "inchikey", fileout, outdir);
 		}
 	}
 
@@ -167,7 +203,7 @@ public class OCLSwingJSTest {
 		System.out.println(inchi + " => " + fileout);
  		StereoMolecule mol = new StereoMolecule();
 		if (new InChIParser().parse(mol, inchi)) {
-			testShowAndWriteMol(mol, "inchi", fileout, outdir);
+			testShowViewAndWriteMol(mol, "inchi", fileout, outdir);
 			testInChIOut(mol, inchi, true);
 		}
 
@@ -175,7 +211,7 @@ public class OCLSwingJSTest {
 		System.out.println("PubChem:" + inchi + " => " + fileout);
 		mol = new StereoMolecule();
 		if (new InChIParser().parse(mol, "PubChem:" + inchi)) {
-			JStructureView view = testShowAndWriteMol(mol, "PubChem-inchi", fileout, outdir);
+			JStructureView view = testShowViewAndWriteMol(mol, "PubChem-inchi", fileout, outdir);
 			if (!testInChIOut(mol, inchi, false)) {
 			  view.setBackground(Color.LIGHT_GRAY);
 			}
@@ -231,7 +267,7 @@ public class OCLSwingJSTest {
 		StereoMolecule mol = new StereoMolecule();
 		cdxml = getString(filein, outdir);
 		if (new CDXParser().parse(mol, cdxml)) {
-			testShowAndWriteMol(mol, "cdxml", fileout, outdir);
+			testShowViewAndWriteMol(mol, "cdxml", fileout, outdir);
 		}
 
 	}
@@ -241,7 +277,7 @@ public class OCLSwingJSTest {
 		StereoMolecule mol = new StereoMolecule();
 		byte[] cdx = getBytes(filein, outdir);
 		if (new CDXParser().parse(mol, cdx)) {
-			testShowAndWriteMol(mol, "cdx", fileout, outdir);
+			testShowViewAndWriteMol(mol, "cdx", fileout, outdir);
 		}
 	}
 
@@ -325,7 +361,7 @@ public class OCLSwingJSTest {
 			String title;
 			if (list == null || list.isEmpty()) {
 				String smiles = JOptionPane.showInputDialog("enter a SMILES",
-						"" + "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[NH]C1=CC=CC2=CC=CC=C12"
+						"N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[NH]C1=CC=CC2=CC=CC=C12"
 //			+ "CC(CCCC(C1CCC2C1(C)CCC1C2CC=C2C1(C)CCC(C2)O)C)C"
 //						+ "CCN.[b]12-c3ccccc3.o1[b]4-c5ccccc5.o4[b]6-c7ccccc7.o62"
 

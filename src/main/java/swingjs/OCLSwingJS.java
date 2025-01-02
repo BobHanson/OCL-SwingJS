@@ -38,6 +38,7 @@ public class OCLSwingJS {
 			String title = null;
 			if (list == null || list.isEmpty()) {
 				String smiles = JOptionPane.showInputDialog("enter a SMILES",
+						//"F[CH@](Cl)(Br)"
 						"C(F)(Cl)=[C@]=CBr"						
 						//"N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[NH]C1=CC=CC2=CC=CC=C12"
 				);
