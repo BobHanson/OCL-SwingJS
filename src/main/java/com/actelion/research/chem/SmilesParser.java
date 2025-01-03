@@ -91,15 +91,6 @@ public class SmilesParser {
 	private Map<Integer, int[]> bsConnectionBonds;
 	
 	/**
-	 * mAtom indices; tracks [CH] atoms to distinguish them from C,
-	 * specifically needed in the case of allene [CH]=[C@]=C
-	 * 
-	 * BH 2025.01.02
-	 * 
-	 */
-	private BitSet bsAtomHasOneExplicitH;
-	
-	/**
 	 * mAtom indices; tracks atoms with numeric connections, which need
 	 * special numbering for allenes
 	 * 
@@ -169,6 +160,7 @@ public class SmilesParser {
 			parse(mol, smiles);
 			}
 		catch (Exception e) {
+			e.printStackTrace();
 			return null;
 			}
 		return mol;
@@ -365,7 +357,6 @@ public class SmilesParser {
 		mMol = mol;
 		mMol.clear();
 		bsConnectionBonds = new HashMap<>();
-		bsAtomHasOneExplicitH = new BitSet();
 		bsAtomHasConnections = new BitSet();
 
 		if (mSmartsWarningBuffer != null)
@@ -459,10 +450,6 @@ public class SmilesParser {
 					mSmartsFeatureFound = true;
 
 				int atom = atomParser.addParsedAtom(mMol, theChar, position);
-				if (atomParser.explicitHydrogens == 1) {
-					// BH 2025.01.02 required for allene parity to distinguish C from [CH]
-					bsAtomHasOneExplicitH.set(atom);
-				}
 				if (mMol.isMarkedAtom(atom))
 					mAromaticAtoms++;
 
@@ -1633,7 +1620,7 @@ public class SmilesParser {
 		 * @author hansonr
 		 */
 		private boolean isInverseOrderAllene() {
-			boolean inversion = true;
+			boolean inversion = false;
 			inversion = checkAlleneInversion(0, inversion);
 			inversion = checkAlleneInversion(1, inversion);
 			return inversion;
@@ -1654,22 +1641,22 @@ public class SmilesParser {
 		private boolean checkAlleneInversion(int index, boolean inversion) {
 			ParityNeighbour a1 = mNeighbourList.get(index);
 			int a = a1.mAtom;
-			boolean hasExplicitH = bsAtomHasOneExplicitH.get(a);
+			boolean hasImplicitH = mMol.getImplicitHydrogens(a) > 0;
 			boolean hasConnections = bsAtomHasConnections.get(a);
 
-			if (!hasExplicitH && !hasConnections) {
+			for (int i = 0, n = mMol.getConnAtoms(a); i < n; i++) {
+				int b = mMol.getConnAtom(a, i);
+				if (b == mCentralAtom)
+					continue;
+				System.out.println("m" + index + "_" + a + "-" + b + " " + mMol.getAtomicNo(b));
+			}
+
+			if (!hasImplicitH && !hasConnections) {
 				// ignore FC or CF
 				return inversion;
 			}
 
-			// for (int i = 0, n = mMol.getConnAtoms(a); i < n; i++) {
-//				int b = mMol.getConnAtom(a, i);
-//				if (b == mCentralAtom)
-//					continue;
-//				System.out.println("m" + index + "_" + a + "-" + b + " " + mMol.getAtomicNo(b));
-//			}
-
-			if (hasExplicitH) {
+			if (hasImplicitH) {
 				// don't worry about leading F[CH]
 				// just reverse trailing =[CH](F) (index==0), and [CH](F)= (index=1)
 				// The H will not be in the molecule.
@@ -1677,6 +1664,7 @@ public class SmilesParser {
 				// for index=1, it will be connected atom 1
 				if (mMol.getConnAtom(a, index) > a) {
 					inversion = !inversion;
+					System.out.println("inverting CX");
 				}
 			}
 			if (hasConnections) {
@@ -1706,10 +1694,10 @@ public class SmilesParser {
 					if (positions != null)
 						nConnected++;
 				}
-//				System.out.println("atoms " + Arrays.toString(connAtoms));
-//				System.out.println("bonds " + Arrays.toString(connBonds));
+				System.out.println("atoms " + Arrays.toString(connAtoms));
+				System.out.println("bonds " + Arrays.toString(connBonds));
 
-				if (hasExplicitH) {
+				if (hasImplicitH) {
 					// [CH]1
 					if (connAtoms[0] < a) {
 						// earlier atom, but later than H here
@@ -1730,12 +1718,18 @@ public class SmilesParser {
 							// C1= no problem; the connected atom is an H
 							break;
 						}
-						// C1(X), but I don't know if that is always the first connection
+						// XC1 or C1(X), but I don't know if that is always the first connection
 						boolean isFirst = (connBonds[0] >= 0);
-						if (connAtoms[isFirst ? 0 : 1] > a) {
-							// C1(X) but parsed as though 1 is after (X)
-							// later atom, but for these purposes before the other attachment
-							inversion = !inversion;
+						int connPos = connAtoms[isFirst ? 0 : 1];
+						int otherPos = connAtoms[isFirst ? 1 : 0];
+						if (otherPos > a) {
+							// C1(X)
+							if (connPos > a)
+								inversion = !inversion;
+						} else {
+							// XC1
+							if (connPos < a)
+								inversion = !inversion;
 						}
 						break;
 					case 2:
@@ -1746,8 +1740,8 @@ public class SmilesParser {
 						// positions are the byte positions of the two ends of each connection
 						int[] positions1 = bsConnectionBonds.get(connBonds[0]);
 						int[] positions2 = bsConnectionBonds.get(connBonds[1]);
-						// System.out.println(Arrays.toString(positions1));
-						// System.out.println(Arrays.toString(positions2));
+						System.out.println(Arrays.toString(positions1));
+						System.out.println(Arrays.toString(positions2));
 						int p1, p2;
 						int c = mCentralAtomPosition;
 						if (index == 0) {

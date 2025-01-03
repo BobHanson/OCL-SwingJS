@@ -38,10 +38,10 @@ public class OCLSwingJSTest {
 	public static void main(String[] args) {
 		String outdir = null;//"C:/temp/";
 		testSmilesParser(outdir);
-		testCDXParsers(outdir);
-		testInChIParsers(outdir);
-		testAllene(outdir);
-		testEne(outdir);
+//		testCDXParsers(outdir);
+//		testInChIParsers(outdir);
+//		testAllene(outdir);
+//		testEne(outdir);
 		
 		
 		//testDialog(args);
@@ -77,12 +77,14 @@ public class OCLSwingJSTest {
 	private static void testAllene(String outdir) {
 		
 		// note that PubChem will return allene structures with no stereochemistry
-		String inchi;
+		String inchi, smiles;
 		// InChI to mol and back
 		inchi = "InChI=1S/C9H5BBr2ClFO/c10-7(2-4-15)6(5-9(12)14)8(11)1-3-13/h3-4,15H,10H2/t1-,2+,5-/m1/s1";
 		testInChI(inchi, outdir);
+	
 		inchi = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
 		testInChI(inchi, outdir);
+		
 		// mol to InChI
 		String filein = "tallene.mol";
 		String fileout = "tallene";
@@ -95,28 +97,64 @@ public class OCLSwingJSTest {
 	}
 
 	private static void testSmilesParser(String outdir) {
-		String smiles;
-
+		String smiles, inchi;
 		String inchi0 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m0/s1";
 		String inchi1 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m1/s1";
 		String inchi0cl = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
 		String inchi1cl = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m1/s1";
 
+// conjugated allene fails DO I CARE??
+		// the problem here is that InChI cannot take un-wedged allenes in
+		// and these conjugated ones utilize those, but there are problems 
+		// around the conjugation.
+//		smiles = "C(O)=[C@@]=C(B)C1=[C@@]=C(F)Br.C1(Br)=[C@]=CCl";
+//		inchi = "InChI=1S/C9H5BBr2ClFO/c10-7(2-4-15)6(5-9(12)14)8(11)1-3-13/h3-4,15H,10H2/t1-,2+,5-/m1/s1";
+//		testSmilesInChI(smiles, inchi, true);		
+
+		// failing -- from tpa2.cdxml -- is creating opposite configration of H-C-OH
+//		// Jmol SMILES and InChI
+		smiles = "C(O)=[C@@]=C(B)CCC1=[C@@]=C(F)Br.C1CCC(Br)=[C@]=CCl";
+		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
+		//InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1
+		testSmilesInChI(smiles, inchi, true);		
+
+		
+		
+
+		smiles = "B[C](CCC)=[C@]=[CH]O";
+		inchi = "InChI=1S/C6H11BO/c1-2-3-6(7)4-5-8/h5,8H,2-3,7H2,1H3/t4-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+
+		smiles = "CCCC(B)=[C@@]=CO";
+		inchi = "InChI=1S/C6H11BO/c1-2-3-6(7)4-5-8/h5,8H,2-3,7H2,1H3/t4-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+		
+		
+// from https://cactus.nci.nih.gov/chemical/structure/InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1/file?format=smiles
+		smiles = "B[C](CC[C](CCC[C](Br)=[C@]=[CH]Cl)=[C@@]=[C](F)Br)=[C@]=[CH]O";
+		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
+		testSmilesInChI(smiles, inchi, true);		
+
+
 		
 		smiles = "FC=[C@]=CBr";
 		testSmilesInChI(smiles, inchi0, true);		
-		smiles = "C(F)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0, true);		
 		smiles = "F[CH]=[C@]=CBr";
 		testSmilesInChI(smiles, inchi0, true);		
+
+		smiles = "C(F)=[C@]=CBr";
+		testSmilesInChI(smiles, inchi1, true);		
 		smiles = "[CH](F)=[C@]=CBr";
 		testSmilesInChI(smiles, inchi1, true);		
+		smiles = "C1=[C@]=CBr.F1";
+		testSmilesInChI(smiles, inchi1, true);		
+		smiles = "F1.C1=[C@]=CBr";
+		testSmilesInChI(smiles, inchi1, true);				
+		
 		smiles = "FC=[C@@]=CBr";
 		testSmilesInChI(smiles, inchi1, true);		
-		smiles = "C1=[C@]=CBr.F1";
-		testSmilesInChI(smiles, inchi0, true);		
-		smiles = "F1.C1=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0, true);				
+		
+		
 		smiles = "FC(Cl)=[C@]=CBr";
 		testSmilesInChI(smiles, inchi0cl, true);
 		smiles = "C1(Cl)=[C@]=CBr.F1";
@@ -131,6 +169,8 @@ public class OCLSwingJSTest {
 		testSmilesInChI(smiles, inchi0cl, true);		
 		smiles = "C21=[C@]=CBr.Cl1.F2";
 		testSmilesInChI(smiles, inchi0cl, true);		
+
+		
 
 
 		//		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
@@ -160,7 +200,9 @@ public class OCLSwingJSTest {
 	}
 
 	private static JStructureView testShowViewAndWriteMol(StereoMolecule mol, String title, String fileout, String outdir) {
-		JStructureView view = JStructureView.getStandardView(JStructureView.classicView, mol);
+		JStructureView view = JStructureView.getStandardView(
+				JStructureView.classicView
+				, mol);
 		view.showInFrame(title, nextLoc());
 		if (fileout != null) {
 			writeViewImage(view, fileout + ".png", outdir);
