@@ -859,7 +859,7 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 	 * @author Bob Hanson
 	 */
 	public static JStructureView getStandardView(int mode, StereoMolecule mol) {
-		return createView(mol, 0, 1, Color.white);
+		return createView(mol, mode, 1, Color.white);
 	}
 
 	/**

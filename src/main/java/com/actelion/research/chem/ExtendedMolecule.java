@@ -2268,19 +2268,35 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		int bestScore = 0;
 		for (int i = 0; i < 2; i++) {
 			int alleneAtom = mConnAtom[atom][i];
-			for (int j = 0; j < mAllConnAtoms[alleneAtom]; j++) {
-				int connAtom = mConnAtom[alleneAtom][j];
-				if (connAtom != atom) {
-					int connBond = mConnBond[alleneAtom][j];
-					int score = getStereoBondScore(connBond, connAtom);
-					if (bestScore < score) {
-						bestScore = score;
-						preferredAtom = connAtom;
-						preferredBond = connBond;
-						preferredAlleneAtom = alleneAtom;
-						oppositeAlleneAtom = mConnAtom[atom][1 - i];
-					}
+			int nTerm = 0;
+			int n = mAllConnAtoms[alleneAtom];
+			int connBond = -1;
+			int connAtom = -1;
+			for (int j = 0; j < n; j++) {
+				int a = mConnAtom[alleneAtom][j];
+				if (a == atom)
+					continue;
+				if (mConnAtom[a].length == 1)
+					nTerm++;
+				connAtom = a;
+				connBond = mConnBond[alleneAtom][j];
+				int score = getStereoBondScore(connBond, connAtom);
+				if (bestScore < score) {
+					bestScore = score;
+					preferredAtom = connAtom;
+					preferredBond = connBond;
+					preferredAlleneAtom = alleneAtom;
+					oppositeAlleneAtom = mConnAtom[atom][1 - i];
 				}
+			}
+			if (connBond >= 0 && nTerm == n - 1) {
+				// force terminal =X(Y)Z when Y and Z are terminal
+				// this allows for more complex situations
+				preferredAtom = connAtom;
+				preferredBond = connBond;
+				preferredAlleneAtom = alleneAtom;
+				oppositeAlleneAtom = mConnAtom[atom][1 - i];
+				break;
 			}
 		}
 
@@ -2307,7 +2323,8 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		for (int i = 0; i < mConnAtoms[preferredAlleneAtom]; i++) {
 			int connAtom = mConnAtom[preferredAlleneAtom][i];
 			if (connAtom != atom) {
-				otherAtom = connAtom;
+				if (connAtom != preferredAtom)
+					otherAtom = connAtom;
 				if (highPriorityAtom > connAtom)
 					highPriorityAtom = connAtom;
 			}
@@ -2342,11 +2359,13 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		boolean isUp = ((angleDif < 0.0) ^ (getAtomParity(atom) == cAtomParity1) ^ (highPriorityAtom == preferredAtom));
 		mBondType[preferredBond] = (isUp ? cBondTypeUp : cBondTypeDown);
 		// BH need second wedge/hash for InChI
-		int bond = getBond(preferredAlleneAtom, otherAtom);
-		if (getBondType(bond) == cBondTypeSingle) {
-			mBondType[bond] = (isUp ? cBondTypeDown : cBondTypeUp);
-			if (getBondAtom(0, bond) == otherAtom) {
-				switchBondAtoms(bond);
+		if (otherAtom >= 0) {
+			int bond = getBond(preferredAlleneAtom, otherAtom);
+			if (getBondType(bond) == cBondTypeSingle) {
+				mBondType[bond] = (isUp ? cBondTypeDown : cBondTypeUp);
+				if (getBondAtom(0, bond) == otherAtom) {
+					switchBondAtoms(bond);
+				}
 			}
 		}
 	}
@@ -2596,23 +2615,31 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	private int preferredAlleneStereoBond(int atom, boolean excludeStereoBonds) {
 		int preferredBond = -1;
 		int bestScore = 0;
-		for (int i=0; i<2; i++) {
+		for (int i = 0; i < 2; i++) {
 			int alleneAtom = mConnAtom[atom][i];
-			for (int j=0; j<mAllConnAtoms[alleneAtom]; j++) {
-				int connAtom = mConnAtom[alleneAtom][j];
-				if (connAtom != atom) {
-					int connBond = mConnBond[alleneAtom][j];
-					int score = getStereoBondScore(connBond, connAtom);
-					if (bestScore < score
-					 && (!excludeStereoBonds || !isStereoBond(connBond))) {
-						bestScore = score;
-						preferredBond = connBond;
-						}
-					}
+			int nTerm = 0;
+			int connBond = -1;
+			int connAtom = -1;
+			int n = mAllConnAtoms[alleneAtom];
+			for (int j = 0; j < n; j++) {
+				int a = mConnAtom[alleneAtom][j];
+				if (a == atom) 
+					continue;
+				connAtom = a;
+				if (mConnAtom[connAtom].length == 1)
+					nTerm++;
+				connBond = mConnBond[alleneAtom][j];
+				int score = getStereoBondScore(connBond, connAtom);
+				if (bestScore < score && (!excludeStereoBonds || !isStereoBond(connBond))) {
+					bestScore = score;
+					preferredBond = connBond;
 				}
 			}
-		return preferredBond;
+			if (connBond >= 0 && nTerm == n - 1)
+				return connBond;
 		}
+		return preferredBond;
+	}
 
 
 	private int preferredBinapStereoBond(int bond) {
