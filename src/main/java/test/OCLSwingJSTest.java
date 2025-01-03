@@ -38,10 +38,10 @@ public class OCLSwingJSTest {
 	public static void main(String[] args) {
 		String outdir = null;//"C:/temp/";
 		testSmilesParser(outdir);
-//		testCDXParsers(outdir);
-//		testInChIParsers(outdir);
-//		testAllene(outdir);
-//		testEne(outdir);
+		testCDXParsers(outdir);
+		testInChIParsers(outdir);
+		testAllene(outdir);
+		testEne(outdir);
 		
 		
 		//testDialog(args);
@@ -113,7 +113,8 @@ public class OCLSwingJSTest {
 
 		// failing -- from tpa2.cdxml -- is creating opposite configration of H-C-OH
 //		// Jmol SMILES and InChI
-		smiles = "C(O)=[C@@]=C(B)CCC1=[C@@]=C(F)Br.C1CCC(Br)=[C@]=CCl";
+		smiles = "C(O)=[C@]=C(B)CCC1=[C@@]=C(F)Br.C1CCC(Br)=[C@]=CCl";
+		smiles = "B[C](CC[C](CCC[C](Br)=[C@]=[CH]Cl)=[C@@]=[C](F)Br)=[C@]=[CH]O";
 		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
 		//InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1
 		testSmilesInChI(smiles, inchi, true);		
