@@ -100,7 +100,9 @@ public class OCLSwingJSTest {
 		String smiles, inchi;
 
 		inchi = "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1";
-		smiles = "$[C@H](N)(C)C(=O)O";
+		smiles = "[C@H](N)(C)C(=O)O";
+		testSmilesInChI(smiles, inchi, true);
+		smiles = "N[C@@H](C)C(=O)O";
 		testSmilesInChI(smiles, inchi, true);
 
 		String inchi0 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m0/s1";

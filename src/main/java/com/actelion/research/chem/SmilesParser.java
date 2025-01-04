@@ -1499,18 +1499,27 @@ public class SmilesParser {
 		}
 	}
 
-	private static class ParityNeighbour {
-		int mAtom,mPosition;
-
-		public ParityNeighbour(int atom, int position) {
-			mAtom = atom;
-			mPosition = position;
-			}
-		}
-
 	private class THParity {
 		private static final int PSEUDO_ATOM_HYDROGEN = Integer.MAX_VALUE - 1;
 		private static final int PSEUDO_ATOM_LONE_PAIR = Integer.MAX_VALUE;
+
+		private class ParityNeighbour {
+			int mAtom,mPosition;
+
+			public ParityNeighbour(int atom, int position) {
+				mAtom = atom;
+				mPosition = position;
+			}
+			
+			public String toString() {
+				// makes debugging much easier!
+				return "[" + (mAtom == PSEUDO_ATOM_HYDROGEN ? "h" 
+						: mAtom == PSEUDO_ATOM_LONE_PAIR ? "lp" 
+						: mMol.getAtomLabel(mAtom) + mPosition)
+						+ "]";
+			}
+		}
+
 
 		int mCentralAtom,mCentralAtomPosition;
 		boolean mIsClockwise,mError;
@@ -1583,7 +1592,6 @@ public class SmilesParser {
 			switch (mNeighbourList.size()) {
 			case 2:
 				isInverse = isInverseOrderAllene();
-				// allene?
 				break;
 			case 3:
 				// All hydrogens atoms within SMILES all stereo centers all hydrogens must be
@@ -1591,7 +1599,9 @@ public class SmilesParser {
 				// Therefore, three neighbour atoms is a rare situation, e.g. CC[S@](=O)C or
 				// frozen out CC[N@H]C
 				// In these cases we add the electron pair as pseudo neighbour
-				mNeighbourList.add(new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
+				mNeighbourList.add(0, new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
+				// Note that this case also covers [C@H] as in alanine [C@H](N)(C)C(=O)O.
+				// A lone pair will suffice in place of pseudo-hydrogen for these purposes.
 		        //$FALL-THROUGH$
 			case 4:
 				isInverse = isInverseOrderTH();
