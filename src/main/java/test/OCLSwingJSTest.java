@@ -77,7 +77,7 @@ public class OCLSwingJSTest {
 	private static void testAllene(String outdir) {
 		
 		// note that PubChem will return allene structures with no stereochemistry
-		String inchi, smiles;
+		String inchi;
 		// InChI to mol and back
 		inchi = "InChI=1S/C9H5BBr2ClFO/c10-7(2-4-15)6(5-9(12)14)8(11)1-3-13/h3-4,15H,10H2/t1-,2+,5-/m1/s1";
 		testInChI(inchi, outdir);
