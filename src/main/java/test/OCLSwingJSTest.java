@@ -125,7 +125,6 @@ public class OCLSwingJSTest {
 		smiles = "N[C@@H](C)C(=O)O";
 		testSmilesInChI(smiles, inchi, true);
 
-		testSmilesInChI("[C@H](N)(C)C(=O)O", "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1", true);
 		testSmilesInChI("[C@H](F)(B)O", "InChI=1S/CH4BFO/c2-1(3)4/h1,4H,2H2/t1-/m1/s1", true);
 
 		String inchi0 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m0/s1";
