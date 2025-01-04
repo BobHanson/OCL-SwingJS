@@ -1515,8 +1515,8 @@ public class SmilesParser {
 				// makes debugging much easier!
 				return "[" + (mAtom == PSEUDO_ATOM_HYDROGEN ? "h" 
 						: mAtom == PSEUDO_ATOM_LONE_PAIR ? "lp" 
-						: mMol.getAtomLabel(mAtom) + mPosition)
-						+ "]";
+						: mMol.getAtomLabel(mAtom))
+						 + mPosition + "]";
 			}
 		}
 
@@ -1600,9 +1600,8 @@ public class SmilesParser {
 				// frozen out CC[N@H]C
 				// In these cases we add the electron pair as pseudo neighbour
 				mNeighbourList.add(new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
-				// Note that this case also covers [C@H] as in alanine [C@H](N)(C)C(=O)O.
+				// Note that this case also covers initial [C@H] as in alanine [C@H](N)(C)C(=O)O.
 				// A lone pair will suffice in place of pseudo-hydrogen for these purposes.
-				// Note that the position of the lone pair in the array is not significant; it could be anywhere.
 				//$FALL-THROUGH$
 			case 4:
 				isInverse = isInverseOrderTH();
@@ -1610,6 +1609,7 @@ public class SmilesParser {
 			default:
 				return Molecule.cAtomParityUnknown;
 			}
+			//System.out.println(mNeighbourList);
 			return (mIsClockwise ^ isInverse) ? Molecule.cAtomParity1 : Molecule.cAtomParity2;
 			/*
 			 * System.out.println();
