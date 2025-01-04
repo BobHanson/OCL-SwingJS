@@ -98,6 +98,11 @@ public class OCLSwingJSTest {
 
 	private static void testSmilesParser(String outdir) {
 		String smiles, inchi;
+
+		inchi = "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1";
+		smiles = "$[C@H](N)(C)C(=O)O";
+		testSmilesInChI(smiles, inchi, true);
+
 		String inchi0 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m0/s1";
 		String inchi1 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m1/s1";
 		String inchi0cl = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";
@@ -105,87 +110,75 @@ public class OCLSwingJSTest {
 
 // conjugated allene fails DO I CARE??
 		// the problem here is that InChI cannot take un-wedged allenes in
-		// and these conjugated ones utilize those, but there are problems 
+		// and these conjugated ones utilize those, but there are problems
 		// around the conjugation.
 //		smiles = "C(O)=[C@@]=C(B)C1=[C@@]=C(F)Br.C1(Br)=[C@]=CCl";
 //		inchi = "InChI=1S/C9H5BBr2ClFO/c10-7(2-4-15)6(5-9(12)14)8(11)1-3-13/h3-4,15H,10H2/t1-,2+,5-/m1/s1";
 //		testSmilesInChI(smiles, inchi, true);		
 
-		// failing -- from tpa2.cdxml -- is creating opposite configration of H-C-OH
 //		// Jmol SMILES and InChI
 		smiles = "C(O)=[C@]=C(B)CCC1=[C@@]=C(F)Br.C1CCC(Br)=[C@]=CCl";
 		smiles = "B[C](CC[C](CCC[C](Br)=[C@]=[CH]Cl)=[C@@]=[C](F)Br)=[C@]=[CH]O";
 		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
-		//InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1
-		testSmilesInChI(smiles, inchi, true);		
-
-		
-		
+		testSmilesInChI(smiles, inchi, true);
 
 		smiles = "B[C](CCC)=[C@]=[CH]O";
 		inchi = "InChI=1S/C6H11BO/c1-2-3-6(7)4-5-8/h5,8H,2-3,7H2,1H3/t4-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
+		testSmilesInChI(smiles, inchi, true);
 
 		smiles = "CCCC(B)=[C@@]=CO";
 		inchi = "InChI=1S/C6H11BO/c1-2-3-6(7)4-5-8/h5,8H,2-3,7H2,1H3/t4-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
-		
-		
+		testSmilesInChI(smiles, inchi, true);
+
 // from https://cactus.nci.nih.gov/chemical/structure/InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1/file?format=smiles
 		smiles = "B[C](CC[C](CCC[C](Br)=[C@]=[CH]Cl)=[C@@]=[C](F)Br)=[C@]=[CH]O";
 		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
-		testSmilesInChI(smiles, inchi, true);		
+		testSmilesInChI(smiles, inchi, true);
 
-
-		
 		smiles = "FC=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0, true);		
+		testSmilesInChI(smiles, inchi0, true);
 		smiles = "F[CH]=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0, true);		
+		testSmilesInChI(smiles, inchi0, true);
 
 		smiles = "C(F)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);		
+		testSmilesInChI(smiles, inchi1, true);
 		smiles = "[CH](F)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);		
+		testSmilesInChI(smiles, inchi1, true);
 		smiles = "C1=[C@]=CBr.F1";
-		testSmilesInChI(smiles, inchi1, true);		
+		testSmilesInChI(smiles, inchi1, true);
 		smiles = "F1.C1=[C@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);				
-		
+		testSmilesInChI(smiles, inchi1, true);
+
 		smiles = "FC=[C@@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);		
-		
-		
+		testSmilesInChI(smiles, inchi1, true);
+
 		smiles = "FC(Cl)=[C@]=CBr";
 		testSmilesInChI(smiles, inchi0cl, true);
 		smiles = "C1(Cl)=[C@]=CBr.F1";
-		testSmilesInChI(smiles, inchi0cl, true);		
+		testSmilesInChI(smiles, inchi0cl, true);
 		smiles = "F1.C1(Cl)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0cl, true);				
+		testSmilesInChI(smiles, inchi0cl, true);
 		smiles = "C12=[C@]=CBr.F1.Cl2";
-		testSmilesInChI(smiles, inchi0cl, true);		
+		testSmilesInChI(smiles, inchi0cl, true);
 		smiles = "C21=[C@]=CBr.F1.Cl2";
-		testSmilesInChI(smiles, inchi1cl, true);		
+		testSmilesInChI(smiles, inchi1cl, true);
 		smiles = "Cl1.F2.C21=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0cl, true);		
+		testSmilesInChI(smiles, inchi0cl, true);
 		smiles = "C21=[C@]=CBr.Cl1.F2";
-		testSmilesInChI(smiles, inchi0cl, true);		
+		testSmilesInChI(smiles, inchi0cl, true);
 
+		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
+		inchi = "InChI=1S/C23H30N2O3/c1-5-15-24(19-13-8-11-17-10-6-7-12-18(17)19)21(26)20-14-9-16-25(20)22(27)28-23(2,3)4/h6-8,10-13,20H,5,9,14-16H2,1-4H3/t20-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+
+		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
+		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
+
+		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
+		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
+		testSmilesInChI(smiles, inchi, true);		
 		
-
-
-		//		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
-//		inchi = "InChI=1S/C23H30N2O3/c1-5-15-24(19-13-8-11-17-10-6-7-12-18(17)19)21(26)20-14-9-16-25(20)22(27)28-23(2,3)4/h6-8,10-13,20H,5,9,14-16H2,1-4H3/t20-/m0/s1";
-//		testSmilesInChI(smiles, inchi, true);		
-//
-//		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
-//		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-//		testSmilesInChI(smiles, inchi, true);		
-//
-//		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
-//		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-//		testSmilesInChI(smiles, inchi, true);		
-//		
 	}
 
 	private static void testSmilesInChI(String smiles, String inchi, boolean throwError) {
@@ -371,7 +364,7 @@ public class OCLSwingJSTest {
 		if (frameY == -1) {
 			frameY = 0;
 		} else if (nFrame % 9 == 0) {
-			frameY += 120;
+			frameY += 110;
 			nFrame = 0;
 		}
 		return new Point(150 * nFrame++, frameY);

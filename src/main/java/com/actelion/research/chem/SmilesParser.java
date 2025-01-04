@@ -1592,7 +1592,7 @@ public class SmilesParser {
 				// frozen out CC[N@H]C
 				// In these cases we add the electron pair as pseudo neighbour
 				mNeighbourList.add(new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
-				break;
+		        //$FALL-THROUGH$
 			case 4:
 				isInverse = isInverseOrderTH();
 				break;
