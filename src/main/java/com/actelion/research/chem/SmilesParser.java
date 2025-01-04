@@ -1599,10 +1599,11 @@ public class SmilesParser {
 				// Therefore, three neighbour atoms is a rare situation, e.g. CC[S@](=O)C or
 				// frozen out CC[N@H]C
 				// In these cases we add the electron pair as pseudo neighbour
-				mNeighbourList.add(0, new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
+				mNeighbourList.add(new ParityNeighbour(PSEUDO_ATOM_LONE_PAIR, mCentralAtomPosition));
 				// Note that this case also covers [C@H] as in alanine [C@H](N)(C)C(=O)O.
 				// A lone pair will suffice in place of pseudo-hydrogen for these purposes.
-		        //$FALL-THROUGH$
+				// Note that the position of the lone pair in the array is not significant; it could be anywhere.
+				//$FALL-THROUGH$
 			case 4:
 				isInverse = isInverseOrderTH();
 				break;
@@ -1833,7 +1834,7 @@ public class SmilesParser {
 								  { "Br[C@@H](F)1.I1", "F[C@H](Br)I" },
 
 								  { "C[S@@](CC)=O", "CC[S@](C)=O" },
-								  { "[S@](=O)(C)CC", "CC[S](C)=O" } };
+								  { "[S@](=O)(C)CC", "CC[S@](C)=O" } };
 		StereoMolecule mol = new StereoMolecule();
 		for (String[] test:data) {
 			try {

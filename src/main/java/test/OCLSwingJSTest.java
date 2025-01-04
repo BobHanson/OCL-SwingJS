@@ -98,9 +98,29 @@ public class OCLSwingJSTest {
 
 	private static void testSmilesParser(String outdir) {
 		String smiles, inchi;
+		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(C)CC/file?format=stdinchi
+		String inchi0s = "InChI=1S/C3H8OS/c1-3-5(2)4/h3H2,1-2H3/t5-/m0/s1";
+		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(N)CC/file?format=stdinchi
+		String inchi1n = "InChI=1S/C2H7NOS/c1-2-5(3)4/h2-3H2,1H3/t5-/m1/s1";
+		smiles = "N[S@@](CC)=O";	
+		testSmilesInChI(smiles, inchi1n, true);
+		smiles = "[S@](N)(CC)=O";	
+		testSmilesInChI(smiles, inchi1n, true);
+		smiles = "[S@](=O)(N)CC";
+		testSmilesInChI(smiles, inchi1n, true);
+		smiles = "CC[S@](N)=O";
+		testSmilesInChI(smiles, inchi1n, true);
+		
+		smiles = "C[S@@](CC)=O";	
+		testSmilesInChI(smiles, inchi0s, true);
+		smiles = "[S@](=O)(C)CC";
+		testSmilesInChI(smiles, inchi0s, true);
+		smiles = "CC[S@](C)=O";
+		testSmilesInChI(smiles, inchi0s, true);
 
-		inchi = "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1";
+	
 		smiles = "[C@H](N)(C)C(=O)O";
+		inchi = "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1";
 		testSmilesInChI(smiles, inchi, true);
 		smiles = "N[C@@H](C)C(=O)O";
 		testSmilesInChI(smiles, inchi, true);
@@ -365,11 +385,11 @@ public class OCLSwingJSTest {
 	private static Point nextLoc() {
 		if (frameY == -1) {
 			frameY = 0;
-		} else if (nFrame % 9 == 0) {
+		} else if (nFrame % 10 == 0) {
 			frameY += 110;
 			nFrame = 0;
 		}
-		return new Point(150 * nFrame++, frameY);
+		return new Point(130 * nFrame++, frameY);
 	}
 
 	private static void writeImage(BufferedImage bi, String fname, String dir) {
