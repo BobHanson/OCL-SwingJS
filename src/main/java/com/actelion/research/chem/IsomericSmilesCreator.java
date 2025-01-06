@@ -894,6 +894,15 @@ public class IsomericSmilesCreator {
 		 && mMol.getConnAtoms(atom) == 2
 		 && mMol.getConnBondOrder(atom,0) == 2
 		 && mMol.getConnBondOrder(atom,1) == 2) {   // allene parities
+			// new - Thomas
+			for (int i=0; i<mMol.getConnAtoms(atom); i++) {
+				int connAtom = mMol.getConnAtom(atom, i);
+				if (connAtom != parent && mMol.getConnAtoms(connAtom) == 2) {
+					inversion = true;
+					break;
+				}
+			}
+			
 			for (int i=0; i<mMol.getConnAtoms(atom); i++) {
 				int connAtom = mMol.getConnAtom(atom,i);
 				int neighbours = 0;
