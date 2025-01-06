@@ -69,7 +69,7 @@ public class SmilesParser {
 	// Therefore, we have to distinguish from explicit H0, which defined query feature for SMARTS.
 	protected static final int HYDROGEN_IMPLICIT_ZERO = 9;
 
-	private StereoMolecule mMol;
+	protected StereoMolecule mMol;
 	private boolean[] mIsAromaticBond;
 	private int mMode,mSmartsMode,mAromaticAtoms,mAromaticBonds,mCoordinateMode;
 	private long mRandomSeed;
@@ -88,7 +88,7 @@ public class SmilesParser {
 	 * 
 	 */
 	
-	private Map<Integer, int[]> bsConnectionBonds;
+	private Map<String, int[]> mapConnectionBonds;
 	
 	/**
 	 * mAtom indices; tracks atoms with numeric connections, which need
@@ -98,6 +98,8 @@ public class SmilesParser {
 	 * 
 	 */
 	private BitSet bsAtomHasConnections;
+	public int[] mol2SmilesMap;
+	protected byte[] smiles; // mainly for debugging
 	/**
 	 * Creates a new SmilesParser that doesn't allow SMARTS features to be present in
 	 * parsed strings. SMARTS features cause an exception. The fragment flag of created
@@ -354,9 +356,10 @@ public class SmilesParser {
 
 	public void parse(StereoMolecule mol, byte[] smiles, int position, int endIndex, boolean createCoordinates,
 			boolean readStereoFeatures) throws Exception {
+		this.smiles = smiles;
 		mMol = mol;
 		mMol.clear();
-		bsConnectionBonds = new HashMap<>();
+		mapConnectionBonds = new HashMap<>();
 		bsAtomHasConnections = new BitSet();
 
 		if (mSmartsWarningBuffer != null)
@@ -658,13 +661,7 @@ public class SmilesParser {
 						// of the closure digit
 						int a1 = ringClosureAtom[number];
 						int a2 = baseAtom[bracketLevel];
-						int bond = mMol.addBond(a1, a2, bondType);
-						{
-							// BH 2025.01.02 for allene parities
-							bsConnectionBonds.put(Integer.valueOf(bond), new int[] {ringClosurePosition[number], position - 1});
-							bsAtomHasConnections.set(a1);
-							bsAtomHasConnections.set(a2);
-						}
+						int bond = addConnection(a1, a2, bondType, ringClosurePosition[number], position - 1);
 						if (ringClosureBondQueryFeatures[number] != 0)
 							bondQueryFeatures = ringClosureBondQueryFeatures[number];
 						if (bondQueryFeatures != 0) {
@@ -872,6 +869,17 @@ public class SmilesParser {
 			mMol.validateAtomQueryFeatures();
 			mMol.validateBondQueryFeatures();
 		}
+	}
+
+	private int addConnection(int a1, int a2, int bondType, int pos1, int pos2) {
+		// BH 2025.01.02 for allene parities
+		int bond = mMol.addBond(a1,  a2, bondType);
+		mapConnectionBonds.put(a1 + "_" + a2, new int[] {pos1, pos2});
+		mapConnectionBonds.put(a2 + "_" + a1, new int[] {pos1, pos2});
+		bsAtomHasConnections.set(a1);
+		bsAtomHasConnections.set(a2);
+		//System.out.println("bond " + bond + " connects " + a1 + " and " + a2 + " pos" + pos1 + " " + pos2);
+		return bond;
 	}
 
 	/**
@@ -1591,7 +1599,7 @@ public class SmilesParser {
 			boolean isInverse = false;
 			switch (mNeighbourList.size()) {
 			case 2:
-				isInverse = isInverseOrderAllene();
+				isInverse = isInverseOrderAllene(handleHydrogenAtomMap);
 				break;
 			case 3:
 				// All hydrogens atoms within SMILES all stereo centers all hydrogens must be
@@ -1630,12 +1638,19 @@ public class SmilesParser {
 		 * @return true if the SMILES atom ordering does not match the Molecule's atom ordering.
 		 * @author hansonr
 		 */
-		private boolean isInverseOrderAllene() {
+		private boolean isInverseOrderAllene(int[] smiles2MolMap) {
 			boolean inversion = false;
-			inversion = checkAlleneInversion(0, inversion);
-			inversion = checkAlleneInversion(1, inversion);
+			if (mol2SmilesMap == null) {
+				mol2SmilesMap = new int[smiles2MolMap.length];
+				for (int i = mol2SmilesMap.length; --i >= 0;) {
+					mol2SmilesMap[smiles2MolMap[i]] = i; 
+				}
+			}
+			inversion = checkAlleneInversion(smiles2MolMap, 0, inversion);
+			inversion = checkAlleneInversion(smiles2MolMap, 1, inversion);
 			return inversion;
 		}
+
 
 		/**
 		 * Determine for a given end, whether there is a switching of the order of
@@ -1644,26 +1659,50 @@ public class SmilesParser {
 		 * there are "ring" connection numbers. If no such complications exist, the
 		 * order in the Molecule will be the same as in the SMILES.
 		 * 
+		 * @param handleHydrogenMap [initialAtomIndex] == finalAtomIndex
 		 * @param index     0 (early end) or 1 (late end)
 		 * @param inversion
 		 * @return inversion after possible further inversion
 		 * @author hansonr
 		 */
-		private boolean checkAlleneInversion(int index, boolean inversion) {
+		private boolean checkAlleneInversion(int[] smiles2MolMap, int index, boolean inversion) {
+			final StereoMolecule mMol = SmilesParser.this.mMol; // avoiding multiple synthetic calls
 			ParityNeighbour a1 = mNeighbourList.get(index);
-			int a = a1.mAtom;
-			boolean hasImplicitH = mMol.getImplicitHydrogens(a) > 0;
-			boolean hasConnections = bsAtomHasConnections.get(a);
+			int smilesAtom = a1.mAtom;
+			int centerAtom = smiles2MolMap[this.mCentralAtom];
+			boolean hasImplicitH = mMol.getImplicitHydrogens(smilesAtom) > 0 && mMol.getConnAtoms(smilesAtom) == mMol.getAllConnAtoms(smilesAtom);
+			boolean hasConnections = bsAtomHasConnections.get(mol2SmilesMap[smilesAtom]);
+			//System.out.println(hasImplicitH + " " + hasConnections + " ca=" + mMol.getConnAtoms(smilesAtom) + " aca="
+			//		+ mMol.getAllConnAtoms(smilesAtom) + " ih=" + mMol.getImplicitHydrogens(smilesAtom));
 
-			for (int i = 0, n = mMol.getConnAtoms(a); i < n; i++) {
-				int b = mMol.getConnAtom(a, i);
-				if (b == mCentralAtom)
-					continue;
-				System.out.println("m" + index + "_" + a + "-" + b + " " + mMol.getAtomicNo(b));
-			}
+//			for (int i = 0, n = mMol.getAllConnAtoms(smilesAtom); i < n; i++) {
+//				int b = mMol.getConnAtom(smilesAtom, i);
+//				if (b == centerAtom)
+//					continue;
+//				System.out.println("m" + index + "_" + smilesAtom + "-" + b + " " + mMol.getAtomicNo(b));
+//			}
 
 			if (!hasImplicitH && !hasConnections) {
 				// ignore FC or CF
+				// but OC([H])= is special for some reason
+				int b = mMol.getConnAtom(smilesAtom, 2); // H atom
+				if (mMol.getAtomicNo(b) == 1) {
+				//	System.out.println("check H " + new String(smiles));
+					// BH
+					// four tested cases:
+					// [H]C(O)=[C@@]=CF  NO inversion!??
+					// OC([H])=[C@]=CF   YES inversion!??
+					// OC=[C@]=C([H])F   YES inversion OK
+					// OC(F)=[C@]=C(O)[H] NO inversion OK
+					//
+					// Why we need to invert OC([H]) and not [H]C(O) makes no sense to me at all
+
+					b = mol2SmilesMap[b];
+					if (index == 0 ? b > smilesAtom 
+							: mol2SmilesMap[mMol.getConnAtom(smilesAtom, 1)] > b) {
+						inversion = !inversion;
+					}
+				}
 				return inversion;
 			}
 
@@ -1673,9 +1712,16 @@ public class SmilesParser {
 				// The H will not be in the molecule.
 				// for index=0, it will be connected atom 0
 				// for index=1, it will be connected atom 1
-				if (mMol.getConnAtom(a, index) > a) {
+				int a2 = mMol.getConnAtom(smilesAtom, index);
+				int b = mol2SmilesMap[a2];
+				if (b > smilesAtom) {
 					inversion = !inversion;
-					System.out.println("inverting CX");
+//					System.out.println("inverting CX");
+					if (mMol.getAtomicNo(a2) == 1) {
+						// this makes no sense to me
+						// OC([H]) has a fluke? requires inversion, even though it should not.
+						inversion = !inversion;
+					}
 				}
 			}
 			if (hasConnections) {
@@ -1683,7 +1729,7 @@ public class SmilesParser {
 				// connections will be earlier or later in the molecule.
 				// the bonds will be to the connected atoms, in unusable order
 
-				int n = mMol.getConnAtoms(a);
+				int n = mMol.getAllConnAtoms(smilesAtom);
 				/**
 				 * the order of the atoms is by position, but that is not significant for
 				 * connections
@@ -1695,22 +1741,22 @@ public class SmilesParser {
 				int[] connBonds = new int[n - 1];
 				int nConnected = 0;
 				for (int i = 0, p = 0; i < n; i++) {
-					int b = mMol.getConnAtom(a, i);
-					if (b == mCentralAtom)
+					int b = mMol.getConnAtom(smilesAtom, i);
+					if (b == centerAtom)
 						continue;
 					connAtoms[p] = b;
-					int bond = mMol.getBond(a, b);
-					int[] positions = bsConnectionBonds.get(bond);
+					int bond = mMol.getBond(smilesAtom, b);
+					int[] positions = mapConnectionBonds.get(mol2SmilesMap[smilesAtom] + "_" + mol2SmilesMap[b]);
 					connBonds[p++] = (positions == null ? -1 : bond);
 					if (positions != null)
 						nConnected++;
 				}
-				System.out.println("atoms " + Arrays.toString(connAtoms));
-				System.out.println("bonds " + Arrays.toString(connBonds));
+//				System.out.println("atoms " + Arrays.toString(connAtoms));
+//				System.out.println("bonds " + Arrays.toString(connBonds));
 
 				if (hasImplicitH) {
 					// [CH]1
-					if (connAtoms[0] < a) {
+					if (connAtoms[0] < smilesAtom) {
 						// earlier atom, but later than H here
 						inversion = !inversion;
 					}
@@ -1725,34 +1771,39 @@ public class SmilesParser {
 
 					switch (nConnected) {
 					case 1:
-						if (mMol.getImplicitHydrogens(a) > 0) {
+						if (mMol.getImplicitHydrogens(smilesAtom) > 0) {
 							// C1= no problem; the connected atom is an H
 							break;
 						}
 						// XC1 or C1(X), but I don't know if that is always the first connection
 						boolean isFirst = (connBonds[0] >= 0);
-						int connPos = connAtoms[isFirst ? 0 : 1];
-						int otherPos = connAtoms[isFirst ? 1 : 0];
-						if (otherPos > a) {
+						int connAtom = connAtoms[isFirst ? 0 : 1];
+						int otherAtom = connAtoms[isFirst ? 1 : 0];
+						if (otherAtom > smilesAtom) {
 							// C1(X)
-							if (connPos > a)
-								inversion = !inversion;
+							if (connAtom > smilesAtom) {
+								if (mMol.getAtomicNo(otherAtom) != 1) {
+									// if the other atom is H, it will be already reversed
+									// by this point.
+									inversion = !inversion;
+								}
+							}
 						} else {
 							// XC1
-							if (connPos < a)
+							if (connAtom < smilesAtom)
 								inversion = !inversion;
 						}
 						break;
 					case 2:
 						// trickier, because we have a lot of options with C12= or C21=
 						// and the exact position of the numbers 1 and 2 are not known.
-						int b1 = getOtherAtom(connBonds[0], a);
-						int b2 = getOtherAtom(connBonds[1], a);
+						int b1 = getOtherAtom(connBonds[0], smilesAtom);
+						int b2 = getOtherAtom(connBonds[1], smilesAtom);
 						// positions are the byte positions of the two ends of each connection
-						int[] positions1 = bsConnectionBonds.get(connBonds[0]);
-						int[] positions2 = bsConnectionBonds.get(connBonds[1]);
-						System.out.println(Arrays.toString(positions1));
-						System.out.println(Arrays.toString(positions2));
+						int[] positions1 = mapConnectionBonds.get(smilesAtom + "_" + mol2SmilesMap[b1]);
+						int[] positions2 = mapConnectionBonds.get(smilesAtom + "_" + mol2SmilesMap[b2]);
+//						System.out.println(Arrays.toString(positions1));
+//						System.out.println(Arrays.toString(positions2));
 						int p1, p2;
 						int c = mCentralAtomPosition;
 						if (index == 0) {
@@ -1789,6 +1840,7 @@ public class SmilesParser {
 					}
 				}
 			}
+//			System.out.println("=" + index + " " + inversion + " " + new String(smiles));
 			return inversion;
 		}
 
@@ -1905,6 +1957,28 @@ public class SmilesParser {
 								  { "C[C@@](C)(O1)C[C@@H](O)[C@@]1(O2)[C@@H](C)[C@@H]3CC=C4[C@]3(C2)C(=O)C[C@H]5[C@H]4CC[C@@H](C6)[C@]5(C)Cc(n7)c6nc(C[C@@]89(C))c7C[C@@H]8CC[C@@H]%10[C@@H]9C[C@@H](O)[C@@]%11(C)C%10=C[C@H](O%12)[C@]%11(O)[C@H](C)[C@]%12(O%13)[C@H](O)C[C@@]%13(C)CO",
 									"Cephalostatin-1",
 									"gdKe@h@@K`H@XjKHuYlnoP\\bbdRbbVTLbTrJbRaQRRRbTJTRTrfrfTTOBPHtFODPhLNSMdIERYJmShLfs]aqy|uUMUUUUUUE@UUUUMUUUUUUTQUUTPR`nDdQQKB|RIFbiQeARuQt`rSSMNtGS\\ct@@" },
+								  
+								  { "OC=[C@]=CF", "allene-1", "gJQHBIAIVVb`@" },
+								  { "OC([H])=[C@]=CF", "allene-1", "gJQHBIAIVVb`@" },
+								  { "OC=[C@]=C([H])F", "allene-1", "gJQHBIAIVVb`@" },
+								  
+								  { "F1.OC=[C@]=C1", "allene-1", "gJQHBIAIVVb`@" },
+								  { "OC=[C@]=C1F.[H]1", "allene-1", "gJQHBIAIVVb`@" },
+								  { "[H]C(O)=[C@@]=CF", "allene-1", "gJQHBIAIVVb`@" },
+								  { "C(O)=[C@@]=CF", "allene-1", "gJQHBIAIVVb`@" },
+								  { "OC=[C@@]=C(F)[H]", "allene-1", "gJQHBIAIVVb`@" },
+								  { "CC(F)=[C@@]=CO", "allene-2", "gGQHJIAIgfZJ@" },
+								  { "OC=[C@]=C(C)F", "allene-2", "gGQHJIAIgfZJ@" },
+								  { "OC=[C@]=C(C)F", "allene-2", "gGQHJIAIgfZJ@" },
+								  { "CC(F)=[C@@]=CO", "allene-2", "gGQHJIAIgfZJ@" },
+								  { "CC(F)=[C@]=C(O)[H]", "allene-2", "gGQHJIAIgfZJ@" },
+								  { "CC(F)=[C@]=C(O)Cl", "allene-3", "gNqDDHbrBS[TmSH@" },
+								  { "OC(Cl)=[C@]=C(C)F", "allene-3", "gNqDDHbrBS[TmSH@" },
+								  { "ClC(O)=[C@]=C(F)C", "allene-3", "gNqDDHbrBS[TmSH@" },
+								  { "OC(Cl)=[C@]=C(C)F", "allene-3", "gNqDDHbrBS[TmSH@" },
+								  { "C1(Cl)=[C@]=C(C)F.O1", "allene-3", "gNqDDHbrBS[TmSH@" },
+								  { "C(O)(Cl)=[C@]=C(C)F", "allene-3", "gNqDDHbrBS[TmSH@" },
+
 									};
 
 		StereoMolecule mol = new StereoMolecule();

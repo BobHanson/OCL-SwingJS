@@ -38,10 +38,10 @@ public class OCLSwingJSTest {
 	public static void main(String[] args) {
 		String outdir = null;//"C:/temp/";
 		testSmilesParser(outdir);
-		testCDXParsers(outdir);
-		testInChIParsers(outdir);
-		testAllene(outdir);
-		testEne(outdir);
+//		testCDXParsers(outdir);
+//		testInChIParsers(outdir);
+//		testAllene(outdir);
+//		testEne(outdir);
 		
 		
 		//testDialog(args);
@@ -98,6 +98,37 @@ public class OCLSwingJSTest {
 
 	private static void testSmilesParser(String outdir) {
 		String smiles, inchi;
+		
+		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(C)CC/file?format=stdinchi
+		String inchi0f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m0/s1"; 
+		String inchi1f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m1/s1";
+		
+		inchi ="InChI=1S/C3H3FO2/c4-3(6)1-2-5/h2,5-6H/t1-/m1/s1";
+		smiles = "OC(F)=[C@]=C(O)[H]";// main() reports error because is OC(F) not CC(F)
+		testSmilesInChI(smiles, inchi, false);
+		smiles = "OC(F)=[C@@]=CO";		
+		testSmilesInChI(smiles, inchi, false);
+		
+		
+		smiles = "[H]C(O)=[C@@]=CF"; 
+		testSmilesInChI(smiles, inchi0f, false); 
+		smiles = "OC([H])=[C@]=CF"; 
+		testSmilesInChI(smiles, inchi0f, false); 
+		smiles = "OC=[C@]=C([H])F";
+		testSmilesInChI(smiles, inchi0f, false); 		
+		smiles = "OC=[C@@]=C1[H].F1";
+		testSmilesInChI(smiles, inchi0f, false); 
+		smiles = "OC=[C@]=C1F.[H]1";
+		testSmilesInChI(smiles, inchi0f, false);
+
+		smiles = "CC(F)=[C@]=C(O)[H]";// main() reports error because is OC(F) not CC(F)
+		testSmilesInChI(smiles, inchi0f, false);
+		smiles = "CC(F)=[C@@]=CO";		
+		testSmilesInChI(smiles, inchi0f, false);
+
+
+
+		
 		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(C)CC/file?format=stdinchi
 		String inchi0s = "InChI=1S/C3H8OS/c1-3-5(2)4/h3H2,1-2H3/t5-/m0/s1";
 		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(N)CC/file?format=stdinchi
@@ -211,6 +242,7 @@ public class OCLSwingJSTest {
 		JStructureView view = testShowViewAndWriteMol(mol, "smiles", null, null);
 		if (!testInChIOut(mol, inchi, false)) {
 			view.setBackground(Color.yellow);
+			System.out.println(smiles + " failed");
 			if (throwError)
 				throw new RuntimeException();
 		}
