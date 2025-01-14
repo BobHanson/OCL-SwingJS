@@ -612,13 +612,13 @@ public class MolfileParser
 			// superatom
 			// just a label
 			return true;
-		case "DAT":
-			// data Sgroup
-			// just more stuff
-			return true;
 		case "MUL":
 			// multiple group
 			// just pointing to atoms
+			return true;
+		case "DAT":
+			// data Sgroup
+			// just more stuff
 			return true;
 		case "COM":
 			// component
