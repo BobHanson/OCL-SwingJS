@@ -785,10 +785,23 @@ public class MolfileParser
 			String specifier = line.substring(index1,index2);
 			int index = specifier.indexOf('=');
 			String field = specifier.substring(0,index);
-			int value = Integer.parseInt(specifier.substring(index + 1));
-			if(field.equals("CHG")){
+			int value = Integer.parseInt(specifier.substring(specifier.charAt(index + 1) == '(' ? index + 2 : index + 1));
+			switch (field) {
+			case "RGROUPS":
+				// M  V30 1 R# 0.0 0.0 0.0 0 RGROUPS=(1 0)
+				// what to do here? At least read our own creation.
+				index = line.indexOf(')', index1);
+				if (value == 1) {
+					index1 = indexOfNextItem(line, index2);
+					value = Integer.parseInt(line.substring(index1, index));
+					mMol.setAtomicNo(atom, rGroupToAtomicNumber(value));
+				}
+				index2 = index + 1;
+				break;
+			case "CHG":
 				mMol.setAtomCharge(atom,value);
-			} else if(field.equals("RAD")){
+				break;
+			case "RAD":
 				switch(value){
 					case 1:
 						mMol.setAtomRadical(atom,Molecule.cAtomRadicalStateS);
@@ -800,14 +813,18 @@ public class MolfileParser
 						mMol.setAtomRadical(atom,Molecule.cAtomRadicalStateT);
 						break;
 				}
-			} else if(field.equals("CFG")){
+				break;
+			case "CFG":
 				//  don't read parities from molfile, they are calculated from up/down bonds
 				//  mMol.setAtomParity(atom, value, false);
-			} else if(field.equals("MASS")){
+				break;
+			case "MASS":
 				mMol.setAtomMass(atom,value);
-            } else if(field.equals("VAL")){
+				break;
+			case "VAL":
                 mMol.setAtomAbnormalValence(atom, (value==-1) ? 0 : (value==0) ? -1 : value);
-			} else if(field.equals("HCOUNT")){
+                break;
+			case "HCOUNT":
 				switch(value){
 					case 0:
 						break;
@@ -829,7 +846,8 @@ public class MolfileParser
 												     | Molecule.cAtomQFNot2Hydrogen, true);
 						break;
 				}
-			} else if(field.equals("SUBST")){
+				break;
+			case "SUBST":
 				if(value == -1){
 					mMol.setAtomQueryFeature(atom,Molecule.cAtomQFNoMoreNeighbours,true);
 				} else if(value > 0){
@@ -844,7 +862,8 @@ public class MolfileParser
 						mMol.setAtomQueryFeature(atom,Molecule.cAtomQFMoreNeighbours,true);
 					}
 				}
-			} else if(field.equals("RBCNT")){
+				break;
+			case "RBCNT":
 				switch(value){
 					case -1:
 						mMol.setAtomQueryFeature(atom,
@@ -880,12 +899,22 @@ public class MolfileParser
 												 true);
 						break;
 				}
-			} else{
+				break;
+			default:
 				TRACE("Warning MolfileParser: Unused version 3 atom specifier:" + field + "\n");
 			}
 		}
 	}
 
+    public static int atomicNoToRGroup(int atomicNo) {
+    	return (atomicNo == 154 ? 0 : atomicNo >= 142 ? atomicNo - 141 : atomicNo - 125);
+	}
+
+    public static int rGroupToAtomicNumber(int value) {
+    	return (value == 0 ? 154 : value < 4 ? 141 + value : 125 + value);
+    	
+    }
+    
 	private void interpretV3BondLine(String line) throws IOException
 	{
 		int index1 = 0;
@@ -1258,13 +1287,13 @@ public class MolfileParser
 		return(s.length() == 0) ? 0 : Integer.parseInt(s);
 	}
 
-	private int endOfItem(String line,int start)
+	private static int endOfItem(String line,int start)
 	{
 		int end = indexOfWhiteSpace(line,start + 1);
 		return(end == -1) ? line.length() : end;
 	}
 
-	private int indexOfWhiteSpace(String line,int fromIndex)
+	private static int indexOfWhiteSpace(String line,int fromIndex)
 	{
 		for(int i = fromIndex;i < line.length();i++){
 			if(line.charAt(i) == ' ' || line.charAt(i) == '\t'){
