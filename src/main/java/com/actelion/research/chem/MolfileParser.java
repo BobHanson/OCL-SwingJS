@@ -521,12 +521,12 @@ public class MolfileParser
 		}
 	}
 
-	private boolean readMoleculeV3FromBuffer(BufferedReader reader) throws IOException
-	{
+	private boolean readMoleculeV3FromBuffer(BufferedReader reader) throws IOException {
 		final int MODE_CTAB = 1;
 		final int MODE_CTAB_ATOM = 2;
 		final int MODE_CTAB_BOND = 3;
 		final int MODE_CTAB_COLLECTION = 4;
+		final int MODE_CTAB_SGROUP = 5;
 
 		if (mAtomIndexMap != null)
 			mAtomIndexMap.clear();
@@ -535,54 +535,179 @@ public class MolfileParser
 
 		int mode = 0;
 		String line = reader.readLine();
-		while(line != null && line.startsWith("M  V30 ")){
+		while (line != null && line.startsWith("M  V30 ")) {
 			line = line.substring(7).trim();
-			while(line.endsWith("-")){
+			while (line.endsWith("-")) {
 				String cont = reader.readLine();
-				if(!cont.startsWith("M  V30 ")){
+				if (!cont.startsWith("M  V30 ")) {
 					return false;
 				}
-				line = line.substring(0,line.length() - 1).concat(cont.substring(7)).trim();
+				line = line.substring(0, line.length() - 1).concat(cont.substring(7)).trim();
 			}
-
-			if(line.startsWith("BEGIN")){
+			if (line.startsWith("BEGIN")) {
 				String modeString = line.substring(6).trim();
-				if(modeString.startsWith("CTAB")){
+				if (modeString.startsWith("CTAB")) {
 					mode = MODE_CTAB;
-				} else if(modeString.startsWith("ATOM")){
+				} else if (modeString.startsWith("ATOM")) {
 					mode = MODE_CTAB_ATOM;
-				} else if(modeString.startsWith("BOND")){
+				} else if (modeString.startsWith("BOND")) {
 					mode = MODE_CTAB_BOND;
-				} else if(modeString.startsWith("COLLECTION")){
+				} else if (modeString.startsWith("COLLECTION")) {
 					mode = MODE_CTAB_COLLECTION;
-				} else{
+				} else if (modeString.startsWith("SGROUP")) {
+					mode = MODE_CTAB_SGROUP;
+				} else {
 					TRACE("Error MolfileParser: Unsupported version 3 block\n");
 					return false;
 				}
-			} else if(line.startsWith("END")){
+			} else if (line.startsWith("END")) {
 				mode = 0;
-			} else if(mode == MODE_CTAB){
-				interpretV3CountLine(line);
-			} else if(mode == MODE_CTAB_ATOM){
-				interpretV3AtomLine(line);
-			} else if(mode == MODE_CTAB_BOND){
-				interpretV3BondLine(line);
-			} else if(mode == MODE_CTAB_COLLECTION){
-				interpretV3CollectionLine(line);
-			} else{
-				TRACE("Error MolfileParser: Unexpected version 3 line\n");
-				return false;
+			} else {
+				switch (mode) {
+				case MODE_CTAB:
+					interpretV3CountLine(line);
+					break;
+				case MODE_CTAB_ATOM:
+					interpretV3AtomLine(line);
+					break;
+				case MODE_CTAB_BOND:
+					interpretV3BondLine(line);
+					break;
+				case MODE_CTAB_COLLECTION:
+					interpretV3CollectionLine(line);
+					break;
+				case MODE_CTAB_SGROUP:
+					if (!interpretV3SGROUPLine(line)) {
+						TRACE("Error MolfileParser: Could not continue with SGROUP line " + line + "\n");
+						return false;
+						
+					};
+					break;
+				default:
+					TRACE("Error MolfileParser: Unexpected version 3 line\n");
+					return false;
+				}
 			}
-
 			line = reader.readLine();
 		}
 
-		while(line != null && (!(line.startsWith("M  END") || line.equals("$$$$")))){
+		while (line != null && (!(line.startsWith("M  END") || line.equals("$$$$")))) {
 			line = reader.readLine();
 		}
 
 		return true;
 	}
+
+	private boolean interpretV3SGROUPLine(String line) throws IOException {
+		// not processing these;
+		// all we are doing here is making sure this is a type we can safely ignore.
+		int index1 = 0;
+		int index2 = endOfItem(line, index1);
+		//int sgIndex = Integer.parseInt(line.substring(index1, index2));
+		index1 = indexOfNextItem(line, index2);
+		index2 = endOfItem(line, index1);
+		String sgt = line.substring(index1, index2);
+		switch (sgt) {
+		case "SUP":
+			// superatom
+			// just a label
+			return true;
+		case "DAT":
+			// data Sgroup
+			// just more stuff
+			return true;
+		case "MUL":
+			// multiple group
+			// just pointing to atoms
+			return true;
+		case "COM":
+			// component
+			// probably ok - just a number?
+			return true;
+		case "MON":
+			// monomer
+			// I'm not seeing the spec for this. Probably OK?
+			return true;
+
+		// should be possible in some cases:
+			
+		case "SRU":
+			// fragment with brackets
+			// We could handle this, but it's tricky
+			// See CDXML reader for an example of how to nest these
+			// and adjust coordinates to extend
+			return false;
+
+	    // definitely not:
+
+		case "COP":
+			// copolymer
+			// definitely not
+			return false;
+		case "ANY":
+			// any polymer
+			return false;
+		case "CRO":
+			// polymer crosslink 
+			// yowser!
+			return false;
+
+		// no idea, as I can't find any specification:
+			
+		case "MER":
+			// Mer type
+			// no specification?
+			return false;
+		case "MOD":
+			// modification
+			// no specification?
+			return false;
+		case "MIX":
+			// mixture
+			// no specification?
+			return false;			
+		case "GRA":
+			// graft
+			// no specification?
+			return false;			
+		case "FOR":
+			// formulation
+			// no specification?
+			return false;
+		case "GEN":
+			// generic
+			// no specification?
+			return false;
+		default:
+			// future?
+			return false;
+		}
+
+//			M V30 BEGIN SGROUP
+//			[M V30 DEFAULT [CLASS=class] -]
+//			M V30 index type extindex -
+//			M V30 [ATOMS=(natoms atom [atom ...])] -
+//			M V30 [XBONDS=(nxbonds xbond [xbond ...])] -
+//			M V30 [CBONDS=(ncbonds cbond [cbond ...])] -
+//			M V30 [PATOMS=(npatoms patom [patom ...])] -
+//			M V30 [SUBTYPE=subtype] [MULT=mult] -
+//			M V30 [CONNECT=connect] [PARENT=parent] [COMPNO=compno] -
+//			M V30 [XBHEAD=(nxbonds xbond [xbond ...])] -
+//			M V30 [XBCORR=(nxbpairs xb1 xb2 [xb1 xb2 ...])] -
+//			M V30 [LABEL=label] -
+//			M V30 [BRKXYZ=(9 bx1 by1 bz1 bx2 by2 bz2 bx3 by3 bz3])* -
+//			M V30 [ESTATE=estate] [CSTATE=(4 xbond cbvx cbvy cbvz)]* -
+//			M V30 [FIELDNAME=fieldname] [FIELDINFO=fieldinfo] -
+//			M V30 [FIELDDISP=fielddisp] -
+//			M V30 [QUERYTYPE=querytype] [QUERYOP=queryop] -
+//			M V30 [FIELDDATA=fielddata] ... -
+//			M V30 [CLASS=class] -
+//			M V30 [SAP=(3 aidx lvidx id)]* -
+//			M V30 [BRKTYP=bracketType] -
+//			...
+//			M V30 END SGROUP			
+	}
+
 
 	private void interpretV3CountLine(String line)
 	{
