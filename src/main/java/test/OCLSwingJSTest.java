@@ -108,7 +108,15 @@ public class OCLSwingJSTest {
 		testSmilesInChI(smiles, inchi, false);
 		smiles = "OC(F)=[C@@]=CO";		
 		testSmilesInChI(smiles, inchi, false);
-		
+
+		// note: these two both give the same result (/m1/s1)
+		// https://cactus.nci.nih.gov/chemical/structure/[H]C([2H])=[C@]=CF/file?format=stdinchi
+		// https://cactus.nci.nih.gov/chemical/structure/[2H]C([H])=[C@]=CF/file?format=stdinchi
+		smiles = "[H]C([2H])=[C@]=CF"; 
+		testSmilesInChI(smiles, "InChI=1S/C3H3F/c1-2-3-4/h3H,1H2/i1D/t2-/m1/s1", false); 
+		smiles = "[2H]C([H])=[C@]=CF"; 
+		testSmilesInChI(smiles, "InChI=1S/C3H3F/c1-2-3-4/h3H,1H2/i1D/t2-/m0/s1", false); 
+
 		
 		smiles = "[H]C(O)=[C@@]=CF"; 
 		testSmilesInChI(smiles, inchi0f, false); 
