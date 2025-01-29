@@ -67,6 +67,10 @@ public class HiDPIHelper {
 	 * @return typically 1.0 or 1.25, 1.5, ...
 	 */
 	public static float getUIScaleFactor() {
+		/**
+		 * @j2sNative
+		 * return 1;
+		 */
 		if (sUIScaleFactor == -1) {
 			float f = 0;
 			String dpiFactor = System.getProperty("dpifactor");
@@ -122,6 +126,10 @@ public class HiDPIHelper {
 	 * @return the (largest) image scaling factor of all connected screens
 	 */
 	public static float getPixelPerComponentSizeFactor() {
+		/**
+		 * @j2sNative
+		 * return 1;
+		 */
 		if (sPixelPerComponentSizeFactor == -1)
 			sPixelPerComponentSizeFactor = Platform.isWindows() ? getMaxDeviceUIScaling() : Platform.isMacintosh() ? getRetinaScaleFactor() : 1.0f;
 
@@ -133,6 +141,10 @@ public class HiDPIHelper {
 	 * @return
 	 */
 	public static float getIconScaleFactor() {
+		/**
+		 * @j2sNative
+		 * return 1;
+		 */
 		if (sIconScaleFactor == -1)
 			sIconScaleFactor = Platform.isWindows() ? getMaxDeviceUIScaling() : Platform.isMacintosh() ? getRetinaScaleFactor() : getUIScaleFactor();
 
