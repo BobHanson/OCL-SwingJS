@@ -6,9 +6,11 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 import javax.imageio.ImageIO;
@@ -36,6 +38,8 @@ public class OCLSwingJSTest {
 	public static int nFrame;
 
 	public static void main(String[] args) {
+		String s = smilesToMolfile("CCC");
+		System.out.println(s);
 		String outdir = null;//"C:/temp/";
 		testSmilesParser(outdir);
 //		testCDXParsers(outdir);
@@ -47,6 +51,22 @@ public class OCLSwingJSTest {
 		//testDialog(args);
 	}
 
+	private static String smilesToMolfile(String smiles) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		try {
+			StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
+			MolfileCreator creator = new MolfileCreator(mol);
+			OutputStreamWriter writer = new OutputStreamWriter(bos);
+			creator.writeMolfile(writer);
+			writer.close();
+			return new String(bos.toByteArray());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	private static void testEne(String outdir) {
 		String inchi;
 		inchi = "InChI=1S/C4H8/c1-3-4-2/h3-4H,1-2H3/b4-3-";
