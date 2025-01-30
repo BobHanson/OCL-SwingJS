@@ -2,7 +2,7 @@ package com.actelion.research.chem.moreparsers;
 
 import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.inchi.InChIJNI;
+import com.actelion.research.chem.inchi.InChIOCL;
 
 /**
  * A "parser" for InChI and InChIKey that just attempts to get the SDF file from
@@ -70,7 +70,7 @@ public class InChIParser {
 // InChI%3D1S%2FC9H8O4%2Fc1-6%2810%2913-8-5-3-2-4-7%288%299%2811%2912%2Fh2-5H%2C1H3%2C%28H%2C11%2C12%29
 				break;
 			}
-			return InChIJNI.inchiToMolecule(code, mol);
+			return InChIOCL.getMoleculeFromInChI(code, mol);
 		case "inchikey":
 			url = pubchemInChIKey.replace("XX", code);
 			break;

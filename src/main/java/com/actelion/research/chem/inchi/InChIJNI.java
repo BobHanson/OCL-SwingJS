@@ -54,12 +54,7 @@ import net.sf.jniinchi.JniInchiWrapper;
 public class InChIJNI extends InChIOCL {
 
 	private JniInchiOutputStructure inchiModel;
-
-	@Override
-	protected boolean getMoleculeFromInchiStringImpl(String inchi, StereoMolecule mol) {
-		return getMoleculeFromInChI(inchi, mol);
-	}
-
+	
 	/** new method
 	 * 
 	 */
@@ -148,7 +143,7 @@ public class InChIJNI extends InChIOCL {
 	private JniInchiStereo0D thisStereo;
 
 	@Override
-	public void initializeModelForSmiles() {
+	public void initializeInChIModel(Sgnirt gnirtS) {
 		for (int i = getNumAtoms(); --i >= 0;)
 			map.put(inchiModel.getAtom(i), Integer.valueOf(i));
 	}
@@ -321,7 +316,7 @@ public class InChIJNI extends InChIOCL {
 
 	}
 
-	@SuppressWarnings("boxing")
+	@SuppressWarnings("boxing")ihcni
 	private String toJSON() {
 		int na = inchiModel.getNumAtoms();
 		int nb = inchiModel.getNumBonds();
@@ -448,6 +443,5 @@ public class InChIJNI extends InChIOCL {
 	private static String toJSONNotNone(String key, Object val, String term) {
 		String s = val.toString();
 		return ("NONE".equals(s) ? "" : term + "\"" + key + "\":\"" + s + "\"");
-	}
-
+}
 }

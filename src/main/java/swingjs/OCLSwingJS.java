@@ -5,11 +5,10 @@ import java.awt.Dimension;
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
 
-import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.IsomericSmilesCreator;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.inchi.InChIJNI;
+import com.actelion.research.chem.inchi.InChIOCL;
 import com.actelion.research.gui.FileHelper;
 import com.actelion.research.gui.editor.SwingEditorArea;
 import com.actelion.research.gui.editor.SwingEditorPanel;
@@ -52,7 +51,8 @@ public class OCLSwingJS {
 				System.exit(1);
 			String smiles = new IsomericSmilesCreator(mol).getSmiles();
 			System.out.println(smiles);
-			String inchi = InChIJNI.getInChI(mol, null);
+			String options = null;
+			String inchi = InChIOCL.getInChI(mol, null, options);
 			System.out.println(inchi);
 			dialog = showEditFrame(mol, title);
 		});

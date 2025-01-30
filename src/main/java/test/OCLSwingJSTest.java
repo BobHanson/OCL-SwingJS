@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 import javax.imageio.ImageIO;
@@ -22,7 +21,7 @@ import com.actelion.research.chem.MolfileCreator;
 import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.inchi.InChIJNI;
+import com.actelion.research.chem.inchi.InChIOCL;
 import com.actelion.research.chem.moreparsers.CDXParser;
 import com.actelion.research.chem.moreparsers.InChIKeyParser;
 import com.actelion.research.chem.moreparsers.InChIParser;
@@ -340,7 +339,8 @@ public class OCLSwingJSTest {
 	}
 
 	private static boolean testInChIOut(StereoMolecule mol, String inchi, boolean throwError) {
-		String s = InChIJNI.getInChI(mol, null);
+		String options = "";
+		String s = InChIOCL.getInChI(mol, options);
 		boolean ok = inchi.equals(s);
 		System.out.println(inchi);
 		System.out.println(s);
