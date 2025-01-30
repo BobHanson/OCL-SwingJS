@@ -25,7 +25,6 @@ import org.iupac.InChIStructureProvider;
 import org.iupac.InchiUtils;
 
 import com.actelion.research.chem.MolfileCreator;
-import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.StereoMolecule;
 
 /**
@@ -75,72 +74,55 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
     // for dynamic loading
   }
 
-  @Override
-  protected boolean getMoleculeFromInchiStringImpl(String inchi, StereoMolecule mol) {
-	  String s = getInChIimpl(mol, inchi, "", false);
-	  return (s != null);
-  }  
-
-  @Override
-  protected String getInChIimpl(StereoMolecule mol, String molData, String options, boolean getKey) {
-  if (mol == null && molData == null)
-	  return null;
-    String ret = "";
-    try {
-      options = setParameters(options, molData, mol);
-      if (options == null)
-        return "";
-      options = options.replace('-', ' ').replaceAll("\\s+", " ").trim().replaceAll(" ", " -").toLowerCase();
-      if (options.length() > 0)
-        options = "-" + options;
-      if (mol != null)
-        molData = new MolfileCreator(mol).getMolfile();
-      if (inputInChI) {
-        if (getInchiModel) {
-          String json = null;
-          /**
-           * @j2sNative json = (Jmol.modelFromInchi ?
-           *            Jmol.modelFromInchi(molData).model : ""); if (json &&
-           *            !this.getInchiModel) { json = JSON.parse(json); }
-           */
-          {
-          }
-          // "getInchiModel" is just a debugging method 
-          // to see the exposed InChI structure in string form
-          return json;
-        }
-        // could be inchikey from inchi
-        /**
-         * @j2sNative ret = (Jmol.inchikeyFromInchi ?
-         *            Jmol.inchikeyFromInchi(molData).inchikey : "");
-         */
-        {
-        }
-      } else {
-        boolean haveKey = (options.indexOf("key") >= 0);
-        if (haveKey) {
-          options = options.replace("inchikey", "key");
-        }
-        /**
-         * @j2sNative ret = (Jmol.inchiFromMolfile ?
-         *            Jmol.inchiFromMolfile(molData, options).inchi : "");
-         */
-        {
-        }
-      }
-    } catch (Throwable e) {
-      // oddly, e will be a string, not an error
-      /**
-       * @j2sNative
-       * 
-       *            e = (e.getMessage$ ? e.getMessage$() : e);
-       */
-      {
-      }
-      System.err.println("InChIJS exception: " + e);
-    }
-    return ret;
-  }
+  protected String getInchiImpl(StereoMolecule mol, String molData, String options, boolean isKey) {
+		options = options.replace('-', ' ').replaceAll("\\s+", " ").trim().replaceAll(" ", " -").toLowerCase();
+		if (options.length() > 0)
+			options = "-" + options;
+		if (mol != null)
+			molData = new MolfileCreator(mol).getMolfile();
+		boolean haveKey = (options.indexOf("key") >= 0);
+		if (haveKey) {
+			options = options.replace("inchikey", "key");
+		}
+		String ret = null;
+		if (inputInChI) {
+			if (getInchiModel) {
+				// model from inchi
+				/**
+				 * @j2sNative
+				 * 
+				 * 			ret = (Jmol.modelFromInchi ? Jmol.modelFromInchi(molData).model :
+				 *            "");
+				 */
+				{
+				}
+			} else if (getKey) {
+				// inchikey from inchi
+				/**
+				 * @j2sNative ret = (Jmol.inchikeyFromInchi ?
+				 *            Jmol.inchikeyFromInchi(molData).inchikey : "");
+				 */
+				{
+				}
+			} else {
+				// inchi from inchi
+				/**
+				 * @j2sNative ret = (Jmol.inchiFromInchi ? Jmol.inchiFromInchi(molData,
+				 *            options).inchi : "");
+				 */
+				{
+				}
+			}
+		} else {
+			/**
+			 * @j2sNative ret = (Jmol.inchiFromMolfile ? Jmol.inchiFromMolfile(molData,
+			 *            options).inchi : "");
+			 */
+			{
+			}
+		}
+		return ret;
+	}
 
   @SuppressWarnings("unused")
   private Object json;
@@ -310,7 +292,6 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
     }
   }
 
-  @SuppressWarnings("unused")
   private int getInt(Map<String, Object> map, String name, int defaultValue) {
     /**
      * @j2sNative var val = map[name]; if (val || val == 0) return val;
@@ -320,7 +301,6 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
     return defaultValue;
   }
 
-  @SuppressWarnings("unused")
   private double getDouble(Map<String, Object> map, String name,
                            double defaultValue) {
     /**

@@ -2,7 +2,7 @@ package org.iupac;
 
 public interface InChIStructureProvider {
   
-  void initialInchiModel(String inchi);
+  void initializeInchiModel(String inchi) throws Exception;
   
   //InChIStructureProvider Setters
   InChIStructureProvider setAtom(int i);

@@ -16,9 +16,8 @@ public abstract class InChIOCL implements InChIStructureProvider {
 
 	private final static boolean jniHasMolFileToInChI = false;
 
-	protected abstract String getInChIimpl(StereoMolecule mol, String molData, String options, boolean isKey);
+	protected abstract String getInchiImpl(StereoMolecule mol, String molData, String options, boolean getKey);
 
-	protected abstract boolean getMoleculeFromInchiStringImpl(String inchi, StereoMolecule mol);
 
 	/**
 	 * This private method selects among:
@@ -49,7 +48,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return InChIKey
 	 */
 	public static String getInChIKey(StereoMolecule mol, String options) {
-		return getInChIOCL().getInChIimpl(mol, null, options, true);
+		return getInChIOCL().getInchi(mol, null, options, true);
 	}
 
 	/**
@@ -61,7 +60,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return InChIKey
 	 */
 	public static String getInChIKey(String molFileDataOrInChI, String options) {
-		return getInChIOCL().getInChIimpl(null, molFileDataOrInChI, options, true);
+		return getInChIOCL().getInchi(null, molFileDataOrInChI, options, true);
 	}
 
 	/**
@@ -73,7 +72,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return InChIKey
 	 */
 	public static String getInChI(StereoMolecule mol, String options) {
-		return getInChIOCL().getInChIimpl(mol, null, options, true);
+		return getInChIOCL().getInchi(mol, null, options, true);
 	}
 
 	/**
@@ -85,7 +84,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return InChIKey
 	 */
 	public static String getInChI(String molFileDataOrInChI, String options) {
-		return getInChIOCL().getInChIimpl(null, molFileDataOrInChI, options, true);
+		return getInChIOCL().getInchi(null, molFileDataOrInChI, options, true);
 	}
 
 	///// to StereoMolecule //
@@ -111,8 +110,6 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		StereoMolecule mol = new StereoMolecule();
 		return (getMoleculeFromInChI(inchi, mol) ? IsomericSmilesCreator.createSmiles(mol) : null);
 	}
-
-
 	
 	/**
 	 * Get an InChI based on options
@@ -123,7 +120,81 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return InChIKey
 	 */
 	protected static String getInChI(StereoMolecule mol, String molfileDataOrInChI, String options) {
-		return getInChIOCL().getInChIimpl(null, molfileDataOrInChI, options, false);
+		return getInChIOCL().getInchi(null, molfileDataOrInChI, options, false);
+	}
+
+	private String getInchi(StereoMolecule mol, String molData, String options, boolean getKey) {
+		try {
+			if (mol == null && molData == null)
+				return null;
+			inchi = null;
+			options = setParameters(options, molData, mol);
+			if (options == null)
+				return "";
+			if (inchi != null) {
+				if (!getKey)
+					return inchi;
+				molData = inchi;
+			} 
+			return getInchiImpl(mol, molData, options, getKey);
+		} catch (Throwable e) {
+			// oddly, e will be a string, not an error
+			/**
+			 * @j2sNative
+			 * 
+			 * 			e = (e.getMessage$ ? e.getMessage$() : e);
+			 */
+			{
+			}
+			System.err.println("InChIOCL exception: " + e);
+			return null;
+		}
+	}
+	
+	protected boolean inputInChI;
+	protected String inchi;
+	protected boolean getInchiModel;
+	protected boolean getKey;
+	protected boolean fixedH;
+
+	private String setParameters(String options, String molData, StereoMolecule mol) {
+		if (mol == null ? molData == null : mol.getAtoms() == 0)
+			return null;
+		if (options == null)
+			options = "";
+		String inchi = null;
+		String lc = options.toLowerCase().trim();
+		boolean getInchiModel = (lc.indexOf("model") == 0);
+		boolean getKey = (lc.indexOf("key") >= 0);
+		if (lc.startsWith("model/")) {
+			inchi = options.substring(10);
+			options = lc = "";
+		} else if (getInchiModel) {
+			lc = lc.substring(5);
+		}
+		boolean optionalFixedH = (options.indexOf("fixedh?") >= 0);
+		boolean inputInChI = molData.startsWith("InChI=");
+		if (!inputInChI) {
+			options = lc;
+			if (getKey) {
+				options = options.replace("inchikey", "");
+				options = options.replace("key", "");
+			}
+
+			if (optionalFixedH) {
+				String fxd = getInchi(mol, molData, options.replace('?', ' '), false);
+				options = options.replace("fixedh?", "");
+				String std = getInchi(mol, molData, options, false);
+				inchi = (fxd != null && fxd.length() <= std.length() ? std : fxd);
+				options = null;
+			}
+		}
+		this.fixedH = optionalFixedH;
+		this.inputInChI = inputInChI;
+		this.inchi = inchi;
+		this.getKey = getKey;
+		this.getInchiModel = getInchiModel;
+		return options;
 	}
 
 	/**
@@ -133,8 +204,9 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * 
 	 * @param struc
 	 * @param mol
+	 * @throws Exception 
 	 */
-	final protected void getOCLMolecule(String inchi, StereoMolecule mol) {
+	final protected void getOCLMolecule(String inchi, StereoMolecule mol) throws Exception {
 		
 		// uses subclass implementations
 		initializeInchiModel(inchi);
@@ -285,54 +357,6 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		default:
 			return Molecule.cBondTypeSingle;
 		}
-
-	}
-
-	protected boolean inputInChI;
-	protected String inchi;
-	protected boolean getInchiModel;
-	protected boolean getKey;
-	protected boolean fixedH;
-
-	protected String setParameters(String options, String molData, StereoMolecule mol) {
-		if (mol == null ? molData == null : mol.getAtoms() == 0)
-			return null;
-		if (options == null)
-			options = "";
-		String inchi = null;
-		String lc = options.toLowerCase().trim();
-		boolean getInchiModel = (lc.indexOf("model") == 0);
-		boolean getKey = (lc.indexOf("key") >= 0);
-		if (lc.startsWith("model/")) {
-			inchi = options.substring(10);
-			options = lc = "";
-		} else if (getInchiModel) {
-			lc = lc.substring(5);
-		}
-		boolean optionalFixedH = (options.indexOf("fixedh?") >= 0);
-		boolean inputInChI = (molData instanceof String && ((String) molData).startsWith("InChI="));
-		if (inputInChI) {
-			inchi = (String) molData;
-		} else {
-			options = lc;
-			if (getKey) {
-				options = options.replace("inchikey", "");
-				options = options.replace("key", "");
-			}
-
-			if (optionalFixedH) {
-				String fxd = getInChIimpl(mol, molData, options.replace('?', ' '), false);
-				options = options.replace("fixedh?", "");
-				String std = getInChIimpl(mol, molData, options, false);
-				inchi = (fxd != null && fxd.length() <= std.length() ? std : fxd);
-			}
-		}
-		this.fixedH = optionalFixedH;
-		this.inputInChI = inputInChI;
-		this.inchi = inchi;
-		this.getKey = getKey;
-		this.getInchiModel = getInchiModel;
-		return options;
 	}
 
 }
