@@ -58,9 +58,9 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
       /**
        * Import inchi-web-SwingJS.js
        * 
-       * @j2sNative var j2sPath = Jmol._applets.master._j2sFullPath;
-       *            Jmol.inchiPath = Jmol._applets.master._j2sFullPath +
-       *            "/_ES6"; import(importPath + "/inchi-web-SwingJS.js");
+       * @j2sNative var j2sPath = J2S._applets.master._j2sFullPath;
+       *            J2S.inchiPath = J2S._applets.master._j2sFullPath +
+       *            "/_ES6"; import(J2S.inchiPath + "/inchi-web-SwingJS.js");
        */
       {
       }
@@ -74,12 +74,12 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
     // for dynamic loading
   }
 
-  protected String getInchiImpl(StereoMolecule mol, String molData, String options, boolean isKey) {
+  protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options, boolean isKey) {
 		options = options.replace('-', ' ').replaceAll("\\s+", " ").trim().replaceAll(" ", " -").toLowerCase();
 		if (options.length() > 0)
 			options = "-" + options;
 		if (mol != null)
-			molData = new MolfileCreator(mol).getMolfile();
+			molFileDataOrInChI = new MolfileCreator(mol).getMolfile();
 		boolean haveKey = (options.indexOf("key") >= 0);
 		if (haveKey) {
 			options = options.replace("inchikey", "key");
@@ -91,7 +91,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 				/**
 				 * @j2sNative
 				 * 
-				 * 			ret = (Jmol.modelFromInchi ? Jmol.modelFromInchi(molData).model :
+				 * 			ret = (J2S.modelFromInchi ? J2S.modelFromInchi(molFileDataOrInChI).model :
 				 *            "");
 				 */
 				{
@@ -99,15 +99,15 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 			} else if (getKey) {
 				// inchikey from inchi
 				/**
-				 * @j2sNative ret = (Jmol.inchikeyFromInchi ?
-				 *            Jmol.inchikeyFromInchi(molData).inchikey : "");
+				 * @j2sNative ret = (J2S.inchikeyFromInchi ?
+				 *            J2S.inchikeyFromInchi(molFileDataOrInChI).inchikey : "");
 				 */
 				{
 				}
 			} else {
 				// inchi from inchi
 				/**
-				 * @j2sNative ret = (Jmol.inchiFromInchi ? Jmol.inchiFromInchi(molData,
+				 * @j2sNative ret = (J2S.inchiFromInchi ? J2S.inchiFromInchi(molFileDataOrInChI,
 				 *            options).inchi : "");
 				 */
 				{
@@ -115,7 +115,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 			}
 		} else {
 			/**
-			 * @j2sNative ret = (Jmol.inchiFromMolfile ? Jmol.inchiFromMolfile(molData,
+			 * @j2sNative ret = (J2S.inchiFromMolfile ? J2S.inchiFromMolfile(molFileDataOrInChI,
 			 *            options).inchi : "");
 			 */
 			{
@@ -135,6 +135,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 
   @Override
   public void initializeInchiModel(String inchi) {
+	  
     /**
      * @j2sNative this.atoms = this.json.atoms; this.bonds = this.json.bonds;
      *            this.stereo0d = this.json.stereo0d;

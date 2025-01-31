@@ -90,4 +90,21 @@ public class ParserUtils {
 		return (url.indexOf("://") < 0 ? "file://" + (url.startsWith("/") ? "" : "/") + url : url);
 	}
 
+	public static String escapePubChemQuery(String value) {
+		return value.replaceAll("=", "%3D")
+				.replaceAll("/", "%2F")
+				.replaceAll("\\+", "%2B")
+				.replaceAll(",", "%2C")
+				.replaceAll("\\(", "%28")
+				.replaceAll("\\)", "%29");
+	}
+
+	public static String escapeCIRQuery(String value) {
+		return value.replaceAll("\\%", "%25")
+				.replaceAll("\\n", "")
+				.replaceAll("#", "%23")
+				.replaceAll("\\[", "%5B")
+				.replaceAll("\\\\", "%5C")
+				.replaceAll("\\]", "%5D");
+	}
 }

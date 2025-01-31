@@ -3,7 +3,6 @@ package org.iupac;
 public interface InChIStructureProvider {
   
   void initializeInchiModel(String inchi) throws Exception;
-  
   //InChIStructureProvider Setters
   InChIStructureProvider setAtom(int i);
   InChIStructureProvider setBond(int i);
@@ -35,9 +34,7 @@ public interface InChIStructureProvider {
    * atomic mass)
    * 
    * 
-   * However, I double "average" here means "average"
-   * 
-   * @return inchi's value of
+   * @return inchi's value of of the average mass
    */
   int getIsotopicMass();
  

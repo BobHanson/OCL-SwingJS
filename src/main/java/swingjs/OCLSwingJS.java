@@ -52,7 +52,7 @@ public class OCLSwingJS {
 			String smiles = new IsomericSmilesCreator(mol).getSmiles();
 			System.out.println(smiles);
 			String options = null;
-			String inchi = InChIOCL.getInChI(mol, null, options);
+			String inchi = InChIOCL.getInChI(mol, options);
 			System.out.println(inchi);
 			dialog = showEditFrame(mol, title);
 		});
