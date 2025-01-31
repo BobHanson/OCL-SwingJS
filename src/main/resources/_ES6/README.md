@@ -4,4 +4,4 @@ put into the site/swingjs/j2s/ directory for JavaScript only.
 
 InChI WASM code from InChI-SwingJS/docs/inchi
 
-Its content that cannot be included in google-compressor compiled packages.
+This is content that cannot be included in google-compressor compiled packages.
