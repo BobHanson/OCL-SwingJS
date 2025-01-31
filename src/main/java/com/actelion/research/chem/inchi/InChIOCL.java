@@ -170,7 +170,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	private String getInchiPvt(StereoMolecule mol, String molDataOrInChI, String options, boolean getKey) {
 		try {
 			if (mol == null && molDataOrInChI == null)
-				return null;
+				return null; // this is an error return
 			inchi = null;
 			options = setParameters(options, molDataOrInChI, mol);
 			getKey |= this.getKey;
@@ -184,7 +184,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 			if (molDataOrInChI != null && !inputInChI && !interfaceHasMolFileToInChI) {
 				mol = new StereoMolecule();
 				if (!new MolfileParser().parse(mol, molDataOrInChI))
-					return null;
+					return null; // failure to parse the moldata or inchi, also an error
 			}
 
 			return getInchiImpl(mol, molDataOrInChI, options, getKey);
@@ -208,8 +208,13 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	protected String inchi;
 
 	private String setParameters(String options, String molDataOrInChI, StereoMolecule mol) {
-		if (mol == null ? molDataOrInChI == null : mol.getAtoms() == 0)
-			return null;
+		if (mol != null) {
+			// this may set mol.atoms if only mol.allAtoms is set,
+			// as when a MOL3000 file has just been read.
+            mol.ensureHelperArrays(Molecule.cHelperNeighbours);
+            if (mol.getAtoms() == 0)
+            	return null;
+		}
 		if (options == null)
 			options = "";
 		String inchi = null;

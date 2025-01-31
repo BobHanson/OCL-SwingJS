@@ -128,7 +128,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
   private Object json;
 
   //all javascript maps and arrays, only accessible through j2sNative.
-  List<Map<String, Object>> atoms, bonds, stereo0d;
+  List<Map<String, Object>> atoms, bonds, stereo;
   private Map<String, Object> thisAtom;
   private Map<String, Object> thisBond;
   private Map<String, Object> thisStereo;
@@ -136,10 +136,14 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
   @Override
   public void initializeInchiModel(String inchi) {
 	  
-    /**
-     * @j2sNative this.atoms = this.json.atoms; this.bonds = this.json.bonds;
-     *            this.stereo0d = this.json.stereo0d;
-     */
+		/**
+		 * @j2sNative
+		 * 			var j = J2S.modelFromInchi(inchi).model;
+		 * 			this.json = JSON.parse(j);
+		 *          this.atoms = this.json.atoms; 
+		 *          this.bonds = this.json.bonds;
+		 *          this.stereo = this.json.stereo || [];
+		 */
     {
     }
   }
@@ -242,7 +246,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 
   @Override
   public String getInchiBondType() {
-    return getString(thisBond, "type", "");
+    return getString(thisBond, "type", "SINGLE");
   }
 
   
@@ -251,7 +255,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
   @Override
   public int getNumStereo0D() {
     /**
-     * @j2sNative return this.stereo0d.length;
+     * @j2sNative return this.stereo.length;
      */
     {
       return 0;
@@ -261,7 +265,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
   @Override
   public InChIStructureProvider setStereo0D(int i) {
     /**
-     * @j2sNative this.thisStereo = this.stereo0d[i];
+     * @j2sNative this.thisStereo = this.stereo[i];
      */
     {
     }
@@ -275,7 +279,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 
   @Override
   public String getStereoType() {
-    return getString(thisStereo, "stereoType", "");
+    return getString(thisStereo, "type", "");
   }
 
   @Override
