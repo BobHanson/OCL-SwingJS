@@ -4855,6 +4855,12 @@ else if (typeof exports === 'object')
 
 "use strict";
 
+var isSwingJS = !!self.J2S;
+
+self.Jmol || (self.Jmol = {});
+self.J2S || (self.J2S = self.Jmol);
+
+
 var module;
 /*
  * singleton asynchronous WASM module(s) initialization required 
@@ -4866,16 +4872,17 @@ var module;
  * See https://github.com/emscripten-core/emscripten/blob/fa339b76424ca9fbe5cf15faea0295d2ac8d58cc/src/settings.js#L1183
  */
  (async function getInchiModule() {
+   if (isSwingJS) {
 	 module = await inchiModule({
 		 "locateFile":function(f) {
 			 return J2S.inchiPath + "/" + f;
 		 }
 	 });
+   } else {
+		 module = await inchiModule();	   
+   }
  })();
  
-
- self.Jmol || (self.Jmol = {});
- self.J2S || (self.J2S = self.Jmol);
 
  
 /*
