@@ -9,8 +9,8 @@ import org.iupac.InChIStructureProvider;
 import com.actelion.research.chem.Canonizer;
 import com.actelion.research.chem.IsomericSmilesCreator;
 import com.actelion.research.chem.Molecule;
+import com.actelion.research.chem.MolfileCreator;
 import com.actelion.research.chem.MolfileParser;
-import com.actelion.research.chem.SmilesCreator;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.coords.CoordinateInventor;
@@ -29,11 +29,14 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	/**
 	 * Do not set this final, as the java2script transpiler needs to evaluate the javadoc.
 	 */
-	private /*nonfinal*/ static boolean interfaceHasMolFileToInChI = /** @j2sNative true || */Boolean.FALSE.booleanValue();
 	private /*nonfinal*/ static boolean isJS = /** @j2sNative true || */Boolean.FALSE.booleanValue();
 	
 
-	protected abstract String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options, boolean getKey);
+	protected abstract boolean implementsMolDataToInChI();
+
+	protected abstract String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options);
+
+
 
 
 	///// molecule to InChI //
@@ -167,27 +170,54 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		return (isJS ? new InChIJS() : new InChIJNI1());
 	}
 
-	private String getInchiPvt(StereoMolecule mol, String molDataOrInChI, String options, boolean getKey) {
-		try {
-			if (mol == null && molDataOrInChI == null)
-				return null; // this is an error return
-			inchi = null;
-			options = setParameters(options, molDataOrInChI, mol);
-			getKey |= this.getKey;
-			if (options == null)
-				return "";
-			if (inchi != null) {
-				if (!getKey)
-					return inchi;
-				molDataOrInChI = inchi;
-			} 
-			if (molDataOrInChI != null && !inputInChI && !interfaceHasMolFileToInChI) {
-				mol = new StereoMolecule();
-				if (!new MolfileParser().parse(mol, molDataOrInChI))
-					return null; // failure to parse the moldata or inchi, also an error
-			}
+	protected boolean getInchiModel;
+	protected boolean isInputInChI;
+	protected boolean getKey;
+	
+	protected String inchi;
 
-			return getInchiImpl(mol, molDataOrInChI, options, getKey);
+	private StereoMolecule mol;
+
+
+	/**
+	 * 
+	 * @param inputMol
+	 * @param molDataOrInChI
+	 * @param options
+	 * @param getKey
+	 * @return
+	 */
+	private String getInchiPvt(StereoMolecule inputMol, String molDataOrInChI, String options, boolean retKey) {
+		try {
+			if (inputMol == null && molDataOrInChI == null)
+				return null; // this is an error return
+			if (inputMol != null && inputMol.getAllAtoms() == 0) {
+				// not an error, just no atoms in the molecule
+				return "";
+			}
+			options = setFieldsPvt(inputMol, molDataOrInChI, options, retKey);
+			if (options == null) { 
+				// probably an error processing mol or inchi data
+				return null; 
+			}
+			if (mol != null)
+				molDataOrInChI = null;
+			if (inchi != null) {
+				// preprocessing has already calculating to the inchi
+				// either the return InChI or the InChI to use for InChIKey
+				if (!getKey || inchi.length() == 0)
+					return inchi;
+				mol = null;
+				molDataOrInChI = inchi;
+			}
+			String ret = getInchiImpl(mol, molDataOrInChI, options);
+			if (ret != null && options.length() == 0 
+					&& ret.startsWith("InChI=") 
+					&& !ret.startsWith("InChI=1S/")) {
+				reportInchicError("inchi C returned standard InChI without '1S/'! Fixing...");
+				ret = "InChI=1S/" + ret.substring(8);
+			}				
+			return ret;
 		} catch (Throwable e) {
 			// oddly, e may be a string, not an error
 			/**
@@ -202,57 +232,117 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		}
 	}
 	
-	protected boolean getInchiModel;
-	protected boolean getKey;
-	protected boolean inputInChI;
-	protected String inchi;
+	protected void reportInchicError(String msg) {
+	    System.out.flush();
+		System.err.println(msg);
+		System.err.flush();
+	}
 
-	private String setParameters(String options, String molDataOrInChI, StereoMolecule mol) {
-		if (mol != null) {
-			// this may set mol.atoms if only mol.allAtoms is set,
-			// as when a MOL3000 file has just been read.
-            mol.ensureHelperArrays(Molecule.cHelperNeighbours);
-            if (mol.getAtoms() == 0)
-            	return null;
-		}
+
+	/**
+	 * 
+	 * @param mol
+	 * @param molDataOrInChI
+	 * @param options
+	 * @return options to pass on, or null if there is an error
+	 */
+	private String setFieldsPvt(StereoMolecule mol, String molDataOrInChI, String options, boolean getKey) {
 		if (options == null)
 			options = "";
-		String inchi = null;
 		String lc = options.toLowerCase().trim();
 		boolean getInchiModel = (lc.indexOf("model") == 0);
-		boolean getKey = (lc.indexOf("key") >= 0);
-		if (lc.startsWith("model/")) {
-			inchi = options.substring(10);
-			options = lc = "";
-		} else if (getInchiModel) {
-			options = lc = lc.substring(5);
-		}
-		boolean optionalFixedH = (options.indexOf("fixedh?") >= 0);
+		boolean optionKey = (lc.indexOf("key") >= 0);
+		String inchi = this.inchi = null;
+		boolean isFixedH = (lc.indexOf("fixedh") >= 0);
+		boolean optionalFixedH = (lc.indexOf("fixedh?") >= 0);
 		if (lc.indexOf("fixedh") < 0) {
-			options = lc = lc.replace("standard",  "").trim();
+			options = lc = lc.replace("standard", "");
 		}
-
 		boolean inputInChI = (molDataOrInChI != null && molDataOrInChI.startsWith("InChI="));
 		if (!inputInChI) {
 			options = lc;
-			if (getKey) {
+			if (optionKey) {
+				// remove any key-based options
 				options = options.replace("inchikey", "");
 				options = options.replace("key", "");
 			}
-			if (optionalFixedH) {
-				String fxd = getInchiPvt(mol, molDataOrInChI, options.replace('?', ' '), false);
-				options = options.replace("fixedh?", "");
-				String std = getInchiPvt(mol, molDataOrInChI, options, false);
-				inchi = (fxd != null && fxd.length() <= std.length() ? std : fxd);
+		}
+		if (getInchiModel) {
+			// note that if we are getting the inchi model, there is no
+			// point in saying "fixedh" or "fixedh?", as the model is the same
+			optionKey = isFixedH = optionalFixedH = false;
+			options = "";
+		}
+		if (optionalFixedH) {
+			// we do this here because we will re-enter
+			// this.inchi will be set to a non-null value if no error
+			inchi = getInChIOptionallyFixedH(mol, molDataOrInChI, inputInChI, lc);
+			mol = null;
+			molDataOrInChI = null;
+			if (inchi == null)
 				options = null;
+		} else if (inputInChI && isFixedH) {
+			// getInChIFromInChI(inchi,"fixedH")
+			// but inchi.c cannot actually do this
+			// so we first create a model, and get the inchi from that.
+			mol = new StereoMolecule();
+			getMoleculeFromInChI(molDataOrInChI, mol);
+			inchi = null;
+			inputInChI = false;
+		}
+		this.getInchiModel = getInchiModel;
+		this.isInputInChI = (inputInChI || inchi != null);
+		this.inchi = inchi;
+		this.getKey = optionKey || getKey;
+		this.mol = mol;
+		return (options == null ? null : options.trim());
+	}
+
+	/**
+	 * Optionally return standard or fixedH InChI.
+	 * 
+	 * The fixedH InChI is only returned if it has a /f layer (i.e. its length is
+	 * longe than the standard InChI.
+	 * 
+	 * @param mol
+	 * @param molDataOrInChI
+	 * @param inputInChI     true if molDataOrInChI starts with "inchi="
+	 * @param options coming in with "fixedh?" along with possibly other options
+	 * @return
+	 */
+	private String getInChIOptionallyFixedH(StereoMolecule mol, String molDataOrInChI, boolean inputInChI,
+			String options) {
+		if (mol == null) {
+			// create a mol if necessary only
+			boolean useMolData = implementsMolDataToInChI();
+			if (inputInChI) {
+				// inchi from inchi
+				mol = new StereoMolecule();
+				getMoleculeFromInChI(molDataOrInChI, mol);
+			} else if (!useMolData){			
+				mol = new StereoMolecule();
+				new MolfileParser().parse(mol, molDataOrInChI);
+			}
+			if (mol != null) {
+				if (useMolData) {
+					molDataOrInChI = new MolfileCreator(mol).getMolfile();
+					mol = null;
+				} else {
+					molDataOrInChI = null;
+				}
 			}
 		}
-		this.inputInChI = inputInChI;
-		this.inchi = inchi;
-		this.getKey = getKey;
-		this.getInchiModel = getInchiModel;
-		return options;
+		String fxd = getInchiPvt(mol, molDataOrInChI, options.replace('?', ' '), false);
+		if (fxd == null) {
+			// error reading mol data or inchi
+			return null;
+		}
+		options = options.replace("fixedh?", "");
+		// not that this next still might not be actually standard
+		String std = getInchiPvt(mol, molDataOrInChI, options, false);
+		return (fxd.indexOf("/f") < 0 ? std : fxd);
 	}
+
 
 	/**
 	 * the real thing
@@ -263,7 +353,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @param mol
 	 * @throws Exception 
 	 */
-	final protected void getOCLMoleculeFromInChI(String inchi, StereoMolecule mol) throws Exception {
+	final private void getOCLMoleculeFromInChI(String inchi, StereoMolecule mol) throws Exception {
 		
 		// uses subclass implementations
 		initializeInchiModel(inchi);

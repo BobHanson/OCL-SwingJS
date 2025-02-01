@@ -53,278 +53,260 @@ import com.actelion.research.chem.StereoMolecule;
  */
 public class InChIJS extends InChIOCL implements InChIStructureProvider {
 
-  static {
-    try {
-      /**
-       * Import inchi-web-SwingJS.js
-       * 
-       * @j2sNative var j2sPath = J2S._applets.master._j2sFullPath;
-       *            J2S.inchiPath = J2S._applets.master._j2sFullPath +
-       *            "/_ES6"; import(J2S.inchiPath + "/inchi-web-SwingJS.js");
-       */
-      {
-      }
-    } catch (Throwable t) {
-      // 
-    }
+	static {
+		try {
+			/**
+			 * Import inchi-web-SwingJS.js
+			 * 
+			 * @j2sNative var j2sPath = J2S._applets.master._j2sFullPath; J2S.inchiPath =
+			 *            J2S._applets.master._j2sFullPath + "/_ES6"; import(J2S.inchiPath +
+			 *            "/inchi-web-SwingJS.js");
+			 */
+			{
+			}
+		} catch (Throwable t) {
+			//
+		}
 
-  }
+	}
 
-  public InChIJS() {
-    // for dynamic loading
-  }
+	public InChIJS() {
+		// for dynamic loading
+	}
 
-  protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options, boolean isKey) {
+	@Override
+	protected boolean implementsMolDataToInChI() {
+		return true;
+	}
+
+	@Override
+	protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options) {
 		options = options.replace('-', ' ').replaceAll("\\s+", " ").trim().replaceAll(" ", " -").toLowerCase();
 		if (options.length() > 0)
 			options = "-" + options;
 		if (mol != null)
 			molFileDataOrInChI = new MolfileCreator(mol).getMolfile();
-		boolean haveKey = (options.indexOf("key") >= 0);
-		if (haveKey) {
-			options = options.replace("inchikey", "key");
-		}
-		String ret = null;
-		if (inputInChI) {
-			if (getInchiModel) {
-				// model from inchi
-				/**
-				 * @j2sNative
-				 * 
-				 * 			ret = (J2S.modelFromInchi ? J2S.modelFromInchi(molFileDataOrInChI).model :
-				 *            "");
-				 */
-				{
-				}
-			} else if (getKey) {
-				// inchikey from inchi
-				/**
-				 * @j2sNative ret = (J2S.inchikeyFromInchi ?
-				 *            J2S.inchikeyFromInchi(molFileDataOrInChI).inchikey : "");
-				 */
-				{
-				}
-			} else {
-				// inchi from inchi
-				/**
-				 * @j2sNative ret = (J2S.inchiFromInchi ? J2S.inchiFromInchi(molFileDataOrInChI,
-				 *            options).inchi : "");
-				 */
-				{
-				}
-			}
-		} else {
-			/**
-			 * @j2sNative ret = (J2S.inchiFromMolfile ? J2S.inchiFromMolfile(molFileDataOrInChI,
-			 *            options).inchi : "");
-			 */
-			{
-			}
-		}
-		return ret;
+		boolean isLoaded = (execute("inchiFromInchi", null, null, null) != null);
+		if (!isLoaded)
+			return "";
+		String inchi = (isInputInChI ? molFileDataOrInChI
+				: execute("inchiFromMolfile", molFileDataOrInChI, options, "inchi"));
+		return (getInchiModel ? execute("modelFromInchi", inchi, options, "model")  //
+				: getKey ? execute("inchikeyFromInchi", inchi, options, "inchikey") //
+				: isInputInChI ? execute("inchiFromInchi", inchi, options, "inchi") //
+				: inchi);
 	}
 
-  @SuppressWarnings("unused")
-  private Object json;
-
-  //all javascript maps and arrays, only accessible through j2sNative.
-  List<Map<String, Object>> atoms, bonds, stereo;
-  private Map<String, Object> thisAtom;
-  private Map<String, Object> thisBond;
-  private Map<String, Object> thisStereo;
-
-  @Override
-  public void initializeInchiModel(String inchi) {
-	  
+	/**
+	 * If key is null, just return the method itself. (Used to confirm that the
+	 * module has loaded.)
+	 * 
+	 * Otherwise, execute the InChI-web-SwingJS method with the given data and
+	 * options and return the STRING value JSON structure delivered by that key.
+	 * 
+	 * @param method
+	 * @param options
+	 * @param key
+	 * @return the JSON value requested or the method requested
+	 */
+	private String execute(String method, String data, String options, String key) {
 		/**
-		 * @j2sNative
-		 * 			var j = J2S.modelFromInchi(inchi).model;
-		 * 			this.json = JSON.parse(j);
-		 *          this.atoms = this.json.atoms; 
-		 *          this.bonds = this.json.bonds;
-		 *          this.stereo = this.json.stereo || [];
+		 * @j2sNative return(key == null ? J2S[method] : J2S[method](data, options)[key]
+		 *            || null);
 		 */
-    {
-    }
-  }
+		{
+			return null;
+		}
+	}
 
-  /// Atoms ///
-  
-  @Override
-  public int getNumAtoms() {
-    /**
-     * @j2sNative return this.atoms.length;
-     */
-    {
-      return 0;
-    }
-  }
+//all javascript maps and arrays, only accessible through j2sNative.
+	List<Map<String, Object>> atoms, bonds, stereo;
+	private Map<String, Object> thisAtom;
+	private Map<String, Object> thisBond;
+	private Map<String, Object> thisStereo;
 
-  @Override
-  public InChIStructureProvider setAtom(int i) {
-    /**
-     * @j2sNative this.thisAtom = this.atoms[i];
-     */
-    {
-    }
-    return this;
-  }
+	@Override
+	public void initializeInchiModel(String inchi) {
+		/**
+		 * @j2sNative var json = JSON.parse(J2S.modelFromInchi(inchi).model); this.atoms
+		 *            = json.atoms; this.bonds = json.bonds; this.stereo = (json.stereo
+		 *            || []);
+		 */
+	}
 
-  @Override
-  public String getElementType() {
-    return getString(thisAtom, "elname", "");
-  }
+	/// Atoms ///
 
-  @Override
-  public double getX() {
-    return getDouble(thisAtom, "x", 0);
-  }
+	@Override
+	public int getNumAtoms() {
+		/**
+		 * @j2sNative return this.atoms.length;
+		 */
+		{
+			return 0;
+		}
+	}
 
-  @Override
-  public double getY() {
-    return getDouble(thisAtom, "y", 0);
-  }
+	@Override
+	public InChIStructureProvider setAtom(int i) {
+		/**
+		 * @j2sNative this.thisAtom = this.atoms[i];
+		 */
+		{
+		}
+		return this;
+	}
 
-  @Override
-  public double getZ() {
-    return getDouble(thisAtom, "z", 0);
-  }
+	@Override
+	public String getElementType() {
+		return getString(thisAtom, "elname", "");
+	}
 
-  @Override
-  public int getCharge() {
-    return getInt(thisAtom, "charge", 0);
-  }
+	@Override
+	public double getX() {
+		return getDouble(thisAtom, "x", 0);
+	}
 
-  @Override
-  public int getImplicitH() {
-    return getInt(thisAtom, "implicitH", 0);
-  }
+	@Override
+	public double getY() {
+		return getDouble(thisAtom, "y", 0);
+	}
 
-  @Override
-  public int getIsotopicMass() {
-    String sym = getElementType();
-    int mass = 0;
-    /**
-     * @j2sNative mass = this.thisAtom["isotopicMass"] || 0;
-     */
-    {
-    }
-    return InchiUtils.getActualMass(sym, mass);
-  }
+	@Override
+	public double getZ() {
+		return getDouble(thisAtom, "z", 0);
+	}
 
-  /// Bonds ///
-  
-  @Override
-  public int getNumBonds() {
-    /**
-     * @j2sNative return this.bonds.length;
-     */
-    {
-      return 0;
-    }
-  }
+	@Override
+	public int getCharge() {
+		return getInt(thisAtom, "charge", 0);
+	}
 
-  @Override
-  public InChIStructureProvider setBond(int i) {
-    /**
-     * @j2sNative this.thisBond = this.bonds[i];
-     */
-    {
-    }
-    return this;
-  }
+	@Override
+	public int getImplicitH() {
+		return getInt(thisAtom, "implicitH", 0);
+	}
 
-  @Override
-  public int getIndexOriginAtom() {
-    return getInt(thisBond, "originAtom", 0);
-  }
+	@Override
+	public int getIsotopicMass() {
+		String sym = getElementType();
+		int mass = 0;
+		/**
+		 * @j2sNative mass = this.thisAtom["isotopicMass"] || 0;
+		 */
+		{
+		}
+		return InchiUtils.getActualMass(sym, mass);
+	}
 
-  @Override
-  public int getIndexTargetAtom() {
-    return getInt(thisBond, "targetAtom", 0);
-  }
+	/// Bonds ///
 
-  @Override
-  public String getInchiBondType() {
-    return getString(thisBond, "type", "SINGLE");
-  }
+	@Override
+	public int getNumBonds() {
+		/**
+		 * @j2sNative return this.bonds.length;
+		 */
+		{
+			return 0;
+		}
+	}
 
-  
-  /// Stereo ///
-  
-  @Override
-  public int getNumStereo0D() {
-    /**
-     * @j2sNative return this.stereo.length;
-     */
-    {
-      return 0;
-    }
-  }
+	@Override
+	public InChIStructureProvider setBond(int i) {
+		/**
+		 * @j2sNative this.thisBond = this.bonds[i];
+		 */
+		{
+		}
+		return this;
+	}
 
-  @Override
-  public InChIStructureProvider setStereo0D(int i) {
-    /**
-     * @j2sNative this.thisStereo = this.stereo[i];
-     */
-    {
-    }
-    return this;
-  }
-  
-  @Override
-  public String getParity() {
-    return getString(thisStereo, "parity", "");
-  }
+	@Override
+	public int getIndexOriginAtom() {
+		return getInt(thisBond, "originAtom", 0);
+	}
 
-  @Override
-  public String getStereoType() {
-    return getString(thisStereo, "type", "");
-  }
+	@Override
+	public int getIndexTargetAtom() {
+		return getInt(thisBond, "targetAtom", 0);
+	}
 
-  @Override
-  public int getCenterAtom() {
-    return getInt(thisStereo, "centralAtom", -1);
-  }
+	@Override
+	public String getInchiBondType() {
+		return getString(thisBond, "type", "SINGLE");
+	}
 
-  @Override
-  public int[] getNeighbors() {
-    /**
-     * @j2sNative return this.thisStereo.neighbors;
-     */
-    {
-      return null;
-    }
-  }
+	/// Stereo ///
 
-  private int getInt(Map<String, Object> map, String name, int defaultValue) {
-    /**
-     * @j2sNative var val = map[name]; if (val || val == 0) return val;
-     */
-    {
-    }
-    return defaultValue;
-  }
+	@Override
+	public int getNumStereo0D() {
+		/**
+		 * @j2sNative return this.stereo.length;
+		 */
+		{
+			return 0;
+		}
+	}
 
-  private double getDouble(Map<String, Object> map, String name,
-                           double defaultValue) {
-    /**
-     * @j2sNative var val = map[name]; if (val || val == 0) return val;
-     */
-    {
-    }
-    return defaultValue;
-  }
+	@Override
+	public InChIStructureProvider setStereo0D(int i) {
+		/**
+		 * @j2sNative this.thisStereo = this.stereo[i];
+		 */
+		{
+		}
+		return this;
+	}
 
-  @SuppressWarnings("unused")
-  private String getString(Map<String, Object> map, String name,
-                           String defaultValue) {
-    /**
-     * @j2sNative var val = map[name]; if (val || val == "") return val;
-     */
-    {
-    }
-    return defaultValue;
-  }
+	@Override
+	public String getParity() {
+		return getString(thisStereo, "parity", "");
+	}
+
+	@Override
+	public String getStereoType() {
+		return getString(thisStereo, "type", "");
+	}
+
+	@Override
+	public int getCenterAtom() {
+		return getInt(thisStereo, "centralAtom", -1);
+	}
+
+	@Override
+	public int[] getNeighbors() {
+		/**
+		 * @j2sNative return this.thisStereo.neighbors;
+		 */
+		{
+			return null;
+		}
+	}
+
+	private int getInt(Map<String, Object> map, String name, int defaultValue) {
+		/**
+		 * @j2sNative var val = map[name]; if (val || val == 0) return val;
+		 */
+		{
+		}
+		return defaultValue;
+	}
+
+	private double getDouble(Map<String, Object> map, String name, double defaultValue) {
+		/**
+		 * @j2sNative var val = map[name]; if (val || val == 0) return val;
+		 */
+		{
+		}
+		return defaultValue;
+	}
+
+	private String getString(Map<String, Object> map, String name, String defaultValue) {
+		/**
+		 * @j2sNative var val = map[name]; if (val || val == "") return val;
+		 */
+		{
+		}
+		return defaultValue;
+	}
 
 }

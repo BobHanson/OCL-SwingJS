@@ -3,11 +3,13 @@ package org.iupac;
 public interface InChIStructureProvider {
   
   void initializeInchiModel(String inchi) throws Exception;
+
   //InChIStructureProvider Setters
   InChIStructureProvider setAtom(int i);
   InChIStructureProvider setBond(int i);
   InChIStructureProvider setStereo0D(int i);
   
+  // general counts
   int getNumAtoms();
   int getNumBonds();
   int getNumStereo0D();

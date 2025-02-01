@@ -26,6 +26,7 @@ import org.iupac.InChIStructureProvider;
 import org.iupac.InchiUtils;
 
 import com.actelion.research.chem.Molecule;
+import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.StereoMolecule;
 
 import net.sf.jniinchi.INCHI_BOND_STEREO;
@@ -53,52 +54,62 @@ import net.sf.jniinchi.JniInchiWrapper;
  */
 public class InChIJNI1 extends InChIOCL {
 
-	private JniInchiOutputStructure inchiModel;
+	private JniInchiOutputStructure jniInchiStructure;
+
+	/**
+	 * JNI-InChI 1.03 cannot pass a MOL file to inchi.c
+	 */
+	@Override
+	protected boolean implementsMolDataToInChI() {
+		return false;
+	}
 
 	/**
 	 * OCL molecule to InChI
 	 * 
 	 * @param mol
 	 * @param options
-	 * @param getKey
 	 * @return
 	 */
-	protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options, boolean getKey) {
+	protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options) {
 		try {
 			String inchi = null;
-			String lc = options.toLowerCase();
-			options = lc;
-			JniInchiInputInchi inchiInput = null;
-			if (inputInChI) {
+			JniInchiInputInchi jniInchiInput = null;
+			if (isInputInChI) {
 				if (getKey) {
-					// inchi.inchi("key")
-					inchi = this.inchi;
+					// inchi => inchikey
+					inchi = molFileDataOrInChI;
 				} else {
-					inchiInput = new JniInchiInputInchi(molFileDataOrInChI, options);
+					// get the inchi from JNI
+					jniInchiInput = new JniInchiInputInchi(molFileDataOrInChI, options);
 					if (getInchiModel) {
-						// inchi.inchi("model" + options)
-						// inchiInput is set
+						// inchi ==> inchi model
+						// we just need jniInchiInput
 					} else {
-						// inchi.inchi()
-						inchi = JniInchiWrapper.getInchiFromInchi(inchiInput).getInchi();
-						inchiInput = null;
+						// inchi ==> inchi
+						inchi = JniInchiWrapper.getInchiFromInchi(jniInchiInput).getInchi();
 					}
 				}
 			} else {
-				// mol.inchi(options)
+				// molecule to inchi
+				// or moldata to inchi
+				if (mol == null) {
+					mol = new StereoMolecule();
+					new MolfileParser().parse(mol, molFileDataOrInChI);
+				}
 				JniInchiOutput out = JniInchiWrapper.getInchi(new JniInchiInput(newJniInchiStructure(mol), options));
 				String msg = out.getMessage();
 				if (msg != null)
 					System.err.println(msg);
 				inchi = out.getInchi();
 				if (getInchiModel) {
-					inchiInput = new JniInchiInputInchi(inchi, options);
+					jniInchiInput = new JniInchiInputInchi(inchi, options);
 				}
 			}
-			if (inchiInput != null) {
-				// 
-				inchiModel = JniInchiWrapper.getStructureFromInchi(inchiInput);
-				return toJSON(inchiModel);
+			if (getInchiModel) {
+				// only not null now if we need a model.
+				// get JNI-InChI structure and generate JSON model
+				return toJSON(JniInchiWrapper.getStructureFromInchi(jniInchiInput));
 			}
 			return (getKey ? JniInchiWrapper.getInchiKey(inchi).getKey() : inchi);
 		} catch (Throwable e) {
@@ -115,6 +126,7 @@ public class InChIJNI1 extends InChIOCL {
 	}
 
 	private static JniInchiStructure newJniInchiStructure(StereoMolecule mol) {
+		mol.ensureHelperArrays(Molecule.cHelperNeighbours);
 		JniInchiStructure struc = new JniInchiStructure();
 		int nAtoms = mol.getAllAtoms();
 		JniInchiAtom[] atoms = new JniInchiAtom[nAtoms];
@@ -191,21 +203,21 @@ public class InChIJNI1 extends InChIOCL {
 
 	@Override
 	public void initializeInchiModel(String inchi) throws Exception {
-		inchiModel = JniInchiWrapper.getStructureFromInchi(new JniInchiInputInchi(inchi));
+		jniInchiStructure = JniInchiWrapper.getStructureFromInchi(new JniInchiInputInchi(inchi));
 		for (int i = getNumAtoms(); --i >= 0;)
-			mapAtomToIndex.put(inchiModel.getAtom(i), Integer.valueOf(i));
+			mapAtomToIndex.put(jniInchiStructure.getAtom(i), Integer.valueOf(i));
 	}
 
 	/// atoms ///
 
 	@Override
 	public int getNumAtoms() {
-		return inchiModel.getNumAtoms();
+		return jniInchiStructure.getNumAtoms();
 	}
 
 	@Override
 	public InChIStructureProvider setAtom(int i) {
-		thisAtom = inchiModel.getAtom(i);
+		thisAtom = jniInchiStructure.getAtom(i);
 		return this;
 	}
 
@@ -248,12 +260,12 @@ public class InChIJNI1 extends InChIOCL {
 
 	@Override
 	public int getNumBonds() {
-		return inchiModel.getNumBonds();
+		return jniInchiStructure.getNumBonds();
 	}
 
 	@Override
 	public InChIStructureProvider setBond(int i) {
-		thisBond = inchiModel.getBond(i);
+		thisBond = jniInchiStructure.getBond(i);
 		return this;
 	}
 
@@ -276,12 +288,12 @@ public class InChIJNI1 extends InChIOCL {
 
 	@Override
 	public int getNumStereo0D() {
-		return inchiModel.getNumStereo0D();
+		return jniInchiStructure.getNumStereo0D();
 	}
 
 	@Override
 	public InChIStructureProvider setStereo0D(int i) {
-		thisStereo = inchiModel.getStereo0D(i);
+		thisStereo = jniInchiStructure.getStereo0D(i);
 		return this;
 	}
 

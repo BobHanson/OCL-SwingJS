@@ -26,7 +26,10 @@ import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.inchi.InChIOCL;
 import com.actelion.research.chem.moreparsers.CDXParser;
+import com.actelion.research.chem.moreparsers.ChemicalNameResolver;
+import com.actelion.research.chem.moreparsers.InChIKeyResolver;
 import com.actelion.research.chem.moreparsers.InChIParser;
+import com.actelion.research.chem.moreparsers.InChIResolver;
 import com.actelion.research.chem.moreparsers.ParserUtils;
 import com.actelion.research.gui.FileHelper;
 import com.actelion.research.gui.JStructureView;
@@ -38,6 +41,7 @@ public class OCLSwingJSTest {
 
 	public static int nFrame;
 
+	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		// load JavaScript:
 		InChIOCL.init();
@@ -49,7 +53,6 @@ public class OCLSwingJSTest {
 	}
 
 	private static void runAsync() {
-		ActionListener a;
 		// just need a single clock tick
 		// SwingUtilities.invokeLater() does not work.
 		Timer t = new Timer(1, new ActionListener() {
@@ -68,60 +71,152 @@ public class OCLSwingJSTest {
 
 	protected static void runTests() {
 
-//		String name = "(R)-cis-4-hydroxyhex-2-ene";
-//		StereoMolecule mol = new StereoMolecule();
-//		new ChemicalNameResolver().resolve(mol, name);
-//		testShowMol(mol, name);
-		
-		//			String s = smilesToMolfile("CCC");
-//		System.out.println(s);
+		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
 		String outdir = null;//"C:/temp/";
-//		testInChI1();
-//		testSmilesParser(outdir);
-//		testCDXParsers(outdir);
-//		testInChIParsers(outdir);
+		testInChI1(outdir);
+		testSmilesParser(outdir);
+		testCDXParsers(outdir);	
+		testInChIParsers(outdir);
 		testAllene(outdir);
 		testEne(outdir);
-		
-		
+		testResolvers(outdir);
+		System.out.println("DONE");
 	}
 
-	private static void testInChI1() { 
+	private static void testResolvers(String outdir) {
+		StereoMolecule mol;
+		String fileout;
+
+		// known inchi key to PubChem
+		
+		fileout = "tinchikeypc";
+		String inchiKey = "BQJCRHHNABKAKU-KBQPJGBKSA-N";
+		System.out.println(inchiKey + " => " + fileout);
+		mol = new StereoMolecule();
+		if (new InChIKeyResolver().setSource(InChIKeyResolver.SOURCE_CIR).resolve(mol, inchiKey)) {
+			testShowViewAndWriteMol(mol, "inchikey", fileout, outdir);
+			String keyReturned = InChIOCL.getInChIKey(mol, null);
+			checkEquals(inchiKey, keyReturned, true, 101);
+			//String smiles = "CN(CC[C@]12c3c(C4)ccc(O)c3O[C@H]11)[C@H]4[C@@H]2C=C[C@@H]1O";
+			//checkEquals(new IsomericSmilesCreator(mol).getSmiles(), smiles, true, 101);
+		} else {
+			checkEquals(inchiKey, "not found at PubChem", true, 103);
+		}
+
+		// known inchi to PubChem
+		
+		fileout = "tinchipc";
+ 		mol = new StereoMolecule();
+ 		String inchi;
+ 		inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
+		if (new InChIResolver().setSource(InChIResolver.SOURCE_CIR).resolve(mol, inchi)) {
+			testShowViewAndWriteMol(mol, "inchi", fileout, outdir);
+			testInChIOut(mol, inchi, true, 102);
+		} else {
+			checkEquals(inchi, "not found at PubChem", true, 103);
+		}
+
+		// unknown inchi to PubChem
+		// will not be found
+
+		fileout = "tinchipc";
+ 		mol = new StereoMolecule();
+ 		inchi = "InChI=1S/C13H18BBrCl2O/c1-4-10(15)7-8(2)5-6-11(14)13(18)12(17)9(3)16/h4-6,9,18H,7,14H2,1-3H3/b8-5+,10-4-,11-6+,13-12+/t9-/m0/s1";
+		if (new InChIResolver().setSource(InChIResolver.SOURCE_PUBCHEM).resolve(mol, inchi)) {
+			testShowViewAndWriteMol(mol, "inchi", fileout, outdir);
+			testInChIOut(mol, inchi, true, 104);
+		} else {
+			checkEquals(inchi, "unknown InChI not found at PubChem, as expected", false, 105);
+		}
+
+		// unknown inchi to CIR
+		
+		fileout = "tinchipc";
+ 		mol = new StereoMolecule();
+ 		inchi = "InChI=1S/C13H18BBrCl2O/c1-4-10(15)7-8(2)5-6-11(14)13(18)12(17)9(3)16/h4-6,9,18H,7,14H2,1-3H3/b8-5+,10-4-,11-6+,13-12+/t9-/m0/s1";;
+		if (new InChIResolver().setSource(InChIResolver.SOURCE_CIR).resolve(mol, inchi)) {
+			testShowViewAndWriteMol(mol, "inchi", fileout, outdir);
+			testInChIOut(mol, inchi, true, 106);
+		} else {
+			checkEquals(inchi, "not found at CIR", true, 107);
+		}
+
+		
+		
+		// oddball chemical name to NCI/CADD CIR
+		
+		String name = "(R)-cis-4-hydroxyhex-2-ene";
+		// is actually (Z,3R)-hex-4-en-3-ol
+		mol = new StereoMolecule();
+		if (new ChemicalNameResolver().resolve(mol, name)) {
+		inchi = InChIOCL.getInChI(mol, null);
+		testShowMol(mol, name);
+		checkEquals("InChI=1S/C6H12O/c1-3-5-6(7)4-2/h3,5-7H,4H2,1-2H3/b5-3-/t6-/m1/s1", inchi, true, 108);
+		} else {
+			checkEquals(name, "not found", true, 109);
+		}
+		
+
+	}
+
+	private static void testInChI1(String outdir) { 
 		StereoMolecule mol;
 		String inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
+		
+		// SMILES from inchi
 		System.out.println(InChIOCL.getSmilesFromInChI(inchi, null));
+		
+		// inchi model from inchi
 		System.out.println(InChIOCL.getInChIModelJSON(inchi));
-	
+		
+		// molecule from inchi
 		mol = new StereoMolecule();
 		InChIOCL.getMoleculeFromInChI(inchi, mol);
 		testShowMol(mol, "from inchi");
+	
+		// optional fixed-H inchi from standard inchi
+		String i2 = InChIOCL.getInChI(inchi, "fixedH?");
+		String inchiFixedH = "InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H";
+		checkEquals(inchiFixedH, i2, true, 4);
 		
+		// standard inchi from fixed-H inchi
+		i2 = InChIOCL.getInChI(inchiFixedH, null);
+		checkEquals(inchi, i2, true, 5);
+		
+		// molecule from inchi
+		mol = new StereoMolecule();
+		InChIOCL.getMoleculeFromInChI(inchi, mol);
+		testShowMol(mol, "from inchi");
+
 		String json;
+		
+		// inchi model from inchi
 		inchi = "InChI=1S/C13H18BBrCl2O/c1-4-10(15)7-8(2)5-6-11(14)13(18)12(17)9(3)16/h4-6,9,18H,7,14H2,1-3H3/b8-5+,10-4-,11-6+,13-12+/t9-/m0/s1";
 		json = InChIOCL.getInChIModelJSON(inchi);
 		System.out.println(json);
-
-		mol = new StereoMolecule();
-		InChIOCL.getMoleculeFromInChI(inchi, mol);
-		testShowMol(mol, "from inchi");
-
+		checkEquals(true,json.length() > 1800, false, 0);
+	
+		// inchi model from MOL data
+		String filein = "tallene.mol";
+		String moldata = getString(filein, outdir);
+		json = InChIOCL.getInChIModelJSON(moldata);
+		System.out.println(json);
+		checkEquals(true,json.length() > 1800, false, 0);
 		
-			
-		checkEquals(json.length() > 1800,true, false, 0);
 		inchi = InChIOCL.getInChIFromSmiles("c1cnc1O", "standard");
-		checkEquals(inchi, "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", true, 0);
+		checkEquals("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", inchi, true, 0);
 		inchi = InChIOCL.getInChIFromSmiles("c1cnc1O", "fixedh");
-		checkEquals(inchi, "InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", true, 0);
+		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
 		inchi = InChIOCL.getInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "fixedh");
-		checkEquals(inchi, "InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", true, 0);
+		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
 		json = InChIOCL.getInChIModelJSON(inchi);
 		System.out.println(json);
-		// inchi C GetINCHIfromINCHI FAILS standard to FixedH, probably as designed:
+		//inchi C does not add fixed hydrogens to its model
 		inchi = InChIOCL.getInChI("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "fixedH");
-		checkEquals(inchi, "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", false, 0);
+		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
 		// and here as well, which is surprising to me:
 		inchi = InChIOCL.getInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "standard");
-		checkEquals(inchi, "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", false, 0);
+		checkEquals("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", inchi, true, 0);
 		return;
 	}
 
@@ -193,71 +288,74 @@ public class OCLSwingJSTest {
 
 	private static void testSmilesParser(String outdir) {
 		String smiles, inchi;
-		
+
+		String s = smilesToMolfile("CCC");
+		System.out.println(s);
+
 		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(C)CC/file?format=stdinchi
 		String inchi0f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m0/s1"; 
-		String inchi1f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m1/s1";
+//		String inchi1f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m1/s1";
 		String inchi2f = "InChI=1S/C4H5FO/c1-4(5)2-3-6/h3,6H,1H3/t2-/m0/s1";
 		
 		inchi ="InChI=1S/C3H3FO2/c4-3(6)1-2-5/h2,5-6H/t1-/m1/s1";
-		smiles = "OC(F)=[C@]=C(O)[H]";// main() reports error because is OC(F) not CC(F)
-		testSmilesInChI(smiles, inchi, false);
+		smiles = "OC(F)=[C@]=C(O)[H]";
+		testSmilesInChI(smiles, inchi, true, 0);
 		smiles = "OC(F)=[C@@]=CO";		
-		testSmilesInChI(smiles, inchi, false);
+		testSmilesInChI(smiles, inchi, true, 0);
 
 		// note: these two both give the same result (/m1/s1)
 		// https://cactus.nci.nih.gov/chemical/structure/[H]C([2H])=[C@]=CF/file?format=stdinchi
 		// https://cactus.nci.nih.gov/chemical/structure/[2H]C([H])=[C@]=CF/file?format=stdinchi
 		smiles = "[H]C([2H])=[C@]=CF"; 
-		testSmilesInChI(smiles, "InChI=1S/C3H3F/c1-2-3-4/h3H,1H2/i1D/t2-/m1/s1", false); 
+		testSmilesInChI(smiles, "InChI=1S/C3H3F/c1-2-3-4/h3H,1H2/i1D/t2-/m1/s1", true, 201); 
 		smiles = "[2H]C([H])=[C@]=CF"; 
-		testSmilesInChI(smiles, "InChI=1S/C3H3F/c1-2-3-4/h3H,1H2/i1D/t2-/m0/s1", false); 
+		testSmilesInChI(smiles, "InChI=1S/C3H3F/c1-2-3-4/h3H,1H2/i1D/t2-/m0/s1", true, 202); 
 
 		
 		smiles = "[H]C(O)=[C@@]=CF"; 
-		testSmilesInChI(smiles, inchi0f, false); 
+		testSmilesInChI(smiles, inchi0f, true, 203); 
 		smiles = "OC([H])=[C@]=CF"; 
-		testSmilesInChI(smiles, inchi0f, false); 
+		testSmilesInChI(smiles, inchi0f, true, 204); 
 		smiles = "OC=[C@]=C([H])F";
-		testSmilesInChI(smiles, inchi0f, false); 		
+		testSmilesInChI(smiles, inchi0f, true, 205); 		
 		smiles = "OC=[C@@]=C1[H].F1";
-		testSmilesInChI(smiles, inchi0f, false); 
+		testSmilesInChI(smiles, inchi0f, true, 0); 
 		smiles = "OC=[C@]=C1F.[H]1";
-		testSmilesInChI(smiles, inchi0f, false);
+		testSmilesInChI(smiles, inchi0f, true, 0);
 
 		smiles = "CC(F)=[C@]=C(O)[H]";// main() reports error because is OC(F) not CC(F)
-		testSmilesInChI(smiles, inchi2f, false);
+		testSmilesInChI(smiles, inchi2f, true, 0);
 		smiles = "CC(F)=[C@@]=CO";		
-		testSmilesInChI(smiles, inchi2f, false);
+		testSmilesInChI(smiles, inchi2f, true, 0);
 
 		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(C)CC/file?format=stdinchi
 		String inchi0s = "InChI=1S/C3H8OS/c1-3-5(2)4/h3H2,1-2H3/t5-/m0/s1";
 		// from https://cactus.nci.nih.gov/chemical/structure/[S@](=O)(N)CC/file?format=stdinchi
 		String inchi1n = "InChI=1S/C2H7NOS/c1-2-5(3)4/h2-3H2,1H3/t5-/m1/s1";
 		smiles = "N[S@@](CC)=O";	
-		testSmilesInChI(smiles, inchi1n, true);
+		testSmilesInChI(smiles, inchi1n, true, 0);
 		smiles = "[S@](N)(CC)=O";	
-		testSmilesInChI(smiles, inchi1n, true);
+		testSmilesInChI(smiles, inchi1n, true, 0);
 		smiles = "[S@](=O)(N)CC";
-		testSmilesInChI(smiles, inchi1n, true);
+		testSmilesInChI(smiles, inchi1n, true, 0);
 		smiles = "CC[S@](N)=O";
-		testSmilesInChI(smiles, inchi1n, true);
+		testSmilesInChI(smiles, inchi1n, true, 0);
 		
 		smiles = "C[S@@](CC)=O";	
-		testSmilesInChI(smiles, inchi0s, true);
+		testSmilesInChI(smiles, inchi0s, true, 0);
 		smiles = "[S@](=O)(C)CC";
-		testSmilesInChI(smiles, inchi0s, true);
+		testSmilesInChI(smiles, inchi0s, true, 0);
 		smiles = "CC[S@](C)=O";
-		testSmilesInChI(smiles, inchi0s, true);
+		testSmilesInChI(smiles, inchi0s, true, 0);
 
 	
 		smiles = "[C@H](N)(C)C(=O)O";
 		inchi = "InChI=1S/C3H7NO2/c1-2(4)3(5)6/h2H,4H2,1H3,(H,5,6)/t2-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);
+		testSmilesInChI(smiles, inchi, true, 0);
 		smiles = "N[C@@H](C)C(=O)O";
-		testSmilesInChI(smiles, inchi, true);
+		testSmilesInChI(smiles, inchi, true, 0);
 
-		testSmilesInChI("[C@H](F)(B)O", "InChI=1S/CH4BFO/c2-1(3)4/h1,4H,2H2/t1-/m1/s1", true);
+		testSmilesInChI("[C@H](F)(B)O", "InChI=1S/CH4BFO/c2-1(3)4/h1,4H,2H2/t1-/m1/s1", true, 0);
 
 		String inchi0 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m0/s1";
 		String inchi1 = "InChI=1S/C3H2BrF/c4-2-1-3-5/h2-3H/t1-/m1/s1";
@@ -276,72 +374,72 @@ public class OCLSwingJSTest {
 		smiles = "C(O)=[C@]=C(B)CCC1=[C@@]=C(F)Br.C1CCC(Br)=[C@]=CCl";
 		smiles = "B[C](CC[C](CCC[C](Br)=[C@]=[CH]Cl)=[C@@]=[C](F)Br)=[C@]=[CH]O";
 		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
-		testSmilesInChI(smiles, inchi, true);
+		testSmilesInChI(smiles, inchi, true, 0);
 
 		smiles = "B[C](CCC)=[C@]=[CH]O";
 		inchi = "InChI=1S/C6H11BO/c1-2-3-6(7)4-5-8/h5,8H,2-3,7H2,1H3/t4-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);
+		testSmilesInChI(smiles, inchi, true, 0);
 
 		smiles = "CCCC(B)=[C@@]=CO";
 		inchi = "InChI=1S/C6H11BO/c1-2-3-6(7)4-5-8/h5,8H,2-3,7H2,1H3/t4-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);
+		testSmilesInChI(smiles, inchi, true, 0);
 
 // from https://cactus.nci.nih.gov/chemical/structure/InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1/file?format=smiles
 		smiles = "B[C](CC[C](CCC[C](Br)=[C@]=[CH]Cl)=[C@@]=[C](F)Br)=[C@]=[CH]O";
 		inchi = "InChI=1S/C14H15BBr2ClFO/c15-12(7-9-20)5-4-11(10-14(17)19)2-1-3-13(16)6-8-18/h8-9,20H,1-5,15H2/t6-,7+,10+/m1/s1";
-		testSmilesInChI(smiles, inchi, true);
+		testSmilesInChI(smiles, inchi, true, 0);
 
 		smiles = "FC=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0, true);
+		testSmilesInChI(smiles, inchi0, true, 0);
 		smiles = "F[CH]=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0, true);
+		testSmilesInChI(smiles, inchi0, true, 0);
 
 		smiles = "C(F)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);
+		testSmilesInChI(smiles, inchi1, true, 0);
 		smiles = "[CH](F)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);
+		testSmilesInChI(smiles, inchi1, true, 0);
 		smiles = "C1=[C@]=CBr.F1";
-		testSmilesInChI(smiles, inchi1, true);
+		testSmilesInChI(smiles, inchi1, true, 0);
 		smiles = "F1.C1=[C@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);
+		testSmilesInChI(smiles, inchi1, true, 0);
 
 		smiles = "FC=[C@@]=CBr";
-		testSmilesInChI(smiles, inchi1, true);
+		testSmilesInChI(smiles, inchi1, true, 0);
 
 		smiles = "FC(Cl)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0cl, true);
+		testSmilesInChI(smiles, inchi0cl, true, 0);
 		smiles = "C1(Cl)=[C@]=CBr.F1";
-		testSmilesInChI(smiles, inchi0cl, true);
+		testSmilesInChI(smiles, inchi0cl, true, 0);
 		smiles = "F1.C1(Cl)=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0cl, true);
+		testSmilesInChI(smiles, inchi0cl, true, 0);
 		smiles = "C12=[C@]=CBr.F1.Cl2";
-		testSmilesInChI(smiles, inchi0cl, true);
+		testSmilesInChI(smiles, inchi0cl, true, 0);
 		smiles = "C21=[C@]=CBr.F1.Cl2";
-		testSmilesInChI(smiles, inchi1cl, true);
+		testSmilesInChI(smiles, inchi1cl, true, 0);
 		smiles = "Cl1.F2.C21=[C@]=CBr";
-		testSmilesInChI(smiles, inchi0cl, true);
+		testSmilesInChI(smiles, inchi0cl, true, 0);
 		smiles = "C21=[C@]=CBr.Cl1.F2";
-		testSmilesInChI(smiles, inchi0cl, true);
+		testSmilesInChI(smiles, inchi0cl, true, 0);
 
 		smiles = "N12C(=O)OC(C)(C)C.C1CC[C@H]2C(=O)[N](CCC)C1=CC=CC2=CC=CC=C12";
 		inchi = "InChI=1S/C23H30N2O3/c1-5-15-24(19-13-8-11-17-10-6-7-12-18(17)19)21(26)20-14-9-16-25(20)22(27)28-23(2,3)4/h6-8,10-13,20H,5,9,14-16H2,1-4H3/t20-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
+		testSmilesInChI(smiles, inchi, true, 0);		
 
 		smiles = "C1=CC(O)=C2C3=C1C[C@@H]4[C@H]5[C@]36[C@@H]7[C@@H](O)C=C5.O72.C6CN4C";
 		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
+		testSmilesInChI(smiles, inchi, true, 0);		
 
 		smiles = "CN1CC[C@@]23[C@H]4OC5=C(O)C=CC(=C25)C[C@@H]1[C@@H]3C=C[C@@H]4O";
 		inchi = "InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1";
-		testSmilesInChI(smiles, inchi, true);		
+		testSmilesInChI(smiles, inchi, true, 0);		
 		
 	}
 
-	private static void testSmilesInChI(String smiles, String inchi, boolean throwError) {
+	private static void testSmilesInChI(String smiles, String inchi, boolean throwError, int testpt) {
 		System.out.println(smiles);
 		StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
 		JStructureView view = testShowViewAndWriteMol(mol, "smiles", null, null);
-		if (!testInChIOut(mol, inchi, false, 0)) {
+		if (!testInChIOut(mol, inchi, false, testpt)) {
 			view.setBackground(Color.yellow);
 			System.out.println(smiles + " failed");
 			if (throwError)
@@ -367,8 +465,6 @@ public class OCLSwingJSTest {
 	}
 
 	private static void testInChIParsers(String outdir) {
-		StereoMolecule mol;
-		String fileout;
 
 		String[] tests = new String[] {
 				// inchi = "InChI=1S/C4H11N/c1-3-5-4-2/h5H,3-4H2,1-2H3";
@@ -386,24 +482,11 @@ public class OCLSwingJSTest {
 		for (int i = 0; i < tests.length; i++)
 			testInChI(tests[i], outdir, 0);
 
-//		fileout = "tinchikey";
-//		String inchiKey = "BQJCRHHNABKAKU-KBQPJGBKSA-N";
-//		System.out.println(inchiKey + " => " + fileout);
-//		mol = new StereoMolecule();
-//		if (new InChIKeyResolver().setSource(InChIKeyResolver.SOURCE_CIR).resolve(mol, inchiKey)) {
-//			testShowViewAndWriteMol(mol, "inchikey", fileout, outdir);
-//		}
 	}
 
 	private static void testInChI(String inchi, String outdir, int testpt) {
 		String fileout = "tinchi";
  		StereoMolecule mol = new StereoMolecule();
-//		if (new InChIResolver().setSource(InChIResolver.SOURCE_CIR).resolve(mol, inchi)) {
-//			testShowViewAndWriteMol(mol, "inchi", fileout, outdir);
-//			testInChIOut(mol, inchi, true);
-//		}
-//
-//		mol = new StereoMolecule();
  		fileout= "tinchi-jni";
 		System.out.println(inchi + " => " + fileout);
 		System.out.println(InChIOCL.getInChIModelJSON(inchi));
@@ -411,18 +494,6 @@ public class OCLSwingJSTest {
 			testShowViewAndWriteMol(mol, "fromInchi", fileout, outdir);
 			testInChIOut(mol, inchi, true, 0);
 		}
-
-
-//		fileout = "tinchipc";
-//		System.out.println("PubChem:" + inchi + " => " + fileout);
-//		mol = new StereoMolecule();
-//		if (new InChIResolver().resolve(mol, inchi)) {
-//			JStructureView view = testShowViewAndWriteMol(mol, "PubChem-inchi", fileout, outdir);
-//			if (!testInChIOut(mol, inchi, false)) {
-//			  view.setBackground(Color.LIGHT_GRAY);
-//			}
-//		}
-//
 	}
 
 	private static boolean testInChIOut(StereoMolecule mol, String inchi, boolean throwError, int testpt) {
@@ -430,14 +501,15 @@ public class OCLSwingJSTest {
 		String s = InChIOCL.getInChI(mol, options);
 		if (s.length() == 0)
 			s = "<inchi was null>";
-		return checkEquals(s, inchi,throwError, testpt);
+		return checkEquals(inchi, s,throwError, testpt);
 	}
 	
-	private static boolean checkEquals(Object s1, Object s2, boolean throwError, int testpt) {
-		boolean ok = s1.equals(s2);
-		System.out.println(s1); 
-		System.out.println(s2);
+	private static boolean checkEquals(Object expected, Object got, boolean throwError, int testpt) {
+		boolean ok = expected.equals(got);
+		System.out.println(testpt + " exp:" + expected);
+		System.out.println(testpt + " got:" + got); 
 		System.out.println(ok);
+		if (!ok) 
 		if (!ok && throwError)
 			throw new RuntimeException("checkEquals fails at " + testpt);
 		return ok;		
@@ -622,120 +694,6 @@ public class OCLSwingJSTest {
 			System.out.println("cancel");
 			System.exit(1);
 		});
-	}
-
-	static class OclCodeCheck {
-
-		private int nAvail = 6;
-		private int pt;
-		private byte[] idcode;
-		private int mData;
-		private int abits;
-		private int bbits;
-		private int nBytes;
-
-		public boolean checkOCL(String s) {
-			// remove coordinates
-			nBytes = s.indexOf('!');
-			if (nBytes < 0)
-				nBytes = s.indexOf('#');
-			if (nBytes < 0)
-				nBytes = s.length();
-			if (nBytes < 10 || nBytes > 1000) // reasonable?
-				return false;
-			idcode = s.substring(0, nBytes).getBytes();
-			mData = (idcode[0] & 0x3F) << 11;
-			try {
-				if (idcode == null || idcode.length == 0)
-					return false;
-				abits = decodeBits(4);
-				bbits = decodeBits(4);
-				int version = 8;
-				if (abits > 8) {
-					// abits is the version number
-					version = abits;
-					abits = bbits;
-				}
-				if (version != 8 && version != 9)
-					return false;
-				int allAtoms = decodeBits(abits);
-				int allBonds = decodeBits(bbits);
-				int closureBonds = 1 + allBonds - allAtoms;
-				if (allAtoms == 0 || closureBonds < 0 || closureBonds > allAtoms - 2)
-					return false;
-				int nitrogens = decodeBits(abits);
-				int oxygens = decodeBits(abits);
-				int otherAtoms = decodeBits(abits);
-				int chargedAtoms = decodeBits(abits);
-				checkBits(nitrogens);
-				checkBits(oxygens);
-				checkBits(otherAtoms);
-				checkBits(chargedAtoms);
-				return true;
-			} catch (Throwable e) {
-				return false;
-			}
-		}
-
-		private void checkBits(int n) {
-			if (n != 0) {
-				// check for n monotonically increasing numbers
-				for (int a = -1, i = 0; i < n; i++) {
-					int b = decodeBits(abits);
-					if (b <= a)
-						throw new NullPointerException();
-					a = b;
-				}
-			}
-		}
-
-		private int decodeBits(int bits) {
-			int allBits = bits;
-
-			int data = 0;
-			while (bits != 0) {
-				if (nAvail == 0) {
-					if (++pt >= idcode.length)
-						throw new NullPointerException();
-					mData = (idcode[pt] & 0x3F) << 11;
-					nAvail = 6;
-				}
-				data |= ((0x00010000 & mData) >> (16 - allBits + bits));
-				mData <<= 1;
-				bits--;
-				nAvail--;
-			}
-			return data;
-		}
-	}
-
-	static {
-//		System.out.println(new OclCodeCheck().checkOCL("dcMD@ItARfUV^V``h`@@"));
-//		System.out.println(new OclCodeCheck().checkOCL("daT@`@\\DjfjZn[jjjkJcKhGP`phxdtl|wY@xD`uyo]{|lKUfp"));
-//		System.out.println(new OclCodeCheck().checkOCL("fc" + (char) 0x7F + "A@@@YEDeLhedihdXleJ\\eiwhyjijjjjjjjj`@@"));
-//		System.out.println(new OclCodeCheck().checkOCL("g3\0A;ADLA;MD@ItARfUV^V``h`@@"));
-//		String[] aminoAcidsLabeled = ("gGX`BDdwMULPGzILwXM[jD\n" + 
-//		"dctd@BE]ADf{UYjjihp`GzBfMvCS]Plw^OMtbK]hrwUj}tRfwnbXp\n" + 
-//		"diEL@BDDyInvZjZL`OtiL[lFfzaYn|^{iFLO]Hi`\n" + 
-//		"diFB@BANEInvZjZLHA~eIc]`twTKMwcw]Hqa{iEL\n" + 
-//		"gNxhMV@aI[jihj@SHF{qc]PinpP\n" + 
-//		"defB@BAAeInufjihr@QdqnpZ[jEf{qyndQ{mFMO]hi`\n" + 
-//		"deeL@BdDEInufjihp`GzLfMvCS]Plw^OMtbO]hqi{mEL\n" + 
-//		"gJX`BDdvu@OtbYnpP\n" + 
-//		"dmwD@ByPQInvVUZjejL`OtyL[lFfzaYn|^{iFLO]Hii{mFLo]hi`\n" + 
-//		"diFD@BADf{ejjdrU@_iRXwXMMuBw]xqn{oELO]Hq`\n" + 
-//		"diFD@BADf{Yjjhr@RdqnpZ[jEf{q{ndTp}tcF@\n" + 
-//		"deeD@BdDR[mUjjjL`OtYL[lFfzaYn|^[iDV{QenkP\n" + 
-//		"diFD`JxPBDivzjihI@RdAndX[oEF{QqnhR[lD\n" + 
-//		"dcND@BADf{YU]Zj@@cHC}ASF{AinhV[oGnzQSCwRLZ^{QSKwZL[Vzm@\n" + 
-//		"daFD@BADfyVyjjhr@PdqnpZ[jEfzQyn|P\n" + 
-//		"gNy`BDtf{ZjfHC}Lf[lFmuBv{q@\n" + 
-//		"dazL@BAFR[nZjdrT`_hRXwXMMuBw]xqn{oEL\n" + 
-//		"foAP`@BZ@aInvYWejsfjiB@bFB@OttfF{AhwTKF{qywRJXW]Hqi]vbfUwZN[W]hqc]uZfmwUnYw]Di`\n" + 
-//		"dknL@BACR[me]]Zj@BHr@RTqnpZ[jEf{q{ndTp}tcFgntTr}vcFunkS[hd\n" + 
-//		"dazD@BADf{fjjL`OtIL[lFfza[n|Tw]wcF@s").split("\n");
-//		for (int i = 0; i < aminoAcidsLabeled.length; i++)
-//		System.out.println(new OclCodeCheck().checkOCL(aminoAcidsLabeled[i]));		
 	}
 
 
