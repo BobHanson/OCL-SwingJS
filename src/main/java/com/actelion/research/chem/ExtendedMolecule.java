@@ -4129,7 +4129,7 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 						queryFeatureShift = freeValence + explicitHydrogens - queryFeatureHydrogens;
 
 					if (queryFeatureShift > 0) {
-						long queryFeatures = (queryFeatureHydrogens == 0) ?  // purge 'less than' options
+						int queryFeatures = (queryFeatureHydrogens == 0) ?  // purge 'less than' options
 								0 : (mAtomQueryFeatures[atom] & cAtomQFHydrogen) << queryFeatureShift;
 						queryFeatures |= (queryFeatureShift == 3 ? 7 : explicitHydrogens == 2 ? 3 : 1) << cAtomQFHydrogenShift;
 

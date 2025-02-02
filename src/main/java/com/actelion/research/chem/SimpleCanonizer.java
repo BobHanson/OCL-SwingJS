@@ -41,7 +41,7 @@ public class SimpleCanonizer {
 
     private ExtendedMolecule mMol;
 	private int mCanRank[];
-	private long mCanBaseValue[];
+	private int mCanBaseValue[];
 
 	private boolean mGraphGenerated;
 	private int mGraphRings;
@@ -69,7 +69,7 @@ public class SimpleCanonizer {
             }
 
 		mCanRank = new int[mMol.getAllAtoms()];
-		mCanBaseValue = new long[mMol.getAtoms()];
+		mCanBaseValue = new int[mMol.getAtoms()];
 
 		for (int atom=0; atom<mMol.getAtoms(); atom++) {
 			if ((mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFAny) != 0)
@@ -176,19 +176,19 @@ public class SimpleCanonizer {
 
 	private int canConsolidate() {
 		int canRank = 0;	// all hydrogens have mCanRank[] = 0
-		long lowest;
+		int lowest;
 
 		while (true) {
-			lowest = 0x7fffffffffffffffL;
+			lowest = 0x7fffffff;
 			for (int atom=0; atom<mMol.getAtoms(); atom++)
 				if (lowest > mCanBaseValue[atom])
 					lowest = mCanBaseValue[atom];
 
-			if (lowest != 0x7fffffffffffffffL) {
+			if (lowest != 0x7fffffff) {
 				canRank++;
 				for (int atom=0; atom<mMol.getAtoms(); atom++)
 					if (mCanBaseValue[atom] == lowest) {
-						mCanBaseValue[atom] = 0x7fffffffffffffffL;
+						mCanBaseValue[atom] = 0x7fffffff;
 						mCanRank[atom] = canRank;
 						}
 				continue;
