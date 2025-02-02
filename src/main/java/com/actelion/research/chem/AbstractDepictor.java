@@ -1727,13 +1727,14 @@ public abstract class AbstractDepictor<T> {
 			propStr = append(propStr, mAtomText[atom]);
 
 		String isoStr = null;
-		long queryFeatures = mMol.getAtomQueryFeatures(atom);
-		if (queryFeatures != 0) {
-			if ((queryFeatures & Molecule.cAtomQFIsStereo) != 0)
+		int queryFeatures = mMol.getAtomQueryFeatures(atom);
+		int queryFeaturesEx = mMol.getAtomQueryFeaturesH(atom);
+		if (queryFeatures != 0 || queryFeaturesEx != 0) {
+			if ((queryFeaturesEx & Molecule.cAtomQFIsStereoEx) != 0)
 				isoStr = append(isoStr, "*");
-			if ((queryFeatures & Molecule.cAtomQFIsNotStereo) != 0)
+			if ((queryFeaturesEx & Molecule.cAtomQFIsNotStereoEx) != 0)
 				isoStr = append(isoStr, "!*");
-			if ((queryFeatures & Molecule.cAtomQFHeteroAromatic) != 0)
+			if ((queryFeaturesEx & Molecule.cAtomQFHeteroAromaticEx) != 0)
 				isoStr = append(isoStr, "ha");
 			else if ((queryFeatures & Molecule.cAtomQFAromatic) != 0)
 				isoStr = append(isoStr, "a");
@@ -1742,7 +1743,7 @@ public abstract class AbstractDepictor<T> {
 			if ((queryFeatures & Molecule.cAtomQFMoreNeighbours) != 0)
 				isoStr = append(isoStr, "s");
             if ((queryFeatures & Molecule.cAtomQFHydrogen) != 0) {
-                long hydrogens = (queryFeatures & Molecule.cAtomQFHydrogen);
+                int hydrogens = (queryFeatures & Molecule.cAtomQFHydrogen);
     			if (hydrogens == Molecule.cAtomQFNot1Hydrogen+Molecule.cAtomQFNot2Hydrogen+Molecule.cAtomQFNot3Hydrogen)
     				isoStr = append(isoStr, "h0");
     			else if (hydrogens == Molecule.cAtomQFNot0Hydrogen+Molecule.cAtomQFNot2Hydrogen+Molecule.cAtomQFNot3Hydrogen)
@@ -1763,7 +1764,7 @@ public abstract class AbstractDepictor<T> {
 				    isoStr = append(isoStr, "h1-2");
                 }
             if ((queryFeatures & Molecule.cAtomQFCharge) != 0) {
-                long charge = (queryFeatures & Molecule.cAtomQFCharge);
+                int charge = (queryFeatures & Molecule.cAtomQFCharge);
     			if (charge == Molecule.cAtomQFNotChargePos+Molecule.cAtomQFNotChargeNeg)
     				isoStr = append(isoStr, "c0");
     			else if (charge == Molecule.cAtomQFNotCharge0+Molecule.cAtomQFNotChargeNeg)
@@ -1772,7 +1773,7 @@ public abstract class AbstractDepictor<T> {
     				isoStr = append(isoStr, "c-");
                 }
             if ((queryFeatures & Molecule.cAtomQFPiElectrons) != 0) {
-                long piElectrons = (queryFeatures & Molecule.cAtomQFPiElectrons);
+                int piElectrons = (queryFeatures & Molecule.cAtomQFPiElectrons);
                 if (piElectrons == Molecule.cAtomQFNot1PiElectron+Molecule.cAtomQFNot2PiElectrons)
                     isoStr = append(isoStr, "pi0");
                 else if (piElectrons == Molecule.cAtomQFNot0PiElectrons+Molecule.cAtomQFNot2PiElectrons)
@@ -1783,7 +1784,7 @@ public abstract class AbstractDepictor<T> {
                     isoStr = append(isoStr, "pi>0");
                 }
             if ((queryFeatures & Molecule.cAtomQFNeighbours) != 0) {
-                long neighbours = (queryFeatures & Molecule.cAtomQFNeighbours);
+                int neighbours = (queryFeatures & Molecule.cAtomQFNeighbours);
                 if (neighbours == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot1Neighbour))
                     isoStr = append(isoStr, "n1");
                 else if (neighbours == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot2Neighbours))
@@ -1807,39 +1808,39 @@ public abstract class AbstractDepictor<T> {
                 else if (neighbours == (Molecule.cAtomQFNot0Neighbours | Molecule.cAtomQFNot1Neighbour | Molecule.cAtomQFNot4Neighbours))
 	                isoStr = append(isoStr, "n2-3");
                 }
-			if ((queryFeatures & Molecule.cAtomQFENeighbours) != 0) {
-				long eNegNeighbours = (queryFeatures & Molecule.cAtomQFENeighbours);
-				if (eNegNeighbours == (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot0ENeighbours))
+			if ((queryFeaturesEx & Molecule.cAtomQFENeighboursH) != 0) {
+				int eNegNeighbours = (queryFeaturesEx & Molecule.cAtomQFENeighboursH);
+				if (eNegNeighbours == (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot0ENeighboursEx))
 					isoStr = append(isoStr, "e0");
-				else if (eNegNeighbours == (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot1ENeighbour))
+				else if (eNegNeighbours == (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot1ENeighbourEx))
 					isoStr = append(isoStr, "e1");
-				else if (eNegNeighbours == (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot2ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot2ENeighboursEx))
 					isoStr = append(isoStr, "e2");
-				else if (eNegNeighbours == (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot3ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot3ENeighboursEx))
 					isoStr = append(isoStr, "e3");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot2ENeighbours | Molecule.cAtomQFNot3ENeighbours | Molecule.cAtomQFNot4ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot2ENeighboursEx | Molecule.cAtomQFNot3ENeighboursEx | Molecule.cAtomQFNot4ENeighboursEx))
 					isoStr = append(isoStr, "e<2");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot3ENeighbours | Molecule.cAtomQFNot4ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot3ENeighboursEx | Molecule.cAtomQFNot4ENeighboursEx))
 					isoStr = append(isoStr, "e<3");
-				else if (eNegNeighbours == Molecule.cAtomQFNot4ENeighbours)
+				else if (eNegNeighbours == Molecule.cAtomQFNot4ENeighboursEx)
 					isoStr = append(isoStr, "e<4");
-				else if (eNegNeighbours == Molecule.cAtomQFNot0ENeighbours)
+				else if (eNegNeighbours == Molecule.cAtomQFNot0ENeighboursEx)
 					isoStr = append(isoStr, "e>0");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot1ENeighbour))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx))
 					isoStr = append(isoStr, "e>1");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot1ENeighbour | Molecule.cAtomQFNot2ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx | Molecule.cAtomQFNot2ENeighboursEx))
 					isoStr = append(isoStr, "e>2");
-				else if (eNegNeighbours == (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot4ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx))
 					isoStr = append(isoStr, "e>3");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot3ENeighbours | Molecule.cAtomQFNot4ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot3ENeighboursEx | Molecule.cAtomQFNot4ENeighboursEx))
 					isoStr = append(isoStr, "e1-2");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot4ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot4ENeighboursEx))
 					isoStr = append(isoStr, "e1-3");
-				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot1ENeighbour | Molecule.cAtomQFNot4ENeighbours))
+				else if (eNegNeighbours == (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx | Molecule.cAtomQFNot4ENeighboursEx))
 					isoStr = append(isoStr, "e2-3");
 				}
             if ((queryFeatures & Molecule.cAtomQFRingState) != 0) {
-                long ringBonds = (queryFeatures & Molecule.cAtomQFRingState);
+                int ringBonds = (queryFeatures & Molecule.cAtomQFRingState);
                 if (ringBonds == Molecule.cAtomQFNot2RingBonds+Molecule.cAtomQFNot3RingBonds+Molecule.cAtomQFNot4RingBonds)
                     isoStr = append(isoStr, "!r");
                 else if (ringBonds == Molecule.cAtomQFNotChain)
@@ -1856,8 +1857,8 @@ public abstract class AbstractDepictor<T> {
             if ((queryFeatures & Molecule.cAtomQFSmallRingSize) != 0) {
                 isoStr = append(isoStr, "r"+((queryFeatures & Molecule.cAtomQFSmallRingSize)>>Molecule.cAtomQFSmallRingSizeShift));
                 }
-			if ((queryFeatures & Molecule.cAtomQFNewRingSize) != 0) {
-				isoStr = append(isoStr, createRingSizeText(queryFeatures));
+			if ((queryFeaturesEx & Molecule.cAtomQFNewRingSizeH) != 0) {
+				isoStr = append(isoStr, createRingSizeTextEx(queryFeaturesEx));
 				}
             if ((queryFeatures & Molecule.cAtomQFFlatNitrogen) != 0) {
                 isoStr = append(isoStr, "f");
@@ -2244,26 +2245,26 @@ public abstract class AbstractDepictor<T> {
 		return true;
 	}
 
-	private String createRingSizeText(long queryFeatures) {
-		queryFeatures &= Molecule.cAtomQFNewRingSize;
+	private String createRingSizeTextEx(int queryFeaturesEx) {
+		queryFeaturesEx &= Molecule.cAtomQFNewRingSizeH;
 		for (int i=0; i<AtomQueryFeatureDialogBuilder.RING_SIZE_VALUES.length; i++)
-			if (queryFeatures == AtomQueryFeatureDialogBuilder.RING_SIZE_VALUES[i])
+			if (queryFeaturesEx == AtomQueryFeatureDialogBuilder.RING_SIZE_VALUES[i])
 				return AtomQueryFeatureDialogBuilder.RING_SIZE_SHORT_TEXT[i];
 
 		StringBuilder customOption = new StringBuilder("R");
-		if ((queryFeatures & Molecule.cAtomQFRingSize0) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSize0Ex) != 0)
 			customOption.append("0");
-		if ((queryFeatures & Molecule.cAtomQFRingSize3) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSize3Ex) != 0)
 			customOption.append("3");
-		if ((queryFeatures & Molecule.cAtomQFRingSize4) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSize4Ex) != 0)
 			customOption.append("4");
-		if ((queryFeatures & Molecule.cAtomQFRingSize5) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSize5Ex) != 0)
 			customOption.append("5");
-		if ((queryFeatures & Molecule.cAtomQFRingSize6) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSize6Ex) != 0)
 			customOption.append("6");
-		if ((queryFeatures & Molecule.cAtomQFRingSize7) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSize7Ex) != 0)
 			customOption.append("7");
-		if ((queryFeatures & Molecule.cAtomQFRingSizeLarge) != 0)
+		if ((queryFeaturesEx & Molecule.cAtomQFRingSizeLargeEx) != 0)
 			customOption.append("8");
 
 		return customOption.toString();

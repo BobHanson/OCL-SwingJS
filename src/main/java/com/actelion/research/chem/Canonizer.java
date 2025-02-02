@@ -2973,7 +2973,7 @@ public class Canonizer {
 			addAtomQueryFeatures(4, nbits, Molecule.cAtomQFRingState, Molecule.cAtomQFRingStateBits,
 					Molecule.cAtomQFRingStateShift);
 
-			addAtomQueryFeatures(5, nbits, Molecule.cAtomQFAromState, Molecule.cAtomQFAromStateBits,
+			addAtomQueryFeatures(5, nbits, Molecule.cAtomQFAromStateL, Molecule.cAtomQFAromStateBits,
 					Molecule.cAtomQFAromStateShift);
 
 			addAtomQueryFeatures(6, nbits, Molecule.cAtomQFAny, 1, -1);
@@ -3135,13 +3135,13 @@ public class Canonizer {
 		if (mMol.isFragment()) { // 29 = datatype 'reaction parity hint'
 			addAtomQueryFeatures(29, nbits, Molecule.cAtomQFRxnParityHint, Molecule.cAtomQFRxnParityBits,
 					Molecule.cAtomQFRxnParityShift);
-			addAtomQueryFeatures(30, nbits, Molecule.cAtomQFNewRingSize, Molecule.cAtomQFNewRingSizeBits,
-					Molecule.cAtomQFNewRingSizeShift);
-			addAtomQueryFeatures(32, nbits, Molecule.cAtomQFStereoState, Molecule.cAtomQFStereoStateBits,
-					Molecule.cAtomQFStereoStateShift);
-			addAtomQueryFeatures(33, nbits, Molecule.cAtomQFENeighbours, Molecule.cAtomQFENeighbourBits,
-					Molecule.cAtomQFENeighbourShift);
-			addAtomQueryFeatures(34, nbits, Molecule.cAtomQFHeteroAromatic, 1, -1);
+			addAtomQueryFeaturesEx(30, nbits, Molecule.cAtomQFNewRingSizeH, Molecule.cAtomQFNewRingSizeBitsH,
+					Molecule.cAtomQFNewRingSizeShiftH);
+			addAtomQueryFeaturesEx(32, nbits, Molecule.cAtomQFStereoStateH, Molecule.cAtomQFStereoStateBitsH,
+					Molecule.cAtomQFStereoStateShiftH);
+			addAtomQueryFeaturesEx(33, nbits, Molecule.cAtomQFENeighboursH, Molecule.cAtomQFENeighbourBitsH,
+					Molecule.cAtomQFENeighbourShiftH);
+			addAtomQueryFeaturesEx(34, nbits, Molecule.cAtomQFHeteroAromaticEx, 1, -1);
 			addBondQueryFeatures(35, nbits, Molecule.cBondQFMatchFormalOrder, 1, -1);
 			addBondQueryFeatures(36, nbits, Molecule.cBondQFRareBondTypes, Molecule.cBondQFRareBondTypesBits,
 					Molecule.cBondQFRareBondTypesShift);
@@ -3205,7 +3205,7 @@ public class Canonizer {
 		mIDCode = encodeBitsEnd();
 	}
 
-	private void addAtomQueryFeatures(int codeNo, int nbits, long qfMask, int qfBits, int qfShift) {
+	private void addAtomQueryFeatures(int codeNo, int nbits, int qfMask, int qfBits, int qfShift) {
 		int count = 0;
 		for (int atom = 0; atom < mMol.getAtoms(); atom++)
 			if ((mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask) != 0)
@@ -3218,6 +3218,27 @@ public class Canonizer {
 		encodeBits(count, nbits);
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			long feature = mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask;
+			if (feature != 0) {
+				encodeBits(atom, nbits);
+				if (qfBits != 1)
+					encodeBits(feature >> qfShift, qfBits);
+			}
+		}
+	}
+
+	private void addAtomQueryFeaturesEx(int codeNo, int nbits, int qfMask, int qfBits, int qfShift) {
+		int count = 0;
+		for (int atom = 0; atom < mMol.getAtoms(); atom++)
+			if ((mMol.getAtomQueryFeaturesH(mGraphAtom[atom]) & qfMask) != 0)
+				count++;
+
+		if (count == 0)
+			return;
+
+		encodeFeatureNo(codeNo);
+		encodeBits(count, nbits);
+		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
+			long feature = mMol.getAtomQueryFeaturesH(mGraphAtom[atom]) & qfMask;
 			if (feature != 0) {
 				encodeBits(atom, nbits);
 				if (qfBits != 1)

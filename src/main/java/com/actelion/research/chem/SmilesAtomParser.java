@@ -14,7 +14,8 @@ public class SmilesAtomParser {
 	int atomicNo,abnormalValence,charge,mapNo,explicitHydrogens;
 	private final boolean mAllowCactvs;
 	private final int mMode;
-	private long atomQueryFeatures;      // translated from obvious SMARTS features
+	private int atomQueryFeaturesL;      // translated from obvious SMARTS features
+	private int atomQueryFeaturesH;      // translated from obvious SMARTS features
 	private final SmilesParser mParentParser;
 	private SortedList<Integer> atomList;
 	private ArrayList<StereoMolecule> recursiveSmartsList,excludeGroupList;
@@ -28,7 +29,8 @@ public class SmilesAtomParser {
 		mapNo = 0;
 		abnormalValence = -1;
 		explicitHydrogens = HYDROGEN_ANY;
-		atomQueryFeatures = 0L;
+		atomQueryFeaturesL = 0;
+		atomQueryFeaturesH = 0;
 	}
 
 	private void addAtomToList(int atomicNo) {
@@ -41,15 +43,15 @@ public class SmilesAtomParser {
 	protected int parseAtomOutsideBrackets(byte[] smiles, int position, int endIndex, boolean allowSmarts) {
 		if (smiles[position-1] == '*') {
 			atomicNo = 6;
-			atomQueryFeatures |= Molecule.cAtomQFAny;
+			atomQueryFeaturesL |= Molecule.cAtomQFAny;
 		}
 		else if (smiles[position-1] == '?') {
 			atomicNo = 0;
 		}
 		else if ((smiles[position-1] == 'A' || smiles[position-1] == 'a') && allowSmarts) {
 			atomicNo = 6;
-			atomQueryFeatures |= Molecule.cAtomQFAny;
-			atomQueryFeatures |= smiles[position-1] == 'A' ? Molecule.cAtomQFNotAromatic : Molecule.cAtomQFAromatic;
+			atomQueryFeaturesL |= Molecule.cAtomQFAny;
+			atomQueryFeaturesL |= smiles[position-1] == 'A' ? Molecule.cAtomQFNotAromatic : Molecule.cAtomQFAromatic;
 			smartsFeatureFound = true;
 		}
 		else {
@@ -136,7 +138,7 @@ public class SmilesAtomParser {
 
 		if (smiles[position-1] == '*') {
 			atomicNo = 6;
-			atomQueryFeatures |= Molecule.cAtomQFAny;
+			atomQueryFeaturesL |= Molecule.cAtomQFAny;
 		}
 		else if (smiles[position-1] == '?') {
 			atomicNo = 0;
@@ -145,14 +147,14 @@ public class SmilesAtomParser {
 			boolean isNotList = (smiles[position-1] == '!');
 			if (isNotList) {
 				smartsFeatureFound = true;
-				atomQueryFeatures |= Molecule.cAtomQFAny;
+				atomQueryFeaturesL |= Molecule.cAtomQFAny;
 				position++;
 			}
 
 			// Handle this before checking for atom symbols, because R<n> (ring count) takes precedence to R1 - R16 (substituent pseudo label)
 			if (smiles[position-1] == 'R' && allowSmarts && (Character.isDigit(smiles[position]) || (mAllowCactvs && smiles[position] == '{'))) {
 				atomicNo = 6;
-				atomQueryFeatures |= Molecule.cAtomQFAny;
+				atomQueryFeaturesL |= Molecule.cAtomQFAny;
 				position--;
 				if (isNotList)
 					position--;
@@ -205,9 +207,9 @@ public class SmilesAtomParser {
 					if (atomList != null && atomList.size() > 1) {
 						explicitHydrogens = HYDROGEN_ANY;   // don't use implicit zero with atom lists
 						if (!mayBeAliphatic)
-							atomQueryFeatures |= Molecule.cAtomQFAromatic;
+							atomQueryFeaturesL |= Molecule.cAtomQFAromatic;
 						else if (!mayBeAromatic)
-							atomQueryFeatures |= Molecule.cAtomQFNotAromatic;
+							atomQueryFeaturesL |= Molecule.cAtomQFNotAromatic;
 					}
 
 					position = start;
@@ -254,7 +256,7 @@ public class SmilesAtomParser {
 
 				// explicit charge=0 is usually meant as query feature
 				if (charge == 0)
-					atomQueryFeatures |= Molecule.cAtomQFNotChargeNeg | Molecule.cAtomQFNotChargePos;
+					atomQueryFeaturesL |= Molecule.cAtomQFNotChargeNeg | Molecule.cAtomQFNotChargePos;
 				continue;
 			}
 
@@ -265,7 +267,7 @@ public class SmilesAtomParser {
 			if (smiles[position] == 'H') {
 				position++;
 				position += range.parse(position, 1, 1);
-				long flags = 0;
+				int flags = 0;
 				if (range.min <= 0 && range.max >= 0)
 					flags |= Molecule.cAtomQFNot0Hydrogen;
 				if (range.min <= 1 && range.max >= 1)
@@ -276,7 +278,7 @@ public class SmilesAtomParser {
 					flags |= Molecule.cAtomQFNot3Hydrogen;
 
 				if (isNot) {
-					atomQueryFeatures |= flags;
+					atomQueryFeaturesL |= flags;
 					explicitHydrogens = HYDROGEN_ANY;
 				}
 				else {
@@ -284,7 +286,7 @@ public class SmilesAtomParser {
 						explicitHydrogens = range.min;
 					}
 					else {
-						atomQueryFeatures |= (Molecule.cAtomQFHydrogen & ~flags);
+						atomQueryFeaturesL |= (Molecule.cAtomQFHydrogen & ~flags);
 						explicitHydrogens = HYDROGEN_ANY;
 					}
 				}
@@ -296,7 +298,7 @@ public class SmilesAtomParser {
 				// we translate both to the number of non-H neighbours (for 'D' we assume no explicit H to be present)
 				position++;
 				position += range.parse(position, 1, 1);
-				long flags = 0;
+				int flags = 0;
 				if (range.min <= 0 && range.max >= 0)
 					flags |= Molecule.cAtomQFNot0Neighbours;
 				if (range.min <= 1 && range.max >= 1)
@@ -310,12 +312,12 @@ public class SmilesAtomParser {
 
 				if (flags != 0) {
 					if (isNot)
-						atomQueryFeatures |= flags;
-					else if ((atomQueryFeatures & Molecule.cAtomQFNeighbours) != 0)
-						atomQueryFeatures &= ~flags;
+						atomQueryFeaturesL |= flags;
+					else if ((atomQueryFeaturesL & Molecule.cAtomQFNeighbours) != 0)
+						atomQueryFeaturesL &= ~flags;
 					else {
 						flags = flags ^ Molecule.cAtomQFNeighbours;
-						atomQueryFeatures |= flags;
+						atomQueryFeaturesL |= flags;
 					}
 				}
 				continue;
@@ -324,26 +326,26 @@ public class SmilesAtomParser {
 			if (smiles[position] == 'z' && mAllowCactvs) {   // electro-negative neighbour count (CACTVS,RDKit extension)
 				position++;
 				position += range.parse(position, 1, 4);
-				long flags = 0;
+				int flags = 0;
 				if (range.min <= 0 && range.max >= 0)
-					flags |= Molecule.cAtomQFNot0ENeighbours;
+					flags |= Molecule.cAtomQFNot0ENeighboursEx;
 				if (range.min <= 1 && range.max >= 1)
-					flags |= Molecule.cAtomQFNot1ENeighbour;
+					flags |= Molecule.cAtomQFNot1ENeighbourEx;
 				if (range.min <= 2 && range.max >= 2)
-					flags |= Molecule.cAtomQFNot2ENeighbours;
+					flags |= Molecule.cAtomQFNot2ENeighboursEx;
 				if (range.min <= 3 && range.max >= 3)
-					flags |= Molecule.cAtomQFNot3ENeighbours;
+					flags |= Molecule.cAtomQFNot3ENeighboursEx;
 				if (range.min <= 4 && range.max >= 4)
-					flags |= Molecule.cAtomQFNot4ENeighbours;
+					flags |= Molecule.cAtomQFNot4ENeighboursEx;
 
 				if (flags != 0) {
 					if (isNot)
-						atomQueryFeatures |= flags;
-					else if ((atomQueryFeatures & Molecule.cAtomQFENeighbours) != 0)
-						atomQueryFeatures &= ~flags;
+						atomQueryFeaturesH |= flags;
+					else if ((atomQueryFeaturesH & Molecule.cAtomQFENeighboursH) != 0)
+						atomQueryFeaturesH &= ~flags;
 					else {
-						flags = flags ^ Molecule.cAtomQFENeighbours;
-						atomQueryFeatures |= flags;
+						flags = flags ^ Molecule.cAtomQFENeighboursH;
+						atomQueryFeaturesH |= flags;
 					}
 				}
 				continue;
@@ -369,7 +371,7 @@ public class SmilesAtomParser {
 						valence -= localCharge;
 				}
 
-				long flags = 0;
+				int flags = 0;
 				// we convert into pi-electron count using standard valence
 				if (valence-range.min <= 0 && valence-range.max >= 0)
 					flags |= Molecule.cAtomQFNot0PiElectrons;
@@ -380,19 +382,19 @@ public class SmilesAtomParser {
 
 				if (flags != 0) {
 					if (isNot)
-						atomQueryFeatures |= flags;
-					else if ((atomQueryFeatures & Molecule.cAtomQFPiElectrons) != 0)
-						atomQueryFeatures &= ~flags;
+						atomQueryFeaturesL |= flags;
+					else if ((atomQueryFeaturesL & Molecule.cAtomQFPiElectrons) != 0)
+						atomQueryFeaturesL &= ~flags;
 					else {
 						flags = flags ^ Molecule.cAtomQFPiElectrons;
-						atomQueryFeatures |= flags;
+						atomQueryFeaturesL |= flags;
 					}
 				}
 				continue;
 			}
 
 			if (smiles[position] == 'A' || smiles[position] == 'a') {
-				atomQueryFeatures |= (isNot ^ smiles[position] == 'A') ? Molecule.cAtomQFNotAromatic : Molecule.cAtomQFAromatic;
+				atomQueryFeaturesL |= (isNot ^ smiles[position] == 'A') ? Molecule.cAtomQFNotAromatic : Molecule.cAtomQFAromatic;
 				position++;
 				continue;
 			}
@@ -400,7 +402,7 @@ public class SmilesAtomParser {
 			if (smiles[position] == 'R') {
 				position++;
 				position += range.parse(position, 1, 3);
-				long flags = 0;
+				int flags = 0;
 				if (range.min <= 0 && range.max >= 0)
 					flags |= Molecule.cAtomQFNotChain;
 				if (range.min <= 1 && range.max >= 1)
@@ -414,12 +416,12 @@ public class SmilesAtomParser {
 
 				if (flags != 0) {
 					if (isNot)
-						atomQueryFeatures |= flags;
-					else if ((atomQueryFeatures & Molecule.cAtomQFRingState) != 0)
-						atomQueryFeatures &= ~flags;
+						atomQueryFeaturesL |= flags;
+					else if ((atomQueryFeaturesL & Molecule.cAtomQFRingState) != 0)
+						atomQueryFeaturesL &= ~flags;
 					else {
 						flags = flags ^ Molecule.cAtomQFRingState;
-						atomQueryFeatures |= flags;
+						atomQueryFeaturesL |= flags;
 					}
 				}
 				continue;
@@ -430,9 +432,9 @@ public class SmilesAtomParser {
 				position += range.parse(position, 1, 1);
 				if (range.isDefault) {
 					if (isNot)
-						atomQueryFeatures |= Molecule.cBondQFRingState & ~Molecule.cAtomQFNotChain;
+						atomQueryFeaturesL |= Molecule.cBondQFRingState & ~Molecule.cAtomQFNotChain;
 					else
-						atomQueryFeatures |= Molecule.cAtomQFNotChain;
+						atomQueryFeaturesL |= Molecule.cAtomQFNotChain;
 					continue;
 				}
 
@@ -442,7 +444,7 @@ public class SmilesAtomParser {
 					mParentParser.smartsWarning((isNot ? "!r" : "r") + range.toString());
 
 				if (!isNot && ringSize >= 3 && ringSize <= 7)
-					atomQueryFeatures |= (ringSize << Molecule.cAtomQFSmallRingSizeShift);
+					atomQueryFeaturesL |= (ringSize << Molecule.cAtomQFSmallRingSizeShift);
 				else if (!range.isRange())
 					mParentParser.smartsWarning((isNot ? "!r" : "r") + ringSize);
 				continue;
@@ -472,13 +474,13 @@ public class SmilesAtomParser {
 				if (hybridization < 1 || hybridization > 3)
 					throw new Exception("SmilesParser: Unsupported hybridization. Position:"+position);
 
-				long piElectrons = (hybridization == 1) ? Molecule.cAtomQFNot2PiElectrons
+				int piElectrons = (hybridization == 1) ? Molecule.cAtomQFNot2PiElectrons
 								 : (hybridization == 2) ? Molecule.cAtomQFNot1PiElectron : Molecule.cAtomQFNot0PiElectrons;
 
 				if (!isNot)
 					piElectrons = Molecule.cAtomQFPiElectrons & ~piElectrons;
 
-				atomQueryFeatures |= piElectrons;
+				atomQueryFeaturesL |= piElectrons;
 
 				continue;
 			}
@@ -605,15 +607,15 @@ public class SmilesAtomParser {
 		mol.setAtomCharge(atom, charge);
 		mol.setAtomMapNo(atom, mapNo, false);
 		mol.setAtomAbnormalValence(atom, abnormalValence);
-		if (atomQueryFeatures != 0) {
-			if ((atomQueryFeatures & Molecule.cAtomQFAromatic) != 0) {
-				atomQueryFeatures &= ~Molecule.cAtomQFAromatic;
+		if (atomQueryFeaturesL != 0) {
+			if ((atomQueryFeaturesL & Molecule.cAtomQFAromatic) != 0) {
+				atomQueryFeaturesL &= ~Molecule.cAtomQFAromatic;
 				mol.setAtomMarker(atom, true);
 			}
 			else {
 				mol.setAtomMarker(atom, false);
 			}
-			mol.setAtomQueryFeature(atom, atomQueryFeatures, true);
+			mol.setAtomQueryFeature(atom, atomQueryFeaturesL, true);
 		}
 		if (atomList != null) {
 			int[] list = new int[atomList.size()];
@@ -727,7 +729,7 @@ public class SmilesAtomParser {
 	}
 
 	public boolean atomQueryFeaturesFound() {
-		return atomQueryFeatures != 0L || atomList != null;
+		return (atomQueryFeaturesL != 0 && atomQueryFeaturesH != 0)|| atomList != null;
 	}
 
 	public ArrayList<StereoMolecule> getExcludeGroupList() {
