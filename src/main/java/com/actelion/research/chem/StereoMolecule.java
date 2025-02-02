@@ -55,8 +55,8 @@ public class StereoMolecule extends ExtendedMolecule {
     transient private Canonizer mCanonizer;
     transient private boolean mAssignParitiesToNitrogen;
 
-    public void setPrioritiesPreset(boolean b) {
-    	mPrioritiesPreset = b;
+    public void setParitiesPreset(boolean b) {
+    	mParitiesPreset = b;
     }
 
 	public StereoMolecule() {
@@ -213,7 +213,7 @@ public class StereoMolecule extends ExtendedMolecule {
 
         if (mAssignParitiesToNitrogen)
         	required |= cHelperBitIncludeNitrogenParities;
-        int mask = (mPrioritiesPreset ? (cAtomFlagsHelper3 & ~3) : cAtomFlagsHelper3);
+        int mask = (mParitiesPreset ? (cAtomFlagsHelper3 & ~3) : cAtomFlagsHelper3);
 		for (int atom=0; atom<getAllAtoms(); atom++)
 			mAtomFlags[atom] &= ~mask;
 		for (int bond=0; bond<getBonds(); bond++)
@@ -234,7 +234,7 @@ public class StereoMolecule extends ExtendedMolecule {
             rankMode |= Canonizer.ASSIGN_PARITIES_TO_TETRAHEDRAL_N;
 		    }
 		
-		if (mPrioritiesPreset) {
+		if (mParitiesPreset) {
 			// InChI parser will set this
 			rankMode |= Canonizer.COORDS_ARE_3D;
 		}

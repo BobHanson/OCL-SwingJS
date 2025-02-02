@@ -253,7 +253,7 @@ public class Canonizer {
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0)
 			canFindNitrogenQualifyingForParity();
 
-		mZCoordinatesAvailable = (mMol.mPrioritiesPreset || (mode & COORDS_ARE_3D) != 0) || mMol.is3D();
+		mZCoordinatesAvailable = (mMol.mParitiesPreset || (mode & COORDS_ARE_3D) != 0) || mMol.is3D();
 
 		mAllHydrogensAreExplicit = (mMol.getImplicitHydrogens() == 0);
 		if ((mMode & NEGLECT_ANY_STEREO_INFORMATION) == 0) {

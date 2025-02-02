@@ -420,7 +420,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		// temporarily preserve parities
 		mol.setParitiesValid(0);
 		// coordinates are not
-		mol.setPrioritiesPreset(true);
+		mol.setParitiesPreset(true);
 		new CoordinateInventor(Canonizer.COORDS_ARE_3D);
 		// | CoordinateInventor.MODE_SKIP_DEFAULT_TEMPLATES).invent(mol);
 		mol.ensureHelperArrays(31);
