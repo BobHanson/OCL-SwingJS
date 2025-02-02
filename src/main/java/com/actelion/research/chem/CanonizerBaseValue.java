@@ -35,38 +35,44 @@
 package com.actelion.research.chem;
 
 import java.util.Arrays;
-
 public class CanonizerBaseValue implements Comparable<CanonizerBaseValue> {
-    public long[] mValue;
+
+static int test = 0;
+private final int id;
+
+    private int[] mValue;
     private int mAtom;
     private int mIndex;
     private int mAvailableBits;
-
+    private final static int MAX_BITS_MINUS_1 = 31;
     /**
      * @param size depends on the maximum number of non-H neighbors
      *             and whether bond query features are present
      */
     public CanonizerBaseValue(int size) {
-        mValue = new long[size];
+        mValue = new int[size * 2];
+        id = ++test;
         }
 
     public void init(int atom) {
         mAtom = atom;
         mIndex = 0;
-        mAvailableBits = 63;
+        mAvailableBits = MAX_BITS_MINUS_1;
         Arrays.fill(mValue, 0);
         }
 
-    public void add(long data) {
+    public void addInt(int data) {
         mValue[mIndex] += data;
+//    	if (data != 0)
+//    		System.out.println(hexAlign(id) + "." + mIndex  + " " + hexAlign(mValue[mIndex]) + " add "+ data  + " avail=" + mAvailableBits);
         }
 
-    public void add(int bits, long data) {
+    public void add(int bits, int data) {
         if (mAvailableBits == 0) {
             mIndex++;
-            mAvailableBits = 63;
+            mAvailableBits = MAX_BITS_MINUS_1;
             }
-        if (mAvailableBits == 63) {
+        if (mAvailableBits == MAX_BITS_MINUS_1) {
             mValue[mIndex] |= data;
             mAvailableBits -= bits;
             }
@@ -81,7 +87,7 @@ public class CanonizerBaseValue implements Comparable<CanonizerBaseValue> {
                 mValue[mIndex] |= (data >> (bits - mAvailableBits));
                 bits -= mAvailableBits;
                 mIndex++;
-                mAvailableBits = 63 - bits;
+                mAvailableBits = MAX_BITS_MINUS_1 - bits;
                 mValue[mIndex] |= (data & ((1 << bits) - 1));
                 }
             }

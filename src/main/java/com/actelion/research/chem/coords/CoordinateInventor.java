@@ -1942,8 +1942,8 @@ f.mAtomY[i] = mMol.getAtomY(f.mAtom[i]) / avbl;
 			int bondParity = mMol.getBondParity(bond);
 			if (bondParity == Molecule.cBondParityEor1
 			 || bondParity == Molecule.cBondParityZor2) {
-				baseValue[mMol.getBondAtom(0, bond)].add(bondParity);
-				baseValue[mMol.getBondAtom(1, bond)].add(bondParity);
+				baseValue[mMol.getBondAtom(0, bond)].addInt(bondParity);
+				baseValue[mMol.getBondAtom(1, bond)].addInt(bondParity);
 				}
 			}
 

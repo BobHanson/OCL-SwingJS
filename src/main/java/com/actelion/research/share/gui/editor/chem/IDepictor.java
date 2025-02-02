@@ -54,5 +54,5 @@ public interface IDepictor<T>
 
     void paint(IDrawContext<T> ctx);
 
-    void setFragmentNoColor(long color);
+    void setFragmentNoColor(int color);
 }

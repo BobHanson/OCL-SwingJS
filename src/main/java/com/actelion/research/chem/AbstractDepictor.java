@@ -1728,7 +1728,7 @@ public abstract class AbstractDepictor<T> {
 
 		String isoStr = null;
 		int queryFeatures = mMol.getAtomQueryFeatures(atom);
-		int queryFeaturesEx = mMol.getAtomQueryFeaturesH(atom);
+		int queryFeaturesEx = mMol.getAtomQueryFeaturesEx(atom);
 		if (queryFeatures != 0 || queryFeaturesEx != 0) {
 			if ((queryFeaturesEx & Molecule.cAtomQFIsStereoEx) != 0)
 				isoStr = append(isoStr, "*");

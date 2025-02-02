@@ -82,7 +82,7 @@ public class DescriptorHandlerAllFragmentsFP extends AbstractDescriptorHandlerLo
 
 			boolean[] isBlockedAtom = new boolean[mol.getAtoms()];
 			for (int atom = 0; atom<mol.getAtoms(); atom++)
-				isBlockedAtom[atom] = (mol.getAtomQueryFeaturesH(atom) & ~Molecule.cAtomQFNarrowingH) != 0
+				isBlockedAtom[atom] = (mol.getAtomQueryFeaturesEx(atom) & ~Molecule.cAtomQFNarrowingH) != 0
 									|| mol.getAtomList(atom) != null;
 
 			boolean hasBlockedBond = false;

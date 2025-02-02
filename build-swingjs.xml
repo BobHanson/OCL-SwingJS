@@ -9,7 +9,7 @@
     <property name="site.dir" value="site" />
     <property name="dist.dir" value="dist" />
     <property name="jars.dir" value="jars" />
-	<property name="inchi.jar" value="jni-inchi-0.7-jar-with-dependencies.jar" />
+	<property name="inchi.jar" value="jni-inchi-1.03-jar-with-dependencies.jar" />
 	
     <path id="srcs">
         <dirset dir="." includes="${src.dir}" />

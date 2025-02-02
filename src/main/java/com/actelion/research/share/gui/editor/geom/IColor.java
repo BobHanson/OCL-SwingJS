@@ -41,12 +41,12 @@ package com.actelion.research.share.gui.editor.geom;
  */
 public interface IColor
 {
-    public static final long BLACK = 0x000000FFl;
-    public static final long WHITE = 0xFFFFFFFFl;
-    public static final long RED = 0xFF00000FFl;
-    public static final long BLUE = 0x0000FFFFl;
-    public static final long GREEN = 0x00FF00FFl;
-    public static final long GRAY = 0xAAAAAAFFl;
-    public static final long TRANSPARENT = 0x00000000l;
+    public static final int BLACK = 0x000000FF;
+    public static final int WHITE = 0xFFFFFFFF;
+    public static final int RED =   0xFF0000FF; // BH there was a bug here
+    public static final int BLUE =  0x0000FFFF;
+    public static final int GREEN = 0x00FF00FF;
+    public static final int GRAY =  0xAAAAAAFF;
+    public static final int TRANSPARENT = 0x00000000;
 
 }

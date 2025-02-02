@@ -59,7 +59,7 @@ public interface IDrawContext<T>
 
     String getFont();
 
-    void setFill(long color);
+    void setFill(int color);
 
     void fillText(String str, double x, double y);
 
@@ -73,7 +73,7 @@ public interface IDrawContext<T>
 
     void clearRect(double x, double y, double w, double h);
 
-    void setStroke(long color);
+    void setStroke(int color);
 
     void fillElipse(double v, double v1, double highlightAtomDiameter, double highlightAtomDiameter1);
 

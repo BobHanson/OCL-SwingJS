@@ -206,8 +206,8 @@ public class SSSearcher {
 
 		mRequiredHelperLevel = Molecule.cHelperRings;
 		for (int atom=0; atom<mFragment.getAtoms(); atom++)
-			if ((mFragment.getAtomQueryFeaturesH(atom) & Molecule.cAtomQFStereoStateH) != 0 
-					| (mFragment.getAtomQueryFeaturesH(atom) & Molecule.cAtomQFMatchStereo) != 0)
+			if ((mFragment.getAtomQueryFeaturesEx(atom) & Molecule.cAtomQFStereoStateH) != 0 
+					| (mFragment.getAtomQueryFeaturesEx(atom) & Molecule.cAtomQFMatchStereo) != 0)
 				mRequiredHelperLevel = Molecule.cHelperParities;
 		for (int bond=0; bond<mFragment.getBonds(); bond++)
 			if ((mFragment.getBondQueryFeatures(bond) & Molecule.cBondQFMatchStereo) != 0)
@@ -719,9 +719,9 @@ System.out.println();
 			return false;
 
 		int moleculeQF = mMolecule.getAtomQueryFeatures(moleculeAtom);
-		int moleculeQFEx = mMolecule.getAtomQueryFeaturesH(moleculeAtom);
+		int moleculeQFEx = mMolecule.getAtomQueryFeaturesEx(moleculeAtom);
 		int fragmentQF = mFragment.getAtomQueryFeatures(fragmentAtom);
-		int fragmentQFEx = mFragment.getAtomQueryFeaturesH(fragmentAtom);
+		int fragmentQFEx = mFragment.getAtomQueryFeaturesEx(fragmentAtom);
 
 		int[] fragmentList = mFragment.getAtomList(fragmentAtom);
 		int[] moleculeList = mMolecule.getAtomList(moleculeAtom);
@@ -1433,7 +1433,7 @@ System.out.println();
 						& Molecule.cAtomQFSimpleFeaturesL)
 						^ Molecule.cAtomQFNarrowingL;
 			mMoleculeAtomFeaturesH[atom] = ((getAtomQueryDefaultsH(mMolecule, atom)
-					| mMolecule.getAtomQueryFeaturesH(atom))
+					| mMolecule.getAtomQueryFeaturesEx(atom))
 						& Molecule.cAtomQFSimpleFeaturesH)
 						^ Molecule.cAtomQFNarrowingH;
 
@@ -1550,7 +1550,7 @@ System.out.println();
 					(getAtomQueryDefaultsL(fragment, atom) | fragment.getAtomQueryFeatures(atom)
 							) & Molecule.cAtomQFSimpleFeaturesL) ^ Molecule.cAtomQFNarrowingL;
 			mFragmentAtomFeaturesH[atom] = (
-					(getAtomQueryDefaultsH(fragment, atom) | fragment.getAtomQueryFeaturesH(atom)
+					(getAtomQueryDefaultsH(fragment, atom) | fragment.getAtomQueryFeaturesEx(atom)
 							) & Molecule.cAtomQFSimpleFeaturesH) ^ Molecule.cAtomQFNarrowingH;
 			mFragmentAtomType[atom] = fragment.getAtomicNo(atom);
 

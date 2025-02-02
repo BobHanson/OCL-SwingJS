@@ -562,7 +562,7 @@ public class IsomericSmilesCreator {
 		if (charge == 0 && (mMode & MODE_CREATE_SMARTS) != 0) {
 			// Because SMARTS don't know a charge query feature, we set the atom charge in case of neg/pos charge required.
 			// There is no way to require an uncharged atom (Molecule.cAtomQFNotChargeNeg | Molecule.cAtomQFNotChargePos).
-			long chargeFeatures = mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFCharge;
+			int chargeFeatures = mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFCharge;
 			if (chargeFeatures == (Molecule.cAtomQFNotCharge0 | Molecule.cAtomQFNotChargePos))
 				charge = -1;    // 'require negative charge' is translated into charge := -1
 			else if (chargeFeatures == (Molecule.cAtomQFNotCharge0 | Molecule.cAtomQFNotChargeNeg))
@@ -646,7 +646,7 @@ public class IsomericSmilesCreator {
 		buffer.setLength(0);
 
 		int queryFeatures = mMol.getAtomQueryFeatures(atom);
-		int queryFeaturesEx = mMol.getAtomQueryFeaturesH(atom);
+		int queryFeaturesEx = mMol.getAtomQueryFeaturesEx(atom);
 
 		// SMARTS don't distinguish between a charged atom and atom charge query features
 		int chargeFeatures = (int)((queryFeatures & Molecule.cAtomQFCharge) >> Molecule.cAtomQFChargeBits);
@@ -692,7 +692,7 @@ public class IsomericSmilesCreator {
 
 		// Atom membership of SSSR rings cannot be directly translated into number of ring bonds.
 		// We try to get close...
-		long ringState = queryFeatures & Molecule.cAtomQFRingState;
+		int ringState = queryFeatures & Molecule.cAtomQFRingState;
 		if (ringState == Molecule.cAtomQFNotChain)
 			buffer.append(";!R0");
 		else if (ringState == Molecule.cAtomQFNot2RingBonds)
@@ -754,7 +754,7 @@ public class IsomericSmilesCreator {
 				buffer.append(";r" + ringSize);
 		}
 
-		long neighbourFeatures = queryFeatures & Molecule.cAtomQFNeighbours;
+		int neighbourFeatures = queryFeatures & Molecule.cAtomQFNeighbours;
 		if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot1Neighbour))
 			buffer.append(";D1");   // exactly 1
 		if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot2Neighbours))

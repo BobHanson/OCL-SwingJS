@@ -272,12 +272,12 @@ public class AtomTypeCalculator {
 		return sb.toString();
 		}
 
-	public static String getTypeString(long type, int mode) {
+	public static String getTypeString(long ltype, int mode) {
+		int type = (int) ltype;
 		StringBuffer sb = new StringBuffer();
-		sb.append(getAtomicNoCodeString((int)(type & ATOM_FLAGS_ATOMICNO)));
-
+		sb.append(getAtomicNoCodeString(type & ATOM_FLAGS_ATOMICNO));
 		if ((mode & cPropertiesAtomRingSize) != 0) {
-			long ringSize = ((type & ATOM_FLAGS_RINGSIZE) >> ATOM_SHIFT_RINGSIZE);
+			int ringSize = ((type & ATOM_FLAGS_RINGSIZE) >> ATOM_SHIFT_RINGSIZE);
 			if (ringSize != 0) ringSize += 2;
 			sb.append("\t"+ringSize);
 			}
@@ -299,11 +299,12 @@ public class AtomTypeCalculator {
 			}
 
 		if ((mode & cPropertiesAtomRingCount) != 0) {
-			long ringCount = (type & ATOM_FLAGS_RINGCOUNT) >> ATOM_SHIFT_RINGCOUNT;
+			int ringCount = (type & ATOM_FLAGS_RINGCOUNT) >> ATOM_SHIFT_RINGCOUNT;
 			sb.append("\t" + ringCount);
 			}
 
-		type >>= ATOM_FLAG_COUNT;
+		ltype >>= ATOM_FLAG_COUNT;
+		type = (int) ltype;
 		for (int i=1; i<=4; i++) {
 			int neighbourType = (int) (type & CONN_FLAGS_ALL);
 			if (neighbourType != 0) {
@@ -316,7 +317,7 @@ public class AtomTypeCalculator {
 					sb.append("\t"+getSimpleAtomicNoCodeString((int)(neighbourType & CONN_FLAGS_ATOMICNO)));
 
 				if ((mode & cPropertiesConnAtomNeighbours) != 0) {
-					long otherNeighbours = ((neighbourType & CONN_FLAGS_NEIGHBOURS) >> CONN_SHIFT_NEIGHBOURS);
+					int otherNeighbours = ((neighbourType & CONN_FLAGS_NEIGHBOURS) >> CONN_SHIFT_NEIGHBOURS);
 					if ((mode & cPropertiesConnAtomNeighboursExact) == 0)
 						sb.append("\t"+(otherNeighbours == 0 ? "no" : "yes"));
 					else
@@ -332,7 +333,7 @@ public class AtomTypeCalculator {
 				if ((mode & cPropertiesConnAtomStabilized) != 0)
 					sb.append("\t"+(((neighbourType & CONN_FLAG_STABILIZED) != 0) ? "yes" : "no"));
 				}
-			type >>= CONN_FLAG_COUNT;
+			ltype >>= CONN_FLAG_COUNT;
 			}
 
 		return sb.toString();
@@ -356,12 +357,12 @@ public class AtomTypeCalculator {
 			}
 
 		if ((mode & cPropertiesAtomRingCount) != 0) {
-			long ringCount = (type & ATOM_FLAGS_RINGCOUNT) >> ATOM_SHIFT_RINGCOUNT;
+			int ringCount = (type & ATOM_FLAGS_RINGCOUNT) >> ATOM_SHIFT_RINGCOUNT;
 			sb.append("Rc"+ringCount);
 			}
 
 		if ((mode & cPropertiesAtomRingSize) != 0) {
-			long ringSize = ((type & ATOM_FLAGS_RINGSIZE) >> ATOM_SHIFT_RINGSIZE);
+			int ringSize = ((type & ATOM_FLAGS_RINGSIZE) >> ATOM_SHIFT_RINGSIZE);
 			if (ringSize != 0) ringSize += 2;
 			sb.append("Rs" + ringSize);
 			}
@@ -405,7 +406,7 @@ public class AtomTypeCalculator {
 			else if ((mode & cPropertiesConnAtomTypeSimple) != 0)
 				sb.append(getSimpleAtomicNoCodeString((int)(type & CONN_FLAGS_ATOMICNO))+":");
 
-			long neighbours = ((type & CONN_FLAGS_NEIGHBOURS) >> CONN_SHIFT_NEIGHBOURS) + 1;
+			int neighbours = ((type & CONN_FLAGS_NEIGHBOURS) >> CONN_SHIFT_NEIGHBOURS) + 1;
 			if ((mode & cPropertiesConnAtomNeighbours) != 0)
 				sb.append("N" + neighbours);
 
@@ -454,7 +455,7 @@ public class AtomTypeCalculator {
 			int connType = 0;
 
 			if ((mode & cPropertiesConnBondOrder) != 0) {
-				long connBondOrder = mol.getConnBondOrder(atom, i);
+				int connBondOrder = mol.getConnBondOrder(atom, i);
 				if (mode == cPropertiesForMutator) {	// for the Mutator this distinction is more appropriate
 					if (connBondOrder < 3 && mol.isDelocalizedBond(mol.getConnBond(atom, i)) && mol.getAtomPi(atom) == 1)
 						connBondOrder = 0;
@@ -567,7 +568,7 @@ public class AtomTypeCalculator {
 			}
 
 		if ((mode & cPropertiesAtomRingCount) != 0) {
-			long ringCount = mol.getAtomRingCount(atom, 10);
+			int ringCount = mol.getAtomRingCount(atom, 10);
 			atomType |= (ringCount << ATOM_SHIFT_RINGCOUNT);	// ampholytic
 			}
 

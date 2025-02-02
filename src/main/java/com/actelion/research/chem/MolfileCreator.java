@@ -201,7 +201,7 @@ public class MolfileCreator {
 
             mBuilder.append(" 0  0  0");	// massDif, charge, parity
 
-            long hydrogenFlags = Molecule.cAtomQFHydrogen & mol.getAtomQueryFeatures(atom);
+            int hydrogenFlags = Molecule.cAtomQFHydrogen & mol.getAtomQueryFeatures(atom);
             if (hydrogenFlags == 0)
                 mBuilder.append("  0");
             else if (hydrogenFlags == (Molecule.cAtomQFNot0Hydrogen | Molecule.cAtomQFNot1Hydrogen))
@@ -406,7 +406,7 @@ public class MolfileCreator {
             if (no != 0) {
                 int count = 0;
                 for (int atom=0; atom<mol.getAllAtoms(); atom++) {
-                    long ringFeatures = mol.getAtomQueryFeatures(atom) & Molecule.cAtomQFRingState;
+                    int ringFeatures = mol.getAtomQueryFeatures(atom) & Molecule.cAtomQFRingState;
                     if (ringFeatures != 0) {
                         if (count == 0) {
                             mBuilder.append("M  RBC");
@@ -469,7 +469,7 @@ public class MolfileCreator {
             if (no != 0) {
                 int count = 0;
                 for (int atom=0; atom<mol.getAllAtoms(); atom++) {
-                    long substitution = mol.getAtomQueryFeatures(atom) & (Molecule.cAtomQFMoreNeighbours | Molecule.cAtomQFNoMoreNeighbours);
+                    int substitution = mol.getAtomQueryFeatures(atom) & (Molecule.cAtomQFMoreNeighbours | Molecule.cAtomQFNoMoreNeighbours);
                     if (substitution != 0) {
                         if (count == 0) {
                             mBuilder.append("M  SUB");

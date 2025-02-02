@@ -327,7 +327,7 @@ public class AtomQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
 
 	private void setInitialStates() {
 		int queryFeatures = mMol.getAtomQueryFeatures(mAtom);
-		int queryFeaturesEx = mMol.getAtomQueryFeaturesH(mAtom);
+		int queryFeaturesEx = mMol.getAtomQueryFeaturesEx(mAtom);
 
 		if ((queryFeatures & Molecule.cAtomQFAny) != 0) {
 			mCBAny.setSelected(true);

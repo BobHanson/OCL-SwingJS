@@ -6,15 +6,15 @@ package com.actelion.research.share.gui;
  */
 public abstract class DrawConfig
 {
-    public final long createColor(double r, double g, double b, double alpha)
+    public final int createColor(double r, double g, double b, double alpha)
     {
-        long col = (long)(r * 255) << 24 | (long)(g * 255) << 16 | (long)(b * 255) << 8 | (long)(alpha*255);
+        int col =  ((int)(r * 255) << 24) | ((int)(g * 255) << 16) | ((int)(b * 255) << 8) |(int) (alpha*255);
         return col;
     }
 
-    public abstract long getHighLightColor();
-    public abstract long getMapToolColor();
-    public abstract long getSelectionColor();
-    public abstract long getForegroundColor();
-    public abstract long getBackgroundColor();
+    public abstract int getHighLightColor();
+    public abstract int getMapToolColor();
+    public abstract int getSelectionColor();
+    public abstract int getForegroundColor();
+    public abstract int getBackgroundColor();
 }

@@ -2336,7 +2336,7 @@ public class Molecule implements Serializable {
 
 
 	/**
-	 * Returns the lower set of query features for this atom. In order to get all features related to a certain subject
+	 * Returns the lower-byte set of query features for this atom. In order to get all features related to a certain subject
 	 * use something like this: <i>getAtomQueryFeatures() & cAtomQFHydrogen</i>
 	 * @param atom
 	 * @return
@@ -2346,12 +2346,12 @@ public class Molecule implements Serializable {
 		}
 
 	/**
-	 * Returns all set query features for this atom. In order to get all features related to a certain subject
+	 * Returns all set high-byte query features for this atom. In order to get all features related to a certain subject
 	 * use something like this: <i>getAtomQueryFeatures() & cAtomQFHydrogen</i>
 	 * @param atom
 	 * @return
 	 */
-	public int getAtomQueryFeaturesH(int atom) {
+	public int getAtomQueryFeaturesEx(int atom) {
 		return mAtomQueryFeaturesH[atom];
 		}
 
@@ -2836,11 +2836,11 @@ public class Molecule implements Serializable {
 		System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
 		return copy;
     }
-	private static long[] copyOf(long[] original, int newLength) {
-		long[] copy = new long[newLength];
-		System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-		return copy;
-	}
+//	private static long[] copyOf(long[] original, int newLength) {
+//		long[] copy = new long[newLength];
+//		System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
+//		return copy;
+//	}
 	private static int[][] copyOf(int[][] original, int newLength) {
 		int[][] copy = new int[newLength][];
 		for (int i=0; i<original.length; i++) {
@@ -3421,6 +3421,13 @@ public class Molecule implements Serializable {
 		mIsFragment = true;
 		}
 
+	/**
+	 * sets a high-order "Ex" atom query feature bit
+	 * 
+	 * @param atom
+	 * @param feature
+	 * @param value
+	 */
 	public void setAtomQueryFeatureEx(int atom, int feature, boolean value) {
 		if (value)
 			mAtomQueryFeaturesH[atom] |= feature;
