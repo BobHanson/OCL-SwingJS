@@ -217,6 +217,9 @@ public class Molecule implements Serializable {
 	public static final int cAtomQFRingSize7Ex       = 0x00000020;
 	public static final int cAtomQFRingSizeLargeEx   = 0x00000040;
 	
+	/**
+	 * ENeighboursH|StereoStateBitsH|AromStateH
+	 */
 	public static final int cAtomQFSimpleFeaturesH	 = 0x00007F80;
 	
 	public static final int cAtomQFENeighbourBitsH	 = 5;
