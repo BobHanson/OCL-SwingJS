@@ -36,7 +36,7 @@ package com.actelion.research.chem;
 
 
 public class AtomTypeCalculator {
-	public static final int cPropertiesAll						= 0x00007FBE;
+	public static final int cPropertiesAll						= 0x00007FBE; 
 	public static final int cPropertiesForSolubility			= 0x00000860;
 	public static final int cPropertiesForCLogPCharges			= 0x00001861;
 	public static final int cPropertiesForCLogP					= 0x00000861;
@@ -75,30 +75,30 @@ public class AtomTypeCalculator {
 	public static final int cPropertiesConnAtomStabilized		= 0x00004000;
 									// is stabilized neighbour atom
 
-	private static final long ATOM_FLAG_COUNT = 15;
-	private static final long CONN_FLAG_COUNT = 11;
+	private static final int ATOM_FLAG_COUNT = 15; // so 15 + 4*11 = 59 bits used
+	private static final int CONN_FLAG_COUNT = 11;
 
-	private static final long ATOM_FLAGS_ATOMICNO  = 0x0000000F;
-	private static final long ATOM_FLAGS_RINGSIZE  = 0x00000070;
-	private static final long ATOM_SHIFT_RINGSIZE  = 4;
-	private static final long ATOM_FLAGS_RINGCOUNT = 0x00000380;
-	private static final long ATOM_SHIFT_RINGCOUNT = 7;
-	private static final long ATOM_FLAG_SMALLRING  = 0x00000040;	// uses one of the ringsize flags
-	private static final long ATOM_FLAG_AROMATIC   = 0x00000400;
-	private static final long ATOM_FLAG_ALLYLIC    = 0x00000800;
-	private static final long ATOM_FLAG_STABILIZED = 0x00001000;
-	private static final long ATOM_FLAG_CHARGED    = 0x00002000;
-	private static final long ATOM_FLAG_AMPHOLYTIC = 0x00004000;
+	private static final int ATOM_FLAGS_ATOMICNO  = 0x0000000F;
+	private static final int ATOM_FLAGS_RINGSIZE  = 0x00000070;
+	private static final int ATOM_SHIFT_RINGSIZE  = 4;
+	private static final int ATOM_FLAGS_RINGCOUNT = 0x00000380;
+	private static final int ATOM_SHIFT_RINGCOUNT = 7;
+	private static final int ATOM_FLAG_SMALLRING  = 0x00000040;	// uses one of the ringsize flags
+	private static final int ATOM_FLAG_AROMATIC   = 0x00000400;
+	private static final int ATOM_FLAG_ALLYLIC    = 0x00000800;
+	private static final int ATOM_FLAG_STABILIZED = 0x00001000;
+	private static final int ATOM_FLAG_CHARGED    = 0x00002000;
+	private static final int ATOM_FLAG_AMPHOLYTIC = 0x00004000;
 
-	private static final long CONN_FLAGS_ALL        = 0x000007FF;
-	private static final long CONN_FLAGS_ATOMICNO   = 0x0000000F;
-	private static final long CONN_FLAGS_BONDORDER  = 0x00000030;
-	private static final long CONN_SHIFT_BONDORDER  = 4;
-	private static final long CONN_FLAGS_NEIGHBOURS = 0x000000C0;
-	private static final long CONN_SHIFT_NEIGHBOURS = 6;
-	private static final long CONN_FLAG_SMALLRING   = 0x00000100;
-	private static final long CONN_FLAG_AROMATIC    = 0x00000200;
-	private static final long CONN_FLAG_STABILIZED  = 0x00000400;
+	private static final int CONN_FLAGS_ALL        = 0x000007FF;
+	private static final int CONN_FLAGS_ATOMICNO   = 0x0000000F;
+	private static final int CONN_FLAGS_BONDORDER  = 0x00000030;
+	private static final int CONN_SHIFT_BONDORDER  = 4;
+	private static final int CONN_FLAGS_NEIGHBOURS = 0x000000C0;
+	private static final int CONN_SHIFT_NEIGHBOURS = 6;
+	private static final int CONN_FLAG_SMALLRING   = 0x00000100;
+	private static final int CONN_FLAG_AROMATIC    = 0x00000200;
+	private static final int CONN_FLAG_STABILIZED  = 0x00000400;
 
 	private static final short cAtomicNoCode[] = {-1,
       -1,     -1,      0,      0,      1,      2,   //  H  ,He ,Li ,Be ,B  ,C  ,
@@ -305,7 +305,7 @@ public class AtomTypeCalculator {
 
 		type >>= ATOM_FLAG_COUNT;
 		for (int i=1; i<=4; i++) {
-			long neighbourType = type & CONN_FLAGS_ALL;
+			int neighbourType = (int) (type & CONN_FLAGS_ALL);
 			if (neighbourType != 0) {
 				if ((mode & cPropertiesConnBondOrder) != 0)
 					sb.append("\t"+((neighbourType & CONN_FLAGS_BONDORDER) >> CONN_SHIFT_BONDORDER));
@@ -343,8 +343,9 @@ public class AtomTypeCalculator {
 		return toString(type, cPropertiesAll);
 		}
 
-	public static String toString(long type, int mode) {
+	public static String toString(long ltype, int mode) {
 		StringBuffer sb = new StringBuffer();
+		int type = (int) ltype;
 		sb.append(getAtomicNoCodeString((int)(type & ATOM_FLAGS_ATOMICNO))+":");
 
 		if ((mode & cPropertiesAtomCharged) != 0) {
@@ -374,11 +375,12 @@ public class AtomTypeCalculator {
 		if ((mode & cPropertiesAtomStabilized) != 0 && (type & ATOM_FLAG_STABILIZED) != 0)
 			sb.append("St");
 
-		type >>= ATOM_FLAG_COUNT;
+		ltype >>= ATOM_FLAG_COUNT;
 		for (int j=0; j<4; j++) {
-			if (type == 0)
+			if (ltype == 0)
 				break;
-
+			type = (int) ltype;
+	
 			if ((mode & cPropertiesConnBondOrder) != 0) {
 				int bondType = (int) ((type & CONN_FLAGS_BONDORDER) >> CONN_SHIFT_BONDORDER);
 				switch (bondType) {
@@ -418,7 +420,7 @@ public class AtomTypeCalculator {
 
 			sb.append("}");
 
-			type >>= CONN_FLAG_COUNT;
+			ltype >>= CONN_FLAG_COUNT;
 			}
 		
 		return sb.toString();
@@ -433,11 +435,14 @@ public class AtomTypeCalculator {
 		return getAtomType(mol, atom, cPropertiesAll);
 		}
 
-
+	// ...6.........5.........4.........3.........2.........1..........
+	// 3210987654321098765432109876543210987654321098765432109876543210
+	// .....dddddddddddcccccccccccbbbbbbbbbbbaaaaaaaaaaaAAAAAAAAAAAAAAA
+	//          
 	public static long getAtomType(StereoMolecule mol, int atom, int mode) throws Exception {
 		mol.ensureHelperArrays(Molecule.cHelperRings);
 
-		long[] neighbourType = new long[mol.getConnAtoms(atom)];
+		int[] neighbourType = new int[mol.getConnAtoms(atom)];
 		int neighbourCount = 0;
 
 		for (int i=0; i<mol.getConnAtoms(atom); i++) {
@@ -446,7 +451,7 @@ public class AtomTypeCalculator {
 			if (mol.getAtomicNo(connAtom) == 1)	// skip explicit hydrogen
 				continue;
 
-			long connType = 0;
+			int connType = 0;
 
 			if ((mode & cPropertiesConnBondOrder) != 0) {
 				long connBondOrder = mol.getConnBondOrder(atom, i);
