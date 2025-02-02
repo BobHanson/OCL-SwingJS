@@ -34,16 +34,15 @@
 
 package com.actelion.research.chem;
 
-import java.io.*;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
+import java.io.IOException;
+import java.io.Writer;
+//import java.text.DecimalFormat;
 
 public class MolfileCreator {
     private static final float TARGET_AVBL = 1.5f;
 
     private StringBuilder mBuilder;
-    private DecimalFormat mDoubleFormat;
+    //private DecimalFormat mDoubleFormat;
 
     /**
      * This creates a new molfile version 2 from the given molecule.
@@ -91,7 +90,6 @@ public class MolfileCreator {
      * @param builder null or StringBuilder to append to
      */
     public MolfileCreator(ExtendedMolecule mol, boolean allowScaling, double scalingFactor, StringBuilder builder) {
-		mDoubleFormat = new DecimalFormat("0.0000", new DecimalFormatSymbols(Locale.ENGLISH)); //English local ('.' for the dot)
         final String nl = System.lineSeparator();
 
         mol.ensureHelperArrays(Molecule.cHelperParities);
@@ -533,10 +531,25 @@ public class MolfileCreator {
             }
         }
 
-    private void appendTenDigitDouble(double theDouble) {
-    	String val = mDoubleFormat.format(theDouble);
-    	for(int i=val.length(); i<10; i++) mBuilder.append(' ');
-    	mBuilder.append(val);
-        }
+	private void appendTenDigitDouble(double theDouble) {
+//		if (mDoubleFormat == null)
+//			mDoubleFormat = new DecimalFormat("0.0000", new DecimalFormatSymbols(Locale.ENGLISH)); // English local ('.'
+//																									// for the dot)
+//		String val = mDoubleFormat.format(theDouble);
+//		for (int i = val.length(); i < 10; i++)
+//			mBuilder.append(' ');
+		int i = (int) Math.round(theDouble * 10000);
+		String val;
+		if (i == 0) {
+			val = "    0.0000";
+		} else {
+			val = "          " + i;
+			boolean isLow = (Math.abs(i) < 10000);
+			int n = val.length();
+			val = val.substring(0, n - 4) + (isLow ? "0." : ".") + val.substring(n - 4);
+			val = val.substring(val.length() - 10);
+		}
+		mBuilder.append(val);
 	}
+}
 
