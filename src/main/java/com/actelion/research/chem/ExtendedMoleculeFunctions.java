@@ -166,7 +166,7 @@ public class ExtendedMoleculeFunctions {
 				e.printStackTrace();
 			}
 
-			System.out.println(indexAtom + "\t" + mol.getAtomicNo(indexAtom) + "\t" + atomType + "\t" + AtomTypeCalculator.toString(atomType));
+			System.out.println(indexAtom + "\t" + mol.getAtomicNo(indexAtom) + "\t" + hexAlign(atomType) + "\t" + AtomTypeCalculator.toString(atomType));
 		}
 
 		System.out.println();
@@ -174,6 +174,11 @@ public class ExtendedMoleculeFunctions {
 
 
 
+
+	private static String hexAlign(long atomType) {
+		String s = "0000000000000000" + Long.toHexString(atomType);
+		return "0x" + s.substring(s.length() - 16);
+	}
 
 	public static String getColorVal2String(Molecule mol, int indexAtom){
 

@@ -113,19 +113,8 @@ public class Molecule implements Serializable {
 	public static final int cESRMaxGroups			= 32;
 	public static final int cESRGroupBits			= 5;
 
-	protected static final int cAtomFlagsESR		= 0x01FC0000;
-	private static final int cAtomFlagsESRType		= 0x000C0000;
-	private static final int cAtomFlagsESRTypeShift = 18;
-	private static final int cAtomFlagsESRGroup		= 0x01F00000;
-	private static final int cAtomFlagsESRGroupShift = 20;
-
-	protected static final int cAtomFlagConfigurationUnknown = 0x02000000;
-	private static final int cAtomFlagIsStereoCenter = 0x04000000;
-
-	protected static final int cAtomFlagsValence	= 0x78000000;
-	private static final int cAtomFlagsValenceShift = 27;
-
 	public static final int cAtomQFNoOfBits			= 46;  // so, actually, this does not require any change
+	
 	public static final int cAtomQFAromStateBits	= 2;
 	public static final int cAtomQFAromStateShift	= 1;
 	public static final int cAtomQFRingStateBits	= 4;
@@ -142,55 +131,83 @@ public class Molecule implements Serializable {
 	public static final int cAtomQFChargeShift		= 25;
 	public static final int cAtomQFRxnParityBits	= 2;
 	public static final int cAtomQFRxnParityShift	= 30;
-	public static final int cAtomQFNewRingSizeBitsH	= 7;
-	public static final int cAtomQFNewRingSizeShiftH   = 0;//32;
-	public static final int cAtomQFENeighbourBitsH	= 5;
-	public static final int cAtomQFENeighbourShiftH	= 7;//39;
-	public static final int cAtomQFStereoStateBitsH	= 2;
-	public static final int cAtomQFStereoStateShiftH   = 12;//44;
-	public static final int cAtomQFSimpleFeaturesL	= 0x0E3FC7FE;
-	public static final int cAtomQFSimpleFeaturesH	= 0x00007F80;
-	public static final int cAtomQFNarrowingL		= 0x0FFFFFFE;
-	public static final int cAtomQFNarrowingH		= 0x00007FFF;
+
 	public static final int cAtomQFAny				= 0x00000001;
+	public static final int cAtomQFNarrowingL		= 0x0FFFFFFE; // for SSSearcher
+	/**
+	 *  ~(NoMoreNeighbours|MoreNeighbours|MatchStereo|SmallRingSize)
+	 */
+	public static final int cAtomQFSimpleFeaturesL	= 0x0E3FC7FE; 
+	
 	public static final int cAtomQFAromStateL		= 0x00000006;
-	public static final int cAtomQFAromStateH		= 0x00004000;
-	public static final int cAtomQFAromatic		= 0x00000002;
+	public static final int cAtomQFAromatic		    = 0x00000002;
 	public static final int cAtomQFNotAromatic		= 0x00000004;
+	
 	public static final int cAtomQFRingState		= 0x00000078;
-	public static final int cAtomQFNotChain		= 0x00000008;
+	public static final int cAtomQFNotChain		    = 0x00000008;
 	public static final int cAtomQFNot2RingBonds	= 0x00000010;
 	public static final int cAtomQFNot3RingBonds	= 0x00000020;
 	public static final int cAtomQFNot4RingBonds	= 0x00000040;
-	public static final int cAtomQFHydrogen		= 0x00000780;
-	public static final int cAtomQFNot0Hydrogen	= 0x00000080;
-	public static final int cAtomQFNot1Hydrogen	= 0x00000100;
-	public static final int cAtomQFNot2Hydrogen	= 0x00000200;
-	public static final int cAtomQFNot3Hydrogen	= 0x00000400;
-	public static final int cAtomQFNoMoreNeighbours= 0x00000800;
+	
+	public static final int cAtomQFHydrogen		    = 0x00000780;
+	public static final int cAtomQFNot0Hydrogen   	= 0x00000080;
+	public static final int cAtomQFNot1Hydrogen	    = 0x00000100;
+	public static final int cAtomQFNot2Hydrogen	    = 0x00000200;
+	public static final int cAtomQFNot3Hydrogen	    = 0x00000400;
+	
+	public static final int cAtomQFNoMoreNeighbours = 0x00000800;
 	public static final int cAtomQFMoreNeighbours	= 0x00001000;
 	public static final int cAtomQFMatchStereo		= 0x00002000;
-	public static final int cAtomQFPiElectrons		= 0x0001C000;
+		
+	public static final int cAtomQFPiElectrons	   = 0x0001C000;
 	public static final int cAtomQFNot0PiElectrons = 0x00004000;
 	public static final int cAtomQFNot1PiElectron  = 0x00008000;
 	public static final int cAtomQFNot2PiElectrons = 0x00010000;
-	public static final int cAtomQFNeighbours		= 0x003E0000;  // these QF refer to non-H neighbours
+	
+	public static final int cAtomQFNeighbours	   = 0x003E0000;  // these QF refer to non-H neighbours
 	public static final int cAtomQFNot0Neighbours  = 0x00020000;
-	public static final int cAtomQFNot1Neighbour	= 0x00040000;
+
+	protected static final int cAtomFlagsESR	   = 0x01FC0000;  // small-ring parameters
+
+	private static final int cAtomFlagsESRTypeShift  = 18;
+	private static final int cAtomFlagsESRType     = 0x000C0000;
+	public static final int cAtomQFNot1Neighbour   = 0x00040000;
 	public static final int cAtomQFNot2Neighbours  = 0x00080000;
+
+	private static final int cAtomFlagsESRGroupShift = 20;
+	private static final int cAtomFlagsESRGroup    = 0x01F00000;
 	public static final int cAtomQFNot3Neighbours  = 0x00100000;
 	public static final int cAtomQFNot4Neighbours  = 0x00200000;  // this is not 4-or-more neighbours
 	public static final int cAtomQFSmallRingSize   = 0x01C00000;  // legacy: used to just define the smallest rfinal intm is member of
-	public static final int cAtomQFCharge			= 0x0E000000;
-	public static final int cAtomQFNotChargeNeg	= 0x02000000;
-	public static final int cAtomQFNotCharge0		= 0x04000000;
-	public static final int cAtomQFNotChargePos	= 0x08000000;
-	public static final int cAtomQFFlatNitrogen	  = 0x10000000;  // Currently, only used in TorsionDetail
-	public static final int cAtomQFExcludeGroup	  = 0x20000000;  // These atoms must not exist in SS-matches
-	public static final int cAtomQFRxnParityHint	  = 0xC0000000;  // Retain,invert,racemise configuration in reaction
+
+	protected static final int cAtomFlagConfigurationUnknown = 0x02000000;
+	private static final int cAtomFlagIsStereoCenter         = 0x04000000;
+
+	private static final int cAtomFlagsValenceShift = 27;
+	protected static final int cAtomFlagsValence	         = 0x78000000;
+
+	public static final int cAtomQFCharge		     = 0x0E000000;
+	public static final int cAtomQFNotChargeNeg	     = 0x02000000;
+	public static final int cAtomQFNotCharge0	     = 0x04000000;
+	public static final int cAtomQFNotChargePos	     = 0x08000000;
+	
+	public static final int cAtomQFFlatNitrogen	     = 0x10000000;  // Currently, only used in TorsionDetail
+
+	public static final int cAtomQFExcludeGroup	     = 0x20000000;  // These atoms must not exist in SS-matches
+
+	public static final int cAtomQFRxnParityHint     = 0xC0000000;  // Retain,invert,racemise configuration in reaction
 	public static final int cAtomQFRxnParityRetain   = 0x40000000;
 	public static final int cAtomQFRxnParityInvert   = 0x80000000;
 	public static final int cAtomQFRxnParityRacemize = 0xC0000000;
+	
+	// ATOM HIGH BITS 	
+	// stored in int[] mAtomQueryFeaturesH 
+	// (originally high four bytes of long[] mAtomQueryFeatures)
+	
+	public static final int cAtomQFNarrowingH		 = 0x00007FFF;  // for SSSearcher
+
+	public static final int cAtomQFNewRingSizeBitsH	 = 7;
+	public static final int cAtomQFNewRingSizeShiftH = 0;//32L;
 	public static final int cAtomQFNewRingSizeH      = 0x0000007F;
 	public static final int cAtomQFRingSize0Ex       = 0x00000001;
 	public static final int cAtomQFRingSize3Ex       = 0x00000002;
@@ -199,17 +216,29 @@ public class Molecule implements Serializable {
 	public static final int cAtomQFRingSize6Ex       = 0x00000010;
 	public static final int cAtomQFRingSize7Ex       = 0x00000020;
 	public static final int cAtomQFRingSizeLargeEx   = 0x00000040;
+	
+	public static final int cAtomQFSimpleFeaturesH	 = 0x00007F80;
+	
+	public static final int cAtomQFENeighbourBitsH	 = 5;
+	public static final int cAtomQFENeighbourShiftH  = 7;//39L;
 	public static final int cAtomQFENeighboursH      = 0x00000F80;
 	public static final int cAtomQFNot0ENeighboursEx = 0x00000080;
 	public static final int cAtomQFNot1ENeighbourEx  = 0x00000100;
 	public static final int cAtomQFNot2ENeighboursEx = 0x00000200;
 	public static final int cAtomQFNot3ENeighboursEx = 0x00000400;
 	public static final int cAtomQFNot4ENeighboursEx = 0x00000800;
+	
+	public static final int cAtomQFStereoStateBitsH	 = 2;
+	public static final int cAtomQFStereoStateShiftH = 12;//44L;
 	public static final int cAtomQFStereoStateH      = 0x00003000;
 	public static final int cAtomQFIsStereoEx        = 0x00001000;
 	public static final int cAtomQFIsNotStereoEx     = 0x00002000;
+	
+	public static final int cAtomQFAromStateH		 = 0x00004000;
 	public static final int cAtomQFHeteroAromaticEx  = 0x00004000;
 
+	//// BOND BITS
+	
 	public static final int cBondTypeSingle			= 0x00000001;	// first 5 bond types must not be changed,
 	public static final int cBondTypeDouble			= 0x00000002;	// because they are part of the idcode
 	public static final int cBondTypeTriple			= 0x00000004;	// within the bond query features

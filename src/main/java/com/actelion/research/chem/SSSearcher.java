@@ -790,7 +790,7 @@ System.out.println();
 
 		// molecule features must be a subset of the fragment features
 		if ((mMoleculeAtomFeaturesL[moleculeAtom] & ~mFragmentAtomFeaturesL[fragmentAtom]) != 0
-				&& (mMoleculeAtomFeaturesH[moleculeAtom] & ~mFragmentAtomFeaturesH[fragmentAtom]) != 0
+				|| (mMoleculeAtomFeaturesH[moleculeAtom] & ~mFragmentAtomFeaturesH[fragmentAtom]) != 0
 				)
 			return false;
 
@@ -1428,7 +1428,10 @@ System.out.println();
 		mMoleculeAtomFeaturesH = new int[nTotalMoleculeAtoms];
 
 		for (int atom=0; atom<nTotalMoleculeAtoms; atom++) {
-			mMoleculeAtomFeaturesL[atom] = getAtomQueryDefaultsL(mMolecule, atom);
+			mMoleculeAtomFeaturesL[atom] = ((getAtomQueryDefaultsL(mMolecule, atom)
+					| mMolecule.getAtomQueryFeatures(atom))
+						& Molecule.cAtomQFSimpleFeaturesL)
+						^ Molecule.cAtomQFNarrowingL;
 			mMoleculeAtomFeaturesH[atom] = ((getAtomQueryDefaultsH(mMolecule, atom)
 					| mMolecule.getAtomQueryFeaturesH(atom))
 						& Molecule.cAtomQFSimpleFeaturesH)
@@ -1543,10 +1546,12 @@ System.out.println();
 		mFragmentAtomType = new int[fragment.getAtoms()];
 
 		for (int atom=0; atom<nTotalFragmentAtoms; atom++) {
-			mFragmentAtomFeaturesL[atom] = getAtomQueryDefaultsL(fragment, atom) | fragment.getAtomQueryFeatures(atom);
+			mFragmentAtomFeaturesL[atom] = (
+					(getAtomQueryDefaultsL(fragment, atom) | fragment.getAtomQueryFeatures(atom)
+							) & Molecule.cAtomQFSimpleFeaturesL) ^ Molecule.cAtomQFNarrowingL;
 			mFragmentAtomFeaturesH[atom] = (
-					(getAtomQueryDefaultsH(fragment, atom) | fragment.getAtomQueryFeaturesH(atom))
-					& Molecule.cAtomQFSimpleFeaturesH) ^ Molecule.cAtomQFNarrowingH;
+					(getAtomQueryDefaultsH(fragment, atom) | fragment.getAtomQueryFeaturesH(atom)
+							) & Molecule.cAtomQFSimpleFeaturesH) ^ Molecule.cAtomQFNarrowingH;
 			mFragmentAtomType[atom] = fragment.getAtomicNo(atom);
 
 			if ((matchMode & cMatchAtomCharge) != 0)
@@ -1758,59 +1763,59 @@ System.out.println();
 		}
 
 	private int getAtomQueryDefaultsH(StereoMolecule mol, int atom) {
-		int queryDefaults = 0;
+		int queryDefaultsH = 0;
 
 		if (!mol.isFragment()) {
 			if (mol.isHeteroAromaticAtom(atom))
-				queryDefaults |= (Molecule.cAtomQFHeteroAromaticEx);
+				queryDefaultsH |= Molecule.cAtomQFHeteroAromaticEx;
 			if (mol.isAtomStereoCenter(atom))
-				queryDefaults |= Molecule.cAtomQFIsStereoEx;
+				queryDefaultsH |= Molecule.cAtomQFIsStereoEx;
 			else
-				queryDefaults |= Molecule.cAtomQFIsNotStereoEx;
+				queryDefaultsH |= Molecule.cAtomQFIsNotStereoEx;
 
 			int eValue = mol.getAtomElectronegativeNeighbours(atom);
 			switch (eValue) {
 				case 0:
-					queryDefaults |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot0ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot0ENeighboursEx);
 					break;
 				case 1:
-					queryDefaults |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot1ENeighbourEx);
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot1ENeighbourEx);
 					break;
 				case 2:
-					queryDefaults |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot2ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot2ENeighboursEx);
 					break;
 				case 3:
-					queryDefaults |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot3ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot3ENeighboursEx);
 					break;
 				default:
-					queryDefaults |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx);
 					break;
 				}
 			}
 		else {	// The fragments implicit features are not really necessary,
 				// but may speed up the graph matching.
 			if (mol.isHeteroAromaticAtom(atom))
-				queryDefaults |= (Molecule.cAtomQFHeteroAromaticEx);
+				queryDefaultsH |= (Molecule.cAtomQFHeteroAromaticEx);
 
 			int eValue = mol.getAtomElectronegativeNeighbours(atom);
 			switch (eValue) {
 				case 0:
 					break;
 				case 1:
-					queryDefaults |= (Molecule.cAtomQFNot0ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFNot0ENeighboursEx);
 					break;
 				case 2:
-					queryDefaults |= (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx);
+					queryDefaultsH |= (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx);
 					break;
 				case 3:
-					queryDefaults |= (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx | Molecule.cAtomQFNot2ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx | Molecule.cAtomQFNot2ENeighboursEx);
 					break;
 				default:
-					queryDefaults |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx);
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx);
 					break;
 				}
 			}
-		return queryDefaults;
+		return queryDefaultsH;
 		}
 
 	/**

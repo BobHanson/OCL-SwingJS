@@ -664,7 +664,7 @@ public class IsomericSmilesCreator {
 				break;
 			}
 
-		int aromState = queryFeaturesEx & Molecule.cAtomQFAromStateH;
+		int aromState = queryFeatures & Molecule.cAtomQFAromStateL;
 		if (aromState == Molecule.cAtomQFAromatic)
 			buffer.append(";a");
 		else if (aromState == Molecule.cAtomQFNotAromatic)
