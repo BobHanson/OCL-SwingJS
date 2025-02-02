@@ -432,6 +432,7 @@ public class SmilesParser {
 						if (bondQueryFeatures != 0) {
 							mSmartsFeatureFound = true;
 							mMol.setBondQueryFeature(bond, bondQueryFeatures, true);
+							mMol.adaptBondTypeToQueryFeatures(bond);
 						}
 					}
 
@@ -462,6 +463,7 @@ public class SmilesParser {
 					if (bondQueryFeatures != 0) {
 						mSmartsFeatureFound = true;
 						mMol.setBondQueryFeature(bond, bondQueryFeatures, true);
+						mMol.adaptBondTypeToQueryFeatures(bond);
 					}
 				}
 
@@ -667,6 +669,7 @@ public class SmilesParser {
 						if (bondQueryFeatures != 0) {
 							mSmartsFeatureFound = true;
 							mMol.setBondQueryFeature(bond, ringClosureBondQueryFeatures[number], true);
+							mMol.adaptBondTypeToQueryFeatures(bond);
 						}
 						ringClosureAtom[number] = -1; // for number re-usage
 					}
@@ -1659,7 +1662,7 @@ public class SmilesParser {
 		 * there are "ring" connection numbers. If no such complications exist, the
 		 * order in the Molecule will be the same as in the SMILES.
 		 * 
-		 * @param handleHydrogenMap [initialAtomIndex] == finalAtomIndex
+		 * @param simples2Map [initialAtomIndex] == finalAtomIndex
 		 * @param index     0 (early end) or 1 (late end)
 		 * @param inversion
 		 * @return inversion after possible further inversion
@@ -1886,7 +1889,25 @@ public class SmilesParser {
 								  { "Br[C@@H](F)1.I1", "F[C@H](Br)I" },
 
 								  { "C[S@@](CC)=O", "CC[S@](C)=O" },
-								  { "[S@](=O)(C)CC", "CC[S@](C)=O" } };
+								  { "[S@](=O)(C)CC", "CC[S@](C)=O" },
+
+								  { "F1.OC=[C@]=C1", "OC=[C@]=CF" },
+								  { "OC=[C@]=C1F.[H]1", "OC=[C@]=CF" },
+								  { "[H]C(O)=[C@@]=CF", "OC=[C@]=CF" },
+								  { "C(O)=[C@@]=CF", "OC=[C@]=CF" },
+								  { "OC=[C@@]=C(F)[H]", "OC=[C@]=CF" },
+								  { "CC(F)=[C@@]=CO", "CC(F)=[C@@]=CO" },
+								  { "OC=[C@]=C(C)F", "CC(F)=[C@@]=CO" },
+								  { "OC=[C@]=C(C)F", "CC(F)=[C@@]=CO" },
+								  { "CC(F)=[C@@]=CO", "CC(F)=[C@@]=CO" },
+								  { "CC(F)=[C@]=C(O)[H]", "CC(F)=[C@@]=CO" },
+								  { "CC(F)=[C@]=C(O)Cl", "CC(F)=[C@]=C(O)Cl" },
+								  { "ClC(O)=[C@]=C(F)C", "CC(F)=[C@]=C(O)Cl" },
+								  { "OC(Cl)=[C@]=C(C)F", "CC(F)=[C@]=C(O)Cl" },
+								  { "C1(Cl)=[C@]=C(C)F.O1", "CC(F)=[C@]=C(O)Cl" },
+								  { "C(O)(Cl)=[C@]=C(C)F", "CC(F)=[C@]=C(O)Cl" },
+								  { "[C@](=C(C)(F))=C(O)Cl", "CC(F)=[C@]=C(O)Cl" },
+		};
 		StereoMolecule mol = new StereoMolecule();
 		for (String[] test:data) {
 			try {

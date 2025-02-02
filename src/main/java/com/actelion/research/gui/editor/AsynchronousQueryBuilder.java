@@ -4,6 +4,13 @@ import com.actelion.research.gui.generic.GenericActionEvent;
 import com.actelion.research.gui.generic.GenericDialog;
 import com.actelion.research.gui.generic.GenericEventListener;
 
+/**
+ * a superclass for Atom, Bond, Custom, and Text Dialogs that allow them to be
+ * asynchronous in Java and pseudomodal in JavaScript
+ * 
+ * @author hanso
+ *
+ */
 public abstract class AsynchronousQueryBuilder implements GenericEventListener<GenericActionEvent> {
 
 	protected abstract void setQueryFeatures();
@@ -30,6 +37,7 @@ public abstract class AsynchronousQueryBuilder implements GenericEventListener<G
 		}
 		return false;
 	}
+	
 	
 	/**
 	 * Synchronous version

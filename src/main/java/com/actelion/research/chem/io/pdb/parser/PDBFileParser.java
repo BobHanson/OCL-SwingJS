@@ -40,6 +40,7 @@ import com.actelion.research.util.SortedList;
 import java.io.*;
 import java.net.URI;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -199,37 +200,31 @@ public class PDBFileParser {
 	}
 
     public PDBFileParser() {
-
         dfDateDeposition = new SimpleDateFormat(DATE_FORMAT);
-
 	    RemarkParser remarkParser = new RemarkParser();
-
         hetNameParser = new HetNameParser();
-
         hetSynonymParser = new HetSynonymParser();
-
         formulaParser = new FormulaParser();
-
         siteParser = new SiteParser();
-
         modelParser = new ModelParser();
-
     }
 
     public PDBCoordEntryFile parse(File fiPDB) throws IOException, ParseException {
-        return parse(new BufferedReader(new FileReader(fiPDB)));
+		InputStream stream = fiPDB.getName().toLowerCase().endsWith(".pdb.gz") ?
+				new GZIPInputStream(new FileInputStream(fiPDB))
+			  : new FileInputStream(fiPDB);
+		return parse(new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)));
     }
 
     public PDBCoordEntryFile parse(BufferedReader br) throws IOException, ParseException {
         PDBCoordEntryFile pdbCoordEntryFile = new PDBCoordEntryFile();
         
-		ArrayList<String> liRaw = new ArrayList<String>();
+		ArrayList<String> liRaw = new ArrayList<>();
 
 		String sCurrentLine;
 		while ((sCurrentLine = br.readLine()) != null) {
 			liRaw.add(sCurrentLine);
 		}
-
 
         int indexLine = 0;
         
@@ -532,21 +527,28 @@ public class PDBFileParser {
 	    }
 	    
 	    //indexLine--;
-        List<AtomRecord> hetAtomRecords = new ArrayList<AtomRecord>();
-        List<AtomRecord> protAtomRecords = new ArrayList<AtomRecord>();
+        TreeSet<AtomRecord> hetAtomRecords = new TreeSet<>();
+		TreeSet<AtomRecord> protAtomRecords = new TreeSet<AtomRecord>();
         modelParser.parse(liRaw, indexLine,protAtomRecords,hetAtomRecords);
 
-        pdbCoordEntryFile.setProtAtomRecords(protAtomRecords);
-        pdbCoordEntryFile.setHetAtomRecords(hetAtomRecords);
+		ArrayList<AtomRecord> protAtomList = new ArrayList<>();
+		for (AtomRecord ar : protAtomRecords)
+			protAtomList.add(ar);
+
+		ArrayList<AtomRecord> hetAtomList = new ArrayList<>();
+		for (AtomRecord ar : hetAtomRecords)
+			hetAtomList.add(ar);
+
+		pdbCoordEntryFile.setProtAtomRecords(protAtomList);
+        pdbCoordEntryFile.setHetAtomRecords(hetAtomList);
         //List<ModelModel> liModelModel = modelParser.getLiModelModel();
         //pdbCoordEntryFile.setLiModelModel(liModelModel);
 
         indexLine = modelParser.getIndexLine();
+
         //
         // Parsing atom connections
         //
-
-
 		SortedList<int[]> bonds = new SortedList<>(new IntArrayComparator());
 		indexLine = parseCONECTLines(liRaw, indexLine, bonds);
 		pdbCoordEntryFile.setLiConnect(bonds);
@@ -638,7 +640,9 @@ public class PDBFileParser {
 
                 String [] arr = l.split("[ ]+");
                 sb.append(" ");
-                for (int j = 1; j < arr.length; j++) {
+
+				int first = (arr.length >= 2 && arr[1].equals(Integer.toString(i-start+2)) ? 2 : 1);
+                for (int j = first; j < arr.length; j++) {
                     sb.append(arr[j]);
 
                     if(j < arr.length-1) {
@@ -655,7 +659,6 @@ public class PDBFileParser {
         AbstractMap.SimpleEntry<String, Integer> siTextIndex = new AbstractMap.SimpleEntry<>(sb.toString(), indexLine);
 
         return siTextIndex;
-
     }
 
     private List<String> parseMultipleTimesOneLine(List<String> liRaw, int indexLine, String tag) throws ParseException {

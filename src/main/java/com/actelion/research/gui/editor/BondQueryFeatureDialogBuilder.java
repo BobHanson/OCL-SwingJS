@@ -39,17 +39,28 @@ import com.actelion.research.gui.generic.*;
 import com.actelion.research.gui.hidpi.HiDPIHelper;
 
 public class BondQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
+	private GenericDialog       mDialog;
     private ExtendedMolecule	mMol;
 	private int					mBond,mFirstSpanItem;
 	private GenericCheckBox     mCBSingle,mCBDouble,mCBTriple,mCBQuadruple,mCBQuintuple,mCBDelocalized,
 								mCBMetalLigand,mCBIsBridge,mCBMatchFormalOrder,mCBMatchStereo;
 	private GenericComboBox     mComboBoxRing,mComboBoxRingSize,mComboBoxMinAtoms,mComboBoxMaxAtoms;
+	private boolean             mOKSelected;
 
 	public BondQueryFeatureDialogBuilder(GenericUIHelper dialogHelper, ExtendedMolecule mol, int bond) {
 		mDialog = dialogHelper.createDialog((mol.isSelectedAtom(mol.getBondAtom(0, bond))
 				&& mol.isSelectedAtom(mol.getBondAtom(1, bond))) ?
 				"Bond Query Features (Multiple)" : "Bond Query Features", this);
 		build(mol, bond);
+		}
+
+	/**
+	 * @return true if OK was pressed and potential change was applied to molecule
+	 */
+	public boolean showDialog() {
+		mOKSelected = false;
+		mDialog.showDialog();
+		return mOKSelected;
 		}
 
 	private void build(ExtendedMolecule mol, int bond) {
@@ -144,7 +155,7 @@ public class BondQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
 	public void eventHappened(GenericActionEvent e) {
 		if (handleOkCancel(e)) {
 			return;
-			}
+		}
 		if (e.getSource() == mCBIsBridge || e.getSource() == mComboBoxRing) {
             enableItems();
             }
@@ -280,51 +291,20 @@ public class BondQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
 			mMol.setBondType(bond, Molecule.cBondTypeSingle);
             }
         else {
-        	// priority in order of bond orders (except 0)
-            int bondType = -1;
-			int selectionCount = 0;
-
-			if (mCBMetalLigand.isSelected()) {
-				bondType = Molecule.cBondTypeMetalLigand;
-				queryFeatures |= Molecule.cBondTypeMetalLigand;
-				selectionCount++;
-				}
-			if (mCBQuintuple.isSelected()) {
-				bondType = Molecule.cBondTypeQuintuple;
-				queryFeatures |= Molecule.cBondTypeQuintuple;
-				selectionCount++;
-				}
-			if (mCBQuadruple.isSelected()) {
-				bondType = Molecule.cBondTypeQuadruple;
-				queryFeatures |= Molecule.cBondTypeQuadruple;
-				selectionCount++;
-				}
-			if (mCBTriple.isSelected()) {
-				bondType = Molecule.cBondTypeTriple;
-				queryFeatures |= Molecule.cBondTypeTriple;
-				selectionCount++;
-				}
-			if (mCBDouble.isSelected()) {
-				bondType = Molecule.cBondTypeDouble;
-				queryFeatures |= Molecule.cBondTypeDouble;
-				selectionCount++;
-				}
-			if (mCBDelocalized.isSelected()) {
-				bondType = Molecule.cBondTypeDelocalized;
-				queryFeatures |= Molecule.cBondTypeDelocalized;
-				selectionCount++;
-				}
-			if (mCBSingle.isSelected()) {
-				bondType = Molecule.cBondTypeSingle;
+			if (mCBSingle.isSelected())
 				queryFeatures |= Molecule.cBondTypeSingle;
-				selectionCount++;
-				}
-
-			if (bondType != -1)
-				mMol.setBondType(bond, bondType);	// set to the lowest bond order of query options
-
-			if (selectionCount < 2)
-				queryFeatures = 0;
+			if (mCBDouble.isSelected())
+				queryFeatures |= Molecule.cBondTypeDouble;
+			if (mCBTriple.isSelected())
+				queryFeatures |= Molecule.cBondTypeTriple;
+			if (mCBQuadruple.isSelected())
+				queryFeatures |= Molecule.cBondTypeQuadruple;
+			if (mCBQuintuple.isSelected())
+				queryFeatures |= Molecule.cBondTypeQuintuple;
+			if (mCBDelocalized.isSelected())
+				queryFeatures |= Molecule.cBondTypeDelocalized;
+			if (mCBMetalLigand.isSelected())
+				queryFeatures |= Molecule.cBondTypeMetalLigand;
 
 			if (mComboBoxRing.getSelectedIndex() != 0) {
 				if (mComboBoxRing.getSelectedIndex() == 1) {
@@ -358,6 +338,7 @@ public class BondQueryFeatureDialogBuilder extends AsynchronousQueryBuilder {
 
 		mMol.setBondQueryFeature(bond, Molecule.cBondQFAllFeatures, false);
 		mMol.setBondQueryFeature(bond, queryFeatures, true);
+		mMol.adaptBondTypeToQueryFeatures(bond);
 		}
 
     private boolean isSelectedBond(int bond) {

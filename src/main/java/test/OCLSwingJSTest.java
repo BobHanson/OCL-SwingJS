@@ -80,7 +80,7 @@ public class OCLSwingJSTest {
 		testAllene(outdir);
 		testEne(outdir);
 		testResolvers(outdir);
-		System.out.println("DONE");
+		System.out.println("DONE " + nChecked);
 	}
 
 	private static void testResolvers(String outdir) {
@@ -504,10 +504,13 @@ public class OCLSwingJSTest {
 		return checkEquals(inchi, s,throwError, testpt);
 	}
 	
+	static int nChecked = 0;
+
 	private static boolean checkEquals(Object expected, Object got, boolean throwError, int testpt) {
-		boolean ok = expected.equals(got);
-		System.out.println(testpt + " exp:" + expected);
-		System.out.println(testpt + " got:" + got); 
+		nChecked++;
+			boolean ok = expected.equals(got);
+		System.out.println(nChecked + "." + testpt + " exp:" + expected);
+		System.out.println(nChecked + "." + testpt + " got:" + got); 
 		System.out.println(ok);
 		if (!ok) 
 		if (!ok && throwError)
