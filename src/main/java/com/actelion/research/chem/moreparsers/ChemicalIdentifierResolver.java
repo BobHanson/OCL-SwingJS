@@ -3,7 +3,6 @@ package com.actelion.research.chem.moreparsers;
 import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.inchi.InChIOCL;
 
 public abstract class ChemicalIdentifierResolver {
 

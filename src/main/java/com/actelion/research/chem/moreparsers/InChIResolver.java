@@ -1,9 +1,5 @@
 package com.actelion.research.chem.moreparsers;
 
-import com.actelion.research.chem.MolfileParser;
-import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.inchi.InChIOCL;
-
 /**
  * A "parser" for InChI and InChIKey that just attempts to get the SDF file from
  * PubChem corresponding to this string.
