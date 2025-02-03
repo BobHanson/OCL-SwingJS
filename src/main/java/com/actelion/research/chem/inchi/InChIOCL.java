@@ -19,12 +19,15 @@ public abstract class InChIOCL implements InChIStructureProvider {
 
 	/**
 	 * Just loads this class, initiating JavaScript loading of the WASM.
-	 * 
+	 * ini
 	 * Note that a clock tick is required to continue after this asynchronous load.
+	 * @param r 
 	 */
-	public static void init() {
-		getPlatformSubclass();
+	public static void init(Runnable r) {
+		getPlatformSubclass().initAndRun(r);
 	}
+
+	protected abstract void initAndRun(Runnable r);
 
 	/**
 	 * Do not set this final, as the java2script transpiler needs to evaluate the javadoc.
@@ -505,6 +508,5 @@ public abstract class InChIOCL implements InChIStructureProvider {
 			return Molecule.cBondTypeSingle;
 		}
 	}
-
 
 }

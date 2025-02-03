@@ -45,30 +45,10 @@ public class OCLSwingJSTest {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		// load JavaScript:
-		InChIOCL.init();
-		if (/** @j2sNative true ||*/ false) {
-			runAsync();
-		} else {
+		InChIOCL.init(()->{
 			runTests();
-		}
-	}
-
-	private static void runAsync() {
-		// just need a single clock tick
-		// SwingUtilities.invokeLater() does not work.
-		Timer t = new Timer(1, new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				runTests();
-				//System.exit(0);
-			}
-			
 		});
-		t.setRepeats(false);
-		t.start();
-
-}
+	}
 
 	protected static void runTests() {
 		long t = System.currentTimeMillis();

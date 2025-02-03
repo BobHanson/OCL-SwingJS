@@ -531,25 +531,72 @@ public class MolfileCreator {
             }
         }
 
-	private void appendTenDigitDouble(double theDouble) {
-//		if (mDoubleFormat == null)
-//			mDoubleFormat = new DecimalFormat("0.0000", new DecimalFormatSymbols(Locale.ENGLISH)); // English local ('.'
-//																									// for the dot)
-//		String val = mDoubleFormat.format(theDouble);
-//		for (int i = val.length(); i < 10; i++)
-//			mBuilder.append(' ');
-		int i = (int) Math.round(theDouble * 10000);
-		String val;
-		if (i == 0) {
-			val = "    0.0000";
-		} else {
-			val = "          " + i;
-			boolean isLow = (Math.abs(i) < 10000);
-			int n = val.length();
-			val = val.substring(0, n - 4) + (isLow ? "0." : ".") + val.substring(n - 4);
-			val = val.substring(val.length() - 10);
-		}
-		mBuilder.append(val);
+	private void appendTenDigitDouble(double d) {
+		mBuilder.append(align10(d));
 	}
+
+	private static String align10(double d) {
+//		if (mDoubleFormat == null)
+//		mDoubleFormat = new DecimalFormat("0.0000", new DecimalFormatSymbols(Locale.ENGLISH)); // English local ('.'
+//																								// for the dot)
+//	String val = mDoubleFormat.format(theDouble);
+//	for (int i = val.length(); i < 10; i++)
+//		mBuilder.append(' ');
+		boolean isNegative = (d < 0);
+		if (isNegative) {
+			d = -d;
+		}
+		String sign = (isNegative ? "-" : "");
+		int i = Math.round((float)d * 10000);
+		String val;
+		int n;
+		if (i == 0) {
+			return "    0.0000";
+		}
+		if (d > 10000) {
+			// crazy 12346.7345
+			val = sign + d;
+			i = val.indexOf("E");
+			if (i >= 0) {
+				// 1.5E13
+				// 1.343532356634378E13
+				n = val.length();
+				if (n > 10) {
+					String e = val.substring(i);
+					return val.substring(0, 10 - e.length()) + e;
+				}
+			} else {
+				val += "000000000";
+			}
+			return val.substring(0, 10);
+		} 
+		// = -0.02
+		val = "" + i;
+		// = 200   n = 3
+		n = val.length();
+		n = (val = sign + (n > 4 ? "" : "00000".substring(n)) + val).length();
+		// = -00200 n = 6
+		val = val.substring(0, n - 4) + "." + val.substring(n - 4);
+		n++;
+		// = -0.0200 n = 7
+		val = (n == 10 ? val : n > 10 ? val.substring(0, 10) 
+				: "     ".substring(n - 5) + val);
+		// = "   -0.0200"
+		return val;
+	}
+
+//	static {
+//		System.out.println(align10(.02));
+//		System.out.println(align10(456.78));
+//		System.out.println(align10(756436.00078));
+//		System.out.println(align10(13435323566343.78));
+//		System.out.println(align10(.5));
+//		System.out.println(align10(.00078));
+//		System.out.println(align10(.1));
+//		System.out.println(align10(-.0000078));
+//		System.out.println(align10(-.078));
+//		System.out.println(align10(7.8));
+//		System.out.println(align10(756436.00078));
+//	}
 }
 

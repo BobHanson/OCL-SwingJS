@@ -54,6 +54,11 @@ import net.sf.jniinchi.JniInchiWrapper;
  */
 public class InChIJNI1 extends InChIOCL {
 
+	@Override
+	protected void initAndRun(Runnable r) {
+		r.run();
+	}
+
 	private JniInchiOutputStructure jniInchiStructure;
 
 	/**
