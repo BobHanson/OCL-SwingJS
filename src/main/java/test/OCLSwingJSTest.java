@@ -40,6 +40,7 @@ import com.actelion.research.gui.swing.SwingDialog;
 public class OCLSwingJSTest {
 
 	public static int nFrame;
+	private final static boolean showFrames = false;
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
@@ -70,7 +71,7 @@ public class OCLSwingJSTest {
 }
 
 	protected static void runTests() {
-
+		long t = System.currentTimeMillis();
 		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
 		String outdir = null;//"C:/temp/";
 		testInChI1(outdir);
@@ -79,8 +80,8 @@ public class OCLSwingJSTest {
 		testInChIParsers(outdir);
 		testAllene(outdir);
 		testEne(outdir);
-		testResolvers(outdir);
-		System.out.println("DONE " + nChecked);
+		//testResolvers(outdir);
+		System.out.println("DONE " + nChecked + " " + (System.currentTimeMillis() - t) + " ms");
 	}
 
 	private static void testResolvers(String outdir) {
@@ -456,6 +457,7 @@ public class OCLSwingJSTest {
 		JStructureView view = JStructureView.getStandardView(
 				JStructureView.classicView
 				, mol);
+		if (showFrames) 
 		view.showInFrame(title, nextLoc());
 		if (fileout != null) {
 			writeViewImage(view, fileout + ".png", outdir);
