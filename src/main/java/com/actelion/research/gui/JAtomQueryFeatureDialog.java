@@ -46,6 +46,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.util.Arrays;
 
+@SuppressWarnings("rawtypes")
 @Deprecated
 public class JAtomQueryFeatureDialog extends JDialog
 					 implements ActionListener,ItemListener {
@@ -70,6 +71,7 @@ public class JAtomQueryFeatureDialog extends JDialog
 //		init(parent, mol, atom, includeReactionHints);
 //		}
 //
+	@SuppressWarnings("unchecked")
 	private void init(Component parent, ExtendedMolecule mol, int atom, boolean includeReactionHints) {
 		mParent = parent;
 		mMol = mol;
@@ -266,7 +268,7 @@ public class JAtomQueryFeatureDialog extends JDialog
 
 
 	private void setInitialStates() {
-		long queryFeatures = mMol.getAtomQueryFeatures(mAtom);
+		int queryFeatures = mMol.getAtomQueryFeatures(mAtom);
 
 		if ((queryFeatures & Molecule.cAtomQFAny) != 0) {
 			mCBAny.setSelected(true);
@@ -277,13 +279,13 @@ public class JAtomQueryFeatureDialog extends JDialog
 
 		mTFAtomList.setText(mMol.getAtomList(mAtom) == null ? "" : mMol.getAtomListString(mAtom));
 
-		long aromState = queryFeatures & Molecule.cAtomQFAromState;
+		int aromState = queryFeatures & Molecule.cAtomQFAromStateL;
 		if (aromState == Molecule.cAtomQFAromatic)
 			mChoiceArom.setSelectedIndex(1);
 		else if (aromState == Molecule.cAtomQFNotAromatic)
 			mChoiceArom.setSelectedIndex(2);
 
-		long ringState = queryFeatures & Molecule.cAtomQFRingState;
+		int ringState = queryFeatures & Molecule.cAtomQFRingState;
 		if (ringState == (Molecule.cAtomQFNot2RingBonds | Molecule.cAtomQFNot3RingBonds | Molecule.cAtomQFNot4RingBonds))
 			mChoiceRingState.setSelectedIndex(1);
 		else if (ringState == Molecule.cAtomQFNotChain)
@@ -295,10 +297,10 @@ public class JAtomQueryFeatureDialog extends JDialog
 		else if (ringState == (Molecule.cAtomQFNotChain | Molecule.cAtomQFNot2RingBonds | Molecule.cAtomQFNot3RingBonds))
 			mChoiceRingState.setSelectedIndex(5);
 
-		long ringSize = (queryFeatures & Molecule.cAtomQFSmallRingSize) >> Molecule.cAtomQFSmallRingSizeShift;
+		int ringSize = (queryFeatures & Molecule.cAtomQFSmallRingSize) >> Molecule.cAtomQFSmallRingSizeShift;
 		mChoiceRingSize.setSelectedIndex((ringSize == 0) ? 0 : (int)ringSize-2);
 
-		long neighbourFeatures = queryFeatures & Molecule.cAtomQFNeighbours;
+		int neighbourFeatures = queryFeatures & Molecule.cAtomQFNeighbours;
 		if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot1Neighbour))
 		    mChoiceNeighbours.setSelectedIndex(1);
         else if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot2Neighbours))
@@ -316,7 +318,7 @@ public class JAtomQueryFeatureDialog extends JDialog
         else if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot4Neighbours))
             mChoiceNeighbours.setSelectedIndex(8);
 
-		long chargeFeatures = queryFeatures & Molecule.cAtomQFCharge;
+		int chargeFeatures = queryFeatures & Molecule.cAtomQFCharge;
 		if (chargeFeatures == (Molecule.cAtomQFNotChargeNeg | Molecule.cAtomQFNotChargePos))
 			mChoiceCharge.setSelectedIndex(1);
 		else if (chargeFeatures == (Molecule.cAtomQFNotCharge0 | Molecule.cAtomQFNotChargePos))
@@ -324,7 +326,7 @@ public class JAtomQueryFeatureDialog extends JDialog
 		else if (chargeFeatures == (Molecule.cAtomQFNotCharge0 | Molecule.cAtomQFNotChargeNeg))
 			mChoiceCharge.setSelectedIndex(3);
 
-		long hydrogenFeatures = queryFeatures & Molecule.cAtomQFHydrogen;
+		int hydrogenFeatures = queryFeatures & Molecule.cAtomQFHydrogen;
 		if (hydrogenFeatures == (Molecule.cAtomQFNot1Hydrogen | Molecule.cAtomQFNot2Hydrogen | Molecule.cAtomQFNot3Hydrogen))
 			mChoiceHydrogen.setSelectedIndex(1);
 		else if (hydrogenFeatures == (Molecule.cAtomQFNot0Hydrogen | Molecule.cAtomQFNot2Hydrogen | Molecule.cAtomQFNot3Hydrogen))
@@ -342,7 +344,7 @@ public class JAtomQueryFeatureDialog extends JDialog
         else if (hydrogenFeatures == Molecule.cAtomQFNot3Hydrogen)
             mChoiceHydrogen.setSelectedIndex(8);
 
-        long piFeatures = queryFeatures & Molecule.cAtomQFPiElectrons;
+        int piFeatures = queryFeatures & Molecule.cAtomQFPiElectrons;
         if (piFeatures == (Molecule.cAtomQFNot1PiElectron | Molecule.cAtomQFNot2PiElectrons))
             mChoicePi.setSelectedIndex(1);
         else if (piFeatures == (Molecule.cAtomQFNot0PiElectrons | Molecule.cAtomQFNot2PiElectrons))
@@ -365,7 +367,7 @@ public class JAtomQueryFeatureDialog extends JDialog
 			mCBExcludeGroup.setSelected(true);
 
 		if (mChoiceReactionParityHint != null) {
-			long rxnStereo = queryFeatures & Molecule.cAtomQFRxnParityHint;
+			int rxnStereo = queryFeatures & Molecule.cAtomQFRxnParityHint;
 			if (rxnStereo == Molecule.cAtomQFRxnParityRetain)
 				mChoiceReactionParityHint.setSelectedIndex(1);
 			else if (rxnStereo == Molecule.cAtomQFRxnParityInvert)

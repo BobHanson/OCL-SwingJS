@@ -304,7 +304,7 @@ public class MolfileV3Creator
 		        mMolfile.append(" RGROUPS=(1 " + (atomicNo == 154 ? 0 : atomicNo >= 142 ? atomicNo - 141 : atomicNo - 125) +")");
 	            }
 
-	        long hydrogenFlags = Molecule.cAtomQFHydrogen & mol.getAtomQueryFeatures(atom);
+	        int hydrogenFlags = Molecule.cAtomQFHydrogen & mol.getAtomQueryFeatures(atom);
             if (hydrogenFlags == (Molecule.cAtomQFNot0Hydrogen | Molecule.cAtomQFNot1Hydrogen)) {
                 mMolfile.append(" HCOUNT=2"); // at least 2 hydrogens
             	}
@@ -318,7 +318,7 @@ public class MolfileV3Creator
                 mMolfile.append(" HCOUNT=1"); // use at least 1 hydrogens as closest match for exactly one
             	}
 
-            long substitution = mol.getAtomQueryFeatures(atom) & (Molecule.cAtomQFMoreNeighbours | Molecule.cAtomQFNoMoreNeighbours);
+            int substitution = mol.getAtomQueryFeatures(atom) & (Molecule.cAtomQFMoreNeighbours | Molecule.cAtomQFNoMoreNeighbours);
             if (substitution != 0) {
                 if ((substitution & Molecule.cAtomQFMoreNeighbours) != 0) {
                     mMolfile.append(" SUBST=" + (mol.getAllConnAtoms(atom) + 1));
@@ -328,7 +328,7 @@ public class MolfileV3Creator
                 	}
             	}
 
-	        long ringFeatures = mol.getAtomQueryFeatures(atom) & Molecule.cAtomQFRingState;
+	        int ringFeatures = mol.getAtomQueryFeatures(atom) & Molecule.cAtomQFRingState;
             if (ringFeatures != 0) {
                 if (ringFeatures == (Molecule.cAtomQFNot2RingBonds | Molecule.cAtomQFNot3RingBonds | Molecule.cAtomQFNot4RingBonds))
                     mMolfile.append(" RBCNT=-1");

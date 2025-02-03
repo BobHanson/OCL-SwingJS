@@ -41,7 +41,7 @@ public class SimpleCanonizer {
 
     private ExtendedMolecule mMol;
 	private int mCanRank[];
-	private long mCanBaseValue[];
+	private int mCanBaseValue[];
 
 	private boolean mGraphGenerated;
 	private int mGraphRings;
@@ -69,7 +69,7 @@ public class SimpleCanonizer {
             }
 
 		mCanRank = new int[mMol.getAllAtoms()];
-		mCanBaseValue = new long[mMol.getAtoms()];
+		mCanBaseValue = new int[mMol.getAtoms()];
 
 		for (int atom=0; atom<mMol.getAtoms(); atom++) {
 			if ((mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFAny) != 0)
@@ -176,19 +176,19 @@ public class SimpleCanonizer {
 
 	private int canConsolidate() {
 		int canRank = 0;	// all hydrogens have mCanRank[] = 0
-		long lowest;
+		int lowest;
 
 		while (true) {
-			lowest = 0x7fffffffffffffffL;
+			lowest = 0x7fffffff;
 			for (int atom=0; atom<mMol.getAtoms(); atom++)
 				if (lowest > mCanBaseValue[atom])
 					lowest = mCanBaseValue[atom];
 
-			if (lowest != 0x7fffffffffffffffL) {
+			if (lowest != 0x7fffffff) {
 				canRank++;
 				for (int atom=0; atom<mMol.getAtoms(); atom++)
 					if (mCanBaseValue[atom] == lowest) {
-						mCanBaseValue[atom] = 0x7fffffffffffffffL;
+						mCanBaseValue[atom] = 0x7fffffff;
 						mCanRank[atom] = canRank;
 						}
 				continue;
@@ -466,7 +466,7 @@ public class SimpleCanonizer {
                                  Molecule.cAtomQFRingStateShift);
 
             addAtomQueryFeatures(5, false, nbits,
-                                 Molecule.cAtomQFAromState,
+                                 Molecule.cAtomQFAromStateL,
                                  Molecule.cAtomQFAromStateBits,
                                  Molecule.cAtomQFAromStateShift);
 
@@ -630,7 +630,7 @@ public class SimpleCanonizer {
 
 
 	private boolean addAtomQueryFeatures(int codeNo, boolean isSecondFeatureBlock, int nbits,
-                                         long qfMask, int qfBits, int qfShift) {
+                                         int qfMask, int qfBits, int qfShift) {
         int count = 0;
         for (int atom=0; atom<mMol.getAtoms(); atom++)
             if ((mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask) != 0)
@@ -648,7 +648,7 @@ public class SimpleCanonizer {
         encodeBits(codeNo, 4);      //  datatype
         encodeBits(count, nbits);
         for (int atom=0; atom<mMol.getAtoms(); atom++) {
-        long feature = mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask;
+        int feature = mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask;
         if (feature != 0) {
             encodeBits(atom, nbits);
             if (qfBits != 1)
@@ -827,7 +827,7 @@ public class SimpleCanonizer {
         }
 
 
-    private void encodeBits(long data, int bits) {
+    private void encodeBits(int data, int bits) {
 //System.out.println(bits+" bits:"+data+"  mode="+mode);
         while (bits != 0) {
             if (mEncodingBitsAvail == 0) {

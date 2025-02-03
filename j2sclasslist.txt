@@ -35,14 +35,20 @@ com/actelion/research/chem/inchi/InChIOCL.js
 com/actelion/research/chem/moreparsers/CDX2CDXML.js
 com/actelion/research/chem/moreparsers/CDXMLParser.js
 com/actelion/research/chem/moreparsers/CDXParser.js
+com/actelion/research/chem/moreparsers/ChemicalIdentifierResolver.js
+com/actelion/research/chem/moreparsers/ChemicalNameResolver.js
+com/actelion/research/chem/moreparsers/InChIKeyResolver.js
 com/actelion/research/chem/moreparsers/InChIParser.js
+com/actelion/research/chem/moreparsers/InChIResolver.js
 com/actelion/research/chem/moreparsers/ParserUtils.js
 com/actelion/research/chem/moreparsers/XmlReader.js
 com/actelion/research/gui/JStructureView.js
+com/actelion/research/gui/LookAndFeelHelper.js
 com/actelion/research/gui/StructureListener.js
 com/actelion/research/gui/SwingCanvas.js
 com/actelion/research/gui/dnd/MoleculeDragAdapter.js
 com/actelion/research/gui/dnd/MoleculeDropAdapter.js
+com/actelion/research/gui/generic/GenericCursorHelper.js
 com/actelion/research/gui/generic/GenericDepictor.js
 com/actelion/research/gui/generic/GenericDrawContext.js
 com/actelion/research/gui/generic/GenericPoint.js
@@ -50,11 +56,12 @@ com/actelion/research/gui/generic/GenericPolygon.js
 com/actelion/research/gui/generic/GenericRectangle.js
 com/actelion/research/gui/generic/GenericShape.js
 com/actelion/research/gui/hidpi/HiDPIHelper.js
+com/actelion/research/gui/swing/SwingCursorHelper.js
 com/actelion/research/gui/swing/SwingDrawContext.js
 com/actelion/research/util/Angle.js
 com/actelion/research/util/ColorHelper.js
 com/actelion/research/util/IntArrayComparator.js
-core/package.js
+com/actelion/research/util/Platform.js
 java/applet/AppletContext.js
 java/applet/AppletStub.js
 java/applet/JSApplet.js
@@ -87,6 +94,7 @@ java/awt/GraphicsEnvironment.js
 java/awt/Image.js
 java/awt/Insets.js
 java/awt/JSComponent.js
+java/awt/JSFrame.js
 java/awt/JSPanel.js
 java/awt/KeyEventDispatcher.js
 java/awt/KeyEventPostProcessor.js
@@ -149,6 +157,8 @@ java/awt/geom/PathIterator.js
 java/awt/geom/Point2D.js
 java/awt/geom/Rectangle2D.js
 java/awt/geom/RectangularShape.js
+java/awt/geom/RoundRectIterator.js
+java/awt/geom/RoundRectangle2D.js
 java/awt/image/BufferedImage.js
 java/awt/image/ColorModel.js
 java/awt/image/DataBuffer.js
@@ -163,6 +173,7 @@ java/awt/image/SinglePixelPackedSampleModel.js
 java/awt/image/WritableRaster.js
 java/awt/peer/ComponentPeer.js
 java/awt/peer/ContainerPeer.js
+java/awt/peer/FramePeer.js
 java/awt/peer/KeyboardFocusManagerPeer.js
 java/awt/peer/LightweightPeer.js
 java/beans/ChangeListenerMap.js
@@ -190,14 +201,19 @@ java/lang/Class.js
 java/lang/Enum.js
 java/lang/Iterable.js
 java/lang/Readable.js
+java/lang/Runtime.js
+java/lang/Shutdown.js
 java/lang/StringBuffer.js
 java/lang/StringBuilder.js
 java/lang/Thread.js
 java/lang/ThreadGroup.js
 java/math/RoundingMode.js
+java/net/ContentHandler.js
+java/net/HttpURLConnection.js
 java/net/URL.js
 java/net/URLStreamHandler.js
 java/net/URLStreamHandlerFactory.js
+java/net/UnknownHostException.js
 java/nio/Bits.js
 java/nio/Buffer.js
 java/nio/ByteBuffer.js
@@ -263,15 +279,23 @@ java/util/TreeMap.js
 java/util/TreeSet.js
 java/util/Vector.js
 javajs/api/JSONEncodable.js
+javajs/api/GenericLineReader.js
+javajs/api/JSONEncodable.js
+javajs/util/AU.js
+javajs/util/AjaxURLConnection.js
 javajs/util/AjaxURLStreamHandler.js
 javajs/util/AjaxURLStreamHandlerFactory.js
 javajs/util/JSThread.js
 javajs/util/Lst.js
+javajs/util/Rdr.js
+javajs/util/SB.js
+javax/net/ssl/HttpsURLConnection.js
 javax/swing/ArrayTable.js
 javax/swing/FocusManager.js
 javax/swing/InternalFrameFocusTraversalPolicy.js
 javax/swing/JApplet.js
 javax/swing/JComponent.js
+javax/swing/JFrame.js
 javax/swing/JLayeredPane.js
 javax/swing/JPanel.js
 javax/swing/JRootPane.js
@@ -355,6 +379,10 @@ swingjs/JSFrameViewer.js
 swingjs/JSGraphics2D.js
 swingjs/JSGraphicsConfiguration.js
 swingjs/JSGraphicsEnvironment.js
+<<<<<<< HEAD
+=======
+swingjs/JSMouse.js
+>>>>>>> refs/remotes/origin/nolong
 swingjs/JSScreenDevice.js
 swingjs/JSThreadGroup.js
 swingjs/JSToolkit.js
@@ -373,4 +401,9 @@ swingjs/plaf/JSLayeredPaneUI.js
 swingjs/plaf/JSLightweightUI.js
 swingjs/plaf/JSPanelUI.js
 swingjs/plaf/JSRootPaneUI.js
+<<<<<<< HEAD
+=======
+swingjs/plaf/JSWindowUI.js
+swingjs/plaf/Resizer.js
+>>>>>>> refs/remotes/origin/nolong
 test/OCLSwingJSTest.js

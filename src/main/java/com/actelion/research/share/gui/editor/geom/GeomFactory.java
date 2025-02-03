@@ -79,10 +79,10 @@ public abstract class GeomFactory
         return drawConfig;
     }
 
-    public final long getHighLightColor() { return drawConfig.getHighLightColor();}
-    public final long getMapToolColor() { return drawConfig.getMapToolColor();}
-    public final long getSelectionColor() { return drawConfig.getSelectionColor();}
-    public final long getForegroundColor() { return drawConfig.getForegroundColor();}
-    public final long getBackgroundColor() { return drawConfig.getBackgroundColor();}
+    public final int getHighLightColor() { return drawConfig.getHighLightColor();}
+    public final int getMapToolColor() { return drawConfig.getMapToolColor();}
+    public final int getSelectionColor() { return drawConfig.getSelectionColor();}
+    public final int getForegroundColor() { return drawConfig.getForegroundColor();}
+    public final int getBackgroundColor() { return drawConfig.getBackgroundColor();}
 
 }

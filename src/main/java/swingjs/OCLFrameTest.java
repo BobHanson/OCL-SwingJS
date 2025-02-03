@@ -104,6 +104,36 @@ public class OCLFrameTest {
 		}
 	}
 
+	static {
+		System.out.println(new OclCodeCheck().checkOCL("dcMD@ItARfUV^V``h`@@"));
+		System.out.println(new OclCodeCheck().checkOCL("daT@`@\\DjfjZn[jjjkJcKhGP`phxdtl|wY@xD`uyo]{|lKUfp"));
+		System.out.println(new OclCodeCheck().checkOCL("fc" + (char) 0x7F + "A@@@YEDeLhedihdXleJ\\eiwhyjijjjjjjjj`@@"));
+/*fails*/		System.out.println(new OclCodeCheck().checkOCL("g3\0A;ADLA;MD@ItARfUV^V``h`@@"));
+		String[] aminoAcidsLabeled = ("gGX`BDdwMULPGzILwXM[jD\n" + 
+		"dctd@BE]ADf{UYjjihp`GzBfMvCS]Plw^OMtbK]hrwUj}tRfwnbXp\n" + 
+		"diEL@BDDyInvZjZL`OtiL[lFfzaYn|^{iFLO]Hi`\n" + 
+		"diFB@BANEInvZjZLHA~eIc]`twTKMwcw]Hqa{iEL\n" + 
+		"gNxhMV@aI[jihj@SHF{qc]PinpP\n" + 
+		"defB@BAAeInufjihr@QdqnpZ[jEf{qyndQ{mFMO]hi`\n" + 
+		"deeL@BdDEInufjihp`GzLfMvCS]Plw^OMtbO]hqi{mEL\n" + 
+		"gJX`BDdvu@OtbYnpP\n" + 
+		"dmwD@ByPQInvVUZjejL`OtyL[lFfzaYn|^{iFLO]Hii{mFLo]hi`\n" + 
+		"diFD@BADf{ejjdrU@_iRXwXMMuBw]xqn{oELO]Hq`\n" + 
+		"diFD@BADf{Yjjhr@RdqnpZ[jEf{q{ndTp}tcF@\n" + 
+		"deeD@BdDR[mUjjjL`OtYL[lFfzaYn|^[iDV{QenkP\n" + 
+		"diFD`JxPBDivzjihI@RdAndX[oEF{QqnhR[lD\n" + 
+		"dcND@BADf{YU]Zj@@cHC}ASF{AinhV[oGnzQSCwRLZ^{QSKwZL[Vzm@\n" + 
+		"daFD@BADfyVyjjhr@PdqnpZ[jEfzQyn|P\n" + 
+		"gNy`BDtf{ZjfHC}Lf[lFmuBv{q@\n" + 
+		"dazL@BAFR[nZjdrT`_hRXwXMMuBw]xqn{oEL\n" + 
+		"foAP`@BZ@aInvYWejsfjiB@bFB@OttfF{AhwTKF{qywRJXW]Hqi]vbfUwZN[W]hqc]uZfmwUnYw]Di`\n" + 
+		"dknL@BACR[me]]Zj@BHr@RTqnpZ[jEf{q{ndTp}tcFgntTr}vcFunkS[hd\n" + 
+		"dazD@BADf{fjjL`OtIL[lFfza[n|Tw]wcF@s").split("\n");
+		for (int i = 0; i < aminoAcidsLabeled.length; i++)
+		System.out.println(new OclCodeCheck().checkOCL(aminoAcidsLabeled[i]));		
+	}
+
+
 	public static int nFrame;
 
 	public static void main(String[] args) {
@@ -136,6 +166,8 @@ public class OCLFrameTest {
 		} else {
 			mol = (StereoMolecule) list.get(0);
 		}
+		if (mol == null)
+			System.exit(0);
 		mol.ensureHelperArrays(Molecule.cHelperParities);
 		new CoordinateInventor(0).invent(mol);
 		showEditFrame(mol);

@@ -45,30 +45,10 @@ public class OCLSwingJSTest {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		// load JavaScript:
-		InChIOCL.init();
-		if (/** @j2sNative true ||*/ false) {
-			runAsync();
-		} else {
+		InChIOCL.init(()->{
 			runTests();
-		}
-	}
-
-	private static void runAsync() {
-		// just need a single clock tick
-		// SwingUtilities.invokeLater() does not work.
-		Timer t = new Timer(1, new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				runTests();
-				//System.exit(0);
-			}
-			
 		});
-		t.setRepeats(false);
-		t.start();
-
-}
+	}
 
 	protected static void runTests() {
 		long t = System.currentTimeMillis();
@@ -165,11 +145,51 @@ public class OCLSwingJSTest {
 		String inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
 		
 		// SMILES from inchi
-		System.out.println(InChIOCL.getSmilesFromInChI(inchi, null));
+		String smiles = InChIOCL.getSmilesFromInChI(inchi, null);
+		// inchi from SMILES
+		System.out.println(smiles);
+		// OC1=NC=C1
+
+		String inchiOut = InChIOCL.getInChIFromSmiles(smiles, "fixedh");
+		System.out.println(inchiOut);
+		
+		
+		// FixedH-InChI from InChI
+		
+		String inchiOut1 = InChIOCL.getInChIFromInChI(inchi, "standard");
+		String inchiOut1f = InChIOCL.getInChIFromInChI(inchi, "fixedH");
+		System.out.println(smiles);
+		System.out.println(inchiOut1);
+		System.out.println(inchiOut1f);
+		
+		// FixedH-InChI from FixedH-InChI
+
+		smiles = "O=C1-NC=C1";
+
+		System.out.println(smiles);
+		
+		inchiOut1f = InChIOCL.getInChIFromSmiles(smiles, "fixedh");
+		System.out.println(inchiOut1f);		
+		String inchiOut2f = InChIOCL.getInChIFromInChI(inchiOut1f, "fixedH");
+		System.out.println(inchiOut2f);
+		smiles = InChIOCL.getSmilesFromInChI(inchiOut2f, null);
+		System.out.println(smiles);
+		
+		// and
+		
+		inchi = InChIOCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "reference");
+		System.out.println(inchi);		
+		inchi = InChIOCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h4H", "reference");
+		System.out.println(inchi);		
+		inchi = InChIOCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "reference");
+		System.out.println(inchi);		
+
+		// all give the same thing. 
 		
 		// inchi model from inchi
 		System.out.println(InChIOCL.getInChIModelJSON(inchi));
 		
+		inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
 		// molecule from inchi
 		mol = new StereoMolecule();
 		InChIOCL.getMoleculeFromInChI(inchi, mol);
@@ -458,7 +478,7 @@ public class OCLSwingJSTest {
 				JStructureView.classicView
 				, mol);
 		if (showFrames) 
-		view.showInFrame(title, nextLoc());
+			view.showInFrame(title, nextLoc());
 		if (fileout != null) {
 			writeViewImage(view, fileout + ".png", outdir);
 			writeMolFile(mol, fileout + ".mol", outdir);

@@ -87,10 +87,12 @@ public class SSSearcher {
 
 	private int[] mMoleculeAtomType;	// atom features required to match
 	private int[] mFragmentAtomType;
-	private long[] mMoleculeAtomFeatures;	// flags defining given/required atom features
-	private long[] mFragmentAtomFeatures;
-	private long[] mMoleculeRingFeatures;	// flags defining given/required atom ring size features
-	private long[] mFragmentRingFeatures;
+	private int[] mMoleculeAtomFeaturesL;	// flags defining given/required atom features
+	private int[] mMoleculeAtomFeaturesH;	// flags defining given/required atom features
+	private int[] mFragmentAtomFeaturesL;
+	private int[] mFragmentAtomFeaturesH;
+	private int[] mMoleculeRingFeatures;	// flags defining given/required atom ring size features
+	private int[] mFragmentRingFeatures;
 	private int[] mMoleculeBondFeatures;	// flags defining given/required bond features
 	private int[] mFragmentBondFeatures;
 
@@ -204,7 +206,8 @@ public class SSSearcher {
 
 		mRequiredHelperLevel = Molecule.cHelperRings;
 		for (int atom=0; atom<mFragment.getAtoms(); atom++)
-			if ((mFragment.getAtomQueryFeatures(atom) & (Molecule.cAtomQFStereoState | Molecule.cAtomQFMatchStereo)) != 0)
+			if ((mFragment.getAtomQueryFeaturesEx(atom) & Molecule.cAtomQFStereoStateH) != 0 
+					| (mFragment.getAtomQueryFeaturesEx(atom) & Molecule.cAtomQFMatchStereo) != 0)
 				mRequiredHelperLevel = Molecule.cHelperParities;
 		for (int bond=0; bond<mFragment.getBonds(); bond++)
 			if ((mFragment.getBondQueryFeatures(bond) & Molecule.cBondQFMatchStereo) != 0)
@@ -715,8 +718,10 @@ System.out.println();
 		if (fragmentConnAtoms > moleculeConnAtoms)
 			return false;
 
-		long moleculeQF = mMolecule.getAtomQueryFeatures(moleculeAtom);
-		long fragmentQF = mFragment.getAtomQueryFeatures(fragmentAtom);
+		int moleculeQF = mMolecule.getAtomQueryFeatures(moleculeAtom);
+		int moleculeQFEx = mMolecule.getAtomQueryFeaturesEx(moleculeAtom);
+		int fragmentQF = mFragment.getAtomQueryFeatures(fragmentAtom);
+		int fragmentQFEx = mFragment.getAtomQueryFeaturesEx(fragmentAtom);
 
 		int[] fragmentList = mFragment.getAtomList(fragmentAtom);
 		int[] moleculeList = mMolecule.getAtomList(moleculeAtom);
@@ -784,25 +789,27 @@ System.out.println();
 			}
 
 		// molecule features must be a subset of the fragment features
-		if ((mMoleculeAtomFeatures[moleculeAtom] & ~mFragmentAtomFeatures[fragmentAtom]) != 0)
+		if ((mMoleculeAtomFeaturesL[moleculeAtom] & ~mFragmentAtomFeaturesL[fragmentAtom]) != 0
+				|| (mMoleculeAtomFeaturesH[moleculeAtom] & ~mFragmentAtomFeaturesH[fragmentAtom]) != 0
+				)
 			return false;
 
 		// all ring sizes found for fragment atom must all exist for molecule atom
 		if ((mFragmentRingFeatures[fragmentAtom] & ~mMoleculeRingFeatures[moleculeAtom]) != 0)
 			return false;
 
-		long fragmentRingQF = fragmentQF & Molecule.cAtomQFNewRingSize;
+		int fragmentRingQFEx = fragmentQFEx & Molecule.cAtomQFNewRingSizeH;
 		if (mMolecule.isFragment()) {
 			// For a fragment in fragment search, the query fragment must not be more restrictive than the target.
 			// Thus, if we have molecule ring features and no restriction on the query or more allowed features
 			// on the query then don't consider the atom a match.
-			long moleculeRingQF = fragmentQF & Molecule.cAtomQFNewRingSize;
-			if (moleculeRingQF != 0 && (fragmentRingQF == 0 || (fragmentRingQF & ~moleculeRingQF) != 0))
+			int moleculeRingQFEx = fragmentQFEx & Molecule.cAtomQFNewRingSizeH;
+			if (moleculeRingQFEx != 0 && (fragmentRingQFEx == 0 || (fragmentRingQFEx & ~moleculeRingQFEx) != 0))
 				return false;
 			}
 		else {
 			// at least one of the ring sizes defined in ring query features must match one of the ring sizes found in molecule atom
-			if (fragmentRingQF != 0 && (fragmentRingQF & mMoleculeRingFeatures[moleculeAtom]) == 0)
+			if (fragmentRingQFEx != 0 && (fragmentRingQFEx & mMoleculeRingFeatures[moleculeAtom]) == 0)
 				return false;
 			}
 
@@ -1417,13 +1424,18 @@ System.out.println();
 		int nTotalMoleculeAtoms = mMolecule.getAtoms();
 
 		mMoleculeAtomType = new int[nTotalMoleculeAtoms];
-		mMoleculeAtomFeatures = new long[nTotalMoleculeAtoms];
+		mMoleculeAtomFeaturesL = new int[nTotalMoleculeAtoms];
+		mMoleculeAtomFeaturesH = new int[nTotalMoleculeAtoms];
 
 		for (int atom=0; atom<nTotalMoleculeAtoms; atom++) {
-			mMoleculeAtomFeatures[atom] = ((getAtomQueryDefaults(mMolecule, atom)
-				| mMolecule.getAtomQueryFeatures(atom))
-					& Molecule.cAtomQFSimpleFeatures)
-					^ Molecule.cAtomQFNarrowing;
+			mMoleculeAtomFeaturesL[atom] = ((getAtomQueryDefaultsL(mMolecule, atom)
+					| mMolecule.getAtomQueryFeatures(atom))
+						& Molecule.cAtomQFSimpleFeaturesL)
+						^ Molecule.cAtomQFNarrowingL;
+			mMoleculeAtomFeaturesH[atom] = ((getAtomQueryDefaultsH(mMolecule, atom)
+					| mMolecule.getAtomQueryFeaturesEx(atom))
+						& Molecule.cAtomQFSimpleFeaturesH)
+						^ Molecule.cAtomQFNarrowingH;
 
 			mMoleculeAtomType[atom] = mMolecule.getAtomicNo(atom);
 
@@ -1434,29 +1446,29 @@ System.out.println();
 				mMoleculeAtomType[atom] += mMolecule.getAtomMass(atom) << 16;
 			}
 
-		mMoleculeRingFeatures = new long[nTotalMoleculeAtoms];
+		mMoleculeRingFeatures = new int[nTotalMoleculeAtoms];
 		RingCollection ringSet = mMolecule.getRingSet();
 		for (int i=0; i<ringSet.getSize(); i++) {
 			int ringSize = ringSet.getRingSize(i);
 			for (int atom:ringSet.getRingAtoms(i)) {
 				if (ringSize == 3)
-					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize3;
+					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize3Ex;
 				else if (ringSize == 4)
-					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize4;
+					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize4Ex;
 				else if (ringSize == 5)
-					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize5;
+					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize5Ex;
 				else if (ringSize == 6)
-					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize6;
+					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize6Ex;
 				else if (ringSize == 7)
-					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize7;
+					mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize7Ex;
 				}
 			}
 		for (int atom=0; atom<nTotalMoleculeAtoms; atom++) {
 			int ringSize = mMolecule.getAtomRingSize(atom);
 			if (ringSize == 0)
-				mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize0;
+				mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSize0Ex;
 			else if (ringSize > 7)
-				mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSizeLarge;
+				mMoleculeRingFeatures[atom] |= Molecule.cAtomQFRingSizeLargeEx;
 			}
 
 		int nTotalMoleculeBonds = mMolecule.getBonds();
@@ -1472,7 +1484,8 @@ System.out.println();
 			}
 
 	private void setupFragmentFeatures(int matchMode) {
-		long[] atomFeaturesWithoutExcludeAtoms = null;
+		int[] atomFeaturesWithoutExcludeAtomsL = null;
+		int[] atomFeaturesWithoutExcludeAtomsH = null;
 		int[] bondFeaturesWithoutExcludeAtoms = null;
 		int[] atomTypeWithoutExcludeAtoms = null;
 
@@ -1492,7 +1505,8 @@ System.out.println();
 
 			fragmentWithoutExcludeGroups.ensureHelperArrays(mRequiredHelperLevel);
 			setupFragmentFeatures(fragmentWithoutExcludeGroups, matchMode);
-			atomFeaturesWithoutExcludeAtoms = mFragmentAtomFeatures;
+			atomFeaturesWithoutExcludeAtomsL = mFragmentAtomFeaturesL;
+			atomFeaturesWithoutExcludeAtomsH = mFragmentAtomFeaturesH;
 			bondFeaturesWithoutExcludeAtoms = mFragmentBondFeatures;
 			atomTypeWithoutExcludeAtoms = mFragmentAtomType;
 
@@ -1510,7 +1524,8 @@ System.out.println();
 			int index = 0;
 			for (int atom=0; atom<mFragment.getAllAtoms(); atom++) {
 				if (!mIsExcludeAtom[atom]) {
-					mFragmentAtomFeatures[atom] = atomFeaturesWithoutExcludeAtoms[index];
+					mFragmentAtomFeaturesL[atom] = atomFeaturesWithoutExcludeAtomsL[index];
+					mFragmentAtomFeaturesL[atom] = atomFeaturesWithoutExcludeAtomsL[index];
 					mFragmentAtomType[atom] = atomTypeWithoutExcludeAtoms[index++];
 					}
 				}
@@ -1526,14 +1541,17 @@ System.out.println();
 	private void setupFragmentFeatures(StereoMolecule fragment, int matchMode) {
 		int nTotalFragmentAtoms = fragment.getAtoms();
 
-		mFragmentAtomFeatures = new long[fragment.getAtoms()];
+		mFragmentAtomFeaturesL = new int[fragment.getAtoms()];
+		mFragmentAtomFeaturesH = new int[fragment.getAtoms()];
 		mFragmentAtomType = new int[fragment.getAtoms()];
 
 		for (int atom=0; atom<nTotalFragmentAtoms; atom++) {
-			mFragmentAtomFeatures[atom] = ((getAtomQueryDefaults(fragment, atom)
-				| fragment.getAtomQueryFeatures(atom))
-					& Molecule.cAtomQFSimpleFeatures)
-					^ Molecule.cAtomQFNarrowing;
+			mFragmentAtomFeaturesL[atom] = (
+					(getAtomQueryDefaultsL(fragment, atom) | fragment.getAtomQueryFeatures(atom)
+							) & Molecule.cAtomQFSimpleFeaturesL) ^ Molecule.cAtomQFNarrowingL;
+			mFragmentAtomFeaturesH[atom] = (
+					(getAtomQueryDefaultsH(fragment, atom) | fragment.getAtomQueryFeaturesEx(atom)
+							) & Molecule.cAtomQFSimpleFeaturesH) ^ Molecule.cAtomQFNarrowingH;
 			mFragmentAtomType[atom] = fragment.getAtomicNo(atom);
 
 			if ((matchMode & cMatchAtomCharge) != 0)
@@ -1543,7 +1561,7 @@ System.out.println();
 				mFragmentAtomType[atom] += fragment.getAtomMass(atom) << 16;
 			}
 
-		mFragmentRingFeatures = new long[fragment.getAtoms()];
+		mFragmentRingFeatures = new int[fragment.getAtoms()];
 		RingCollection ringSet = fragment.getRingSet();
 		for (int i=0; i<ringSet.getSize(); i++) {
 			boolean containsBridgeBond = false;
@@ -1557,15 +1575,15 @@ System.out.println();
 				int ringSize = ringSet.getRingSize(i);
 				for (int atom:ringSet.getRingAtoms(i)) {
 					if (ringSize == 3)
-						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize3;
+						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize3Ex;
 					else if (ringSize == 4)
-						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize4;
+						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize4Ex;
 					else if (ringSize == 5)
-						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize5;
+						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize5Ex;
 					else if (ringSize == 6)
-						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize6;
+						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize6Ex;
 					else if (ringSize == 7)
-						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize7;
+						mFragmentRingFeatures[atom] |= Molecule.cAtomQFRingSize7Ex;
 					}
 				}
 			}
@@ -1604,22 +1622,16 @@ System.out.println();
 	 * @param atom the atom of which to generate feature flags
 	 * @return atom features independent of query features
 	 */
-	private long getAtomQueryDefaults(StereoMolecule mol, int atom) {
-		long queryDefaults = 0;
+	private int getAtomQueryDefaultsL(StereoMolecule mol, int atom) {
+		int queryDefaults = 0;
 
 		if (!mol.isFragment()) {
 			if (mol.isHeteroAromaticAtom(atom))
-				queryDefaults |= (Molecule.cAtomQFAromatic
-								| Molecule.cAtomQFHeteroAromatic);
+				queryDefaults |= (Molecule.cAtomQFAromatic);
 			else if (mol.isAromaticAtom(atom))
 				queryDefaults |= Molecule.cAtomQFAromatic;
 			else
 				queryDefaults |= Molecule.cAtomQFNotAromatic;
-
-			if (mol.isAtomStereoCenter(atom))
-				queryDefaults |= Molecule.cAtomQFIsStereo;
-			else
-				queryDefaults |= Molecule.cAtomQFIsNotStereo;
 
 			int ringBonds = mol.getAtomRingBondCount(atom);
 			if (ringBonds == 0)
@@ -1682,25 +1694,6 @@ System.out.println();
 				break;
 				}
 
-			int eValue = mol.getAtomElectronegativeNeighbours(atom);
-			switch (eValue) {
-				case 0:
-					queryDefaults |= (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot0ENeighbours);
-					break;
-				case 1:
-					queryDefaults |= (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot1ENeighbour);
-					break;
-				case 2:
-					queryDefaults |= (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot2ENeighbours);
-					break;
-				case 3:
-					queryDefaults |= (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot3ENeighbours);
-					break;
-				default:
-					queryDefaults |= (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot4ENeighbours);
-					break;
-				}
-
 			int piElectrons = mol.getAtomPi(atom);
 			switch (piElectrons) {
 			case 0:
@@ -1720,8 +1713,7 @@ System.out.println();
 		else {	// The fragments implicit features are not really necessary,
 				  // but may speed up the graph matching.
 			if (mol.isHeteroAromaticAtom(atom))
-				queryDefaults |= (Molecule.cAtomQFAromatic
-							  | Molecule.cAtomQFHeteroAromatic);
+				queryDefaults |= (Molecule.cAtomQFAromatic);
 			else if (mol.isAromaticAtom(atom))
 				queryDefaults |= Molecule.cAtomQFAromatic;
 
@@ -1760,24 +1752,6 @@ System.out.println();
 				break;
 				}
 
-			int eValue = mol.getAtomElectronegativeNeighbours(atom);
-			switch (eValue) {
-				case 0:
-					break;
-				case 1:
-					queryDefaults |= (Molecule.cAtomQFNot0ENeighbours);
-					break;
-				case 2:
-					queryDefaults |= (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot1ENeighbour);
-					break;
-				case 3:
-					queryDefaults |= (Molecule.cAtomQFNot0ENeighbours | Molecule.cAtomQFNot1ENeighbour | Molecule.cAtomQFNot2ENeighbours);
-					break;
-				default:
-					queryDefaults |= (Molecule.cAtomQFENeighbours & ~Molecule.cAtomQFNot4ENeighbours);
-					break;
-				}
-
 			int piElectrons = mol.getAtomPi(atom);
 			if (piElectrons > 0)
 				queryDefaults |= Molecule.cAtomQFNot0PiElectrons;
@@ -1788,6 +1762,61 @@ System.out.println();
 		return queryDefaults;
 		}
 
+	private int getAtomQueryDefaultsH(StereoMolecule mol, int atom) {
+		int queryDefaultsH = 0;
+
+		if (!mol.isFragment()) {
+			if (mol.isHeteroAromaticAtom(atom))
+				queryDefaultsH |= Molecule.cAtomQFHeteroAromaticEx;
+			if (mol.isAtomStereoCenter(atom))
+				queryDefaultsH |= Molecule.cAtomQFIsStereoEx;
+			else
+				queryDefaultsH |= Molecule.cAtomQFIsNotStereoEx;
+
+			int eValue = mol.getAtomElectronegativeNeighbours(atom);
+			switch (eValue) {
+				case 0:
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot0ENeighboursEx);
+					break;
+				case 1:
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot1ENeighbourEx);
+					break;
+				case 2:
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot2ENeighboursEx);
+					break;
+				case 3:
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot3ENeighboursEx);
+					break;
+				default:
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx);
+					break;
+				}
+			}
+		else {	// The fragments implicit features are not really necessary,
+				// but may speed up the graph matching.
+			if (mol.isHeteroAromaticAtom(atom))
+				queryDefaultsH |= (Molecule.cAtomQFHeteroAromaticEx);
+
+			int eValue = mol.getAtomElectronegativeNeighbours(atom);
+			switch (eValue) {
+				case 0:
+					break;
+				case 1:
+					queryDefaultsH |= (Molecule.cAtomQFNot0ENeighboursEx);
+					break;
+				case 2:
+					queryDefaultsH |= (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx);
+					break;
+				case 3:
+					queryDefaultsH |= (Molecule.cAtomQFNot0ENeighboursEx | Molecule.cAtomQFNot1ENeighbourEx | Molecule.cAtomQFNot2ENeighboursEx);
+					break;
+				default:
+					queryDefaultsH |= (Molecule.cAtomQFENeighboursH & ~Molecule.cAtomQFNot4ENeighboursEx);
+					break;
+				}
+			}
+		return queryDefaultsH;
+		}
 
 	/**
 	 * Generates inherent feature flags of a given bond.

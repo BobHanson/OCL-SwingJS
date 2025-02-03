@@ -34,16 +34,15 @@
 
 package com.actelion.research.chem;
 
-import java.io.*;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
+import java.io.IOException;
+import java.io.Writer;
+//import java.text.DecimalFormat;
 
 public class MolfileCreator {
     private static final float TARGET_AVBL = 1.5f;
 
     private StringBuilder mBuilder;
-    private DecimalFormat mDoubleFormat;
+    //private DecimalFormat mDoubleFormat;
 
     /**
      * This creates a new molfile version 2 from the given molecule.
@@ -91,7 +90,6 @@ public class MolfileCreator {
      * @param builder null or StringBuilder to append to
      */
     public MolfileCreator(ExtendedMolecule mol, boolean allowScaling, double scalingFactor, StringBuilder builder) {
-		mDoubleFormat = new DecimalFormat("0.0000", new DecimalFormatSymbols(Locale.ENGLISH)); //English local ('.' for the dot)
         final String nl = System.lineSeparator();
 
         mol.ensureHelperArrays(Molecule.cHelperParities);
@@ -201,7 +199,7 @@ public class MolfileCreator {
 
             mBuilder.append(" 0  0  0");	// massDif, charge, parity
 
-            long hydrogenFlags = Molecule.cAtomQFHydrogen & mol.getAtomQueryFeatures(atom);
+            int hydrogenFlags = Molecule.cAtomQFHydrogen & mol.getAtomQueryFeatures(atom);
             if (hydrogenFlags == 0)
                 mBuilder.append("  0");
             else if (hydrogenFlags == (Molecule.cAtomQFNot0Hydrogen | Molecule.cAtomQFNot1Hydrogen))
@@ -406,7 +404,7 @@ public class MolfileCreator {
             if (no != 0) {
                 int count = 0;
                 for (int atom=0; atom<mol.getAllAtoms(); atom++) {
-                    long ringFeatures = mol.getAtomQueryFeatures(atom) & Molecule.cAtomQFRingState;
+                    int ringFeatures = mol.getAtomQueryFeatures(atom) & Molecule.cAtomQFRingState;
                     if (ringFeatures != 0) {
                         if (count == 0) {
                             mBuilder.append("M  RBC");
@@ -469,7 +467,7 @@ public class MolfileCreator {
             if (no != 0) {
                 int count = 0;
                 for (int atom=0; atom<mol.getAllAtoms(); atom++) {
-                    long substitution = mol.getAtomQueryFeatures(atom) & (Molecule.cAtomQFMoreNeighbours | Molecule.cAtomQFNoMoreNeighbours);
+                    int substitution = mol.getAtomQueryFeatures(atom) & (Molecule.cAtomQFMoreNeighbours | Molecule.cAtomQFNoMoreNeighbours);
                     if (substitution != 0) {
                         if (count == 0) {
                             mBuilder.append("M  SUB");
@@ -533,10 +531,72 @@ public class MolfileCreator {
             }
         }
 
-    private void appendTenDigitDouble(double theDouble) {
-    	String val = mDoubleFormat.format(theDouble);
-    	for(int i=val.length(); i<10; i++) mBuilder.append(' ');
-    	mBuilder.append(val);
-        }
+	private void appendTenDigitDouble(double d) {
+		mBuilder.append(align10(d));
 	}
+
+	private static String align10(double d) {
+//		if (mDoubleFormat == null)
+//		mDoubleFormat = new DecimalFormat("0.0000", new DecimalFormatSymbols(Locale.ENGLISH)); // English local ('.'
+//																								// for the dot)
+//	String val = mDoubleFormat.format(theDouble);
+//	for (int i = val.length(); i < 10; i++)
+//		mBuilder.append(' ');
+		boolean isNegative = (d < 0);
+		if (isNegative) {
+			d = -d;
+		}
+		String sign = (isNegative ? "-" : "");
+		int i = Math.round((float)d * 10000);
+		String val;
+		int n;
+		if (i == 0) {
+			return "    0.0000";
+		}
+		if (d > 10000) {
+			// crazy 12346.7345
+			val = sign + d;
+			i = val.indexOf("E");
+			if (i >= 0) {
+				// 1.5E13
+				// 1.343532356634378E13
+				n = val.length();
+				if (n > 10) {
+					String e = val.substring(i);
+					return val.substring(0, 10 - e.length()) + e;
+				}
+			} else {
+				val += "000000000";
+			}
+			return val.substring(0, 10);
+		} 
+		// = -0.02
+		val = "" + i;
+		// = 200   n = 3
+		n = val.length();
+		n = (val = sign + (n > 4 ? "" : "00000".substring(n)) + val).length();
+		// = -00200 n = 6
+		val = val.substring(0, n - 4) + "." + val.substring(n - 4);
+		n++;
+		// = -0.0200 n = 7
+		val = (n == 10 ? val : n > 10 ? val.substring(0, 10) 
+				: "     ".substring(n - 5) + val);
+		// = "   -0.0200"
+		return val;
+	}
+
+//	static {
+//		System.out.println(align10(.02));
+//		System.out.println(align10(456.78));
+//		System.out.println(align10(756436.00078));
+//		System.out.println(align10(13435323566343.78));
+//		System.out.println(align10(.5));
+//		System.out.println(align10(.00078));
+//		System.out.println(align10(.1));
+//		System.out.println(align10(-.0000078));
+//		System.out.println(align10(-.078));
+//		System.out.println(align10(7.8));
+//		System.out.println(align10(756436.00078));
+//	}
+}
 

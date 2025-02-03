@@ -158,6 +158,8 @@ public class Canonizer {
 	private static final int CALC_PARITY_MODE_PRO_PARITY = 2;
 	private static final int CALC_PARITY_MODE_IN_SAME_FRAGMENT = 3;
 
+	private static LongIntSorter longIntSorter;
+
 //	public static final int mAtomBits = 16;
 //	public static final int MAX_ATOMS = 0xFFFF;
 //	public static final int MAX_BONDS = 0xFFFF;
@@ -561,7 +563,7 @@ public class Canonizer {
 	private boolean canBreakTiesByHeteroTopicity() {
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			mCanBase[atom].init(atom);
-			mCanBase[atom].add((2 * mAtomBits + 4), (long) mCanRank[atom] << (mAtomBits + 4));
+			mCanBase[atom].add((2 * mAtomBits + 4), mCanRank[atom] << (mAtomBits + 4));
 		}
 
 		// create in-same-fragment information for all heterotopic atoms
@@ -590,7 +592,7 @@ public class Canonizer {
 	private boolean canInnerBreakTiesByHeteroTopicity() {
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			mCanBase[atom].init(atom);
-			mCanBase[atom].add((2 * mAtomBits + 4), (long) mCanRank[atom] << (mAtomBits + 4));
+			mCanBase[atom].add((2 * mAtomBits + 4), mCanRank[atom] << (mAtomBits + 4));
 		}
 
 		for (int rank = 1; rank <= mNoOfRanks; rank++) {
@@ -607,7 +609,7 @@ public class Canonizer {
 
 				for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 					mCanBase[atom].init(atom);
-					mCanBase[atom].add((2 * mAtomBits + 4), (long) mCanRank[atom] << (mAtomBits + 4));
+					mCanBase[atom].add((2 * mAtomBits + 4), mCanRank[atom] << (mAtomBits + 4));
 				}
 			}
 		}
@@ -629,7 +631,7 @@ public class Canonizer {
 
 				for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 					mCanBase[atom].init(atom);
-					mCanBase[atom].add((2 * mAtomBits + 4), (long) mCanRank[atom] << (mAtomBits + 4));
+					mCanBase[atom].add((2 * mAtomBits + 4),  mCanRank[atom] << (mAtomBits + 4));
 				}
 			}
 		}
@@ -640,7 +642,7 @@ public class Canonizer {
 	private void canBreakTiesRandomly() {
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			mCanBase[atom].init(atom);
-			mCanBase[atom].add(mAtomBits + 1, (long) 2 * mCanRank[atom]);
+			mCanBase[atom].add(mAtomBits + 1,  2 * mCanRank[atom]);
 		}
 
 		// promote randomly one atom of lowest shared rank.
@@ -653,7 +655,7 @@ public class Canonizer {
 
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			if (mCanRank[atom] == rank) {
-				mCanBase[atom].add(1);
+				mCanBase[atom].addInt(1);
 				break;
 			}
 		}
@@ -674,6 +676,20 @@ public class Canonizer {
 		}
 	}
 
+	private static class LongIntSorter implements Comparator<int[]> {
+
+		@Override
+		public int compare(int[] o1, int[] o2) {
+			return (o1[0] > o2[0] ? 1 : o1[0] < o2[0] ? -1 
+					: o1[1] > o2[1] ? 1 : o1[1] < o2[1] ? -1 
+							: 0);
+		}
+		
+	}
+	
+	static {
+		longIntSorter = new LongIntSorter();
+	}
 	/**
 	 * This ranks all atoms based on inherent atom properties, their neighbourhood
 	 * and connecting bond types until all atom and connectivity differences have
@@ -771,21 +787,25 @@ public class Canonizer {
 			for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 				mCanBase[atom].init(atom);
 				mCanBase[atom].add(mAtomBits, mCanRank[atom]);
-				long[] bondQFList = new long[mMol.getConnAtoms(atom) + mMol.getMetalBondedConnAtoms(atom)];
+				int n = mMol.getConnAtoms(atom) + mMol.getMetalBondedConnAtoms(atom);
+				int[][] bondQFList = new int[n][2];
 				int index = 0;
 				for (int i = 0; i < mMol.getAllConnAtomsPlusMetalBonds(atom); i++) {
 					if (i < mMol.getConnAtoms(atom) || i >= mMol.getAllConnAtoms(atom)) {
-						bondQFList[index] = mCanRank[mMol.getConnAtom(atom, i)];
-						bondQFList[index] <<= Molecule.cBondQFNoOfBits;
-						bondQFList[index] |= mMol.getBondQueryFeatures(mMol.getConnBond(atom, i));
+						bondQFList[index][0] = mCanRank[mMol.getConnAtom(atom, i)];
+						//bondQFList[index] <<= Molecule.cBondQFNoOfBits;
+						bondQFList[index][1] = mMol.getBondQueryFeatures(mMol.getConnBond(atom, i));
 						index++;
 					}
 				}
-				Arrays.sort(bondQFList);
-				for (int i = mMaxConnAtoms; i > bondQFList.length; i--)
+				Arrays.sort(bondQFList, longIntSorter);
+//				Arrays.sort(bondQFList);
+				for (int i = mMaxConnAtoms; i > n; i--)
 					mCanBase[atom].add(mAtomBits + Molecule.cBondQFNoOfBits, 0);
-				for (int i = bondQFList.length - 1; i >= 0; i--)
-					mCanBase[atom].add(mAtomBits + Molecule.cBondQFNoOfBits, bondQFList[i]);
+				for (int i = n - 1; i >= 0; i--) {
+					mCanBase[atom].add(mAtomBits, bondQFList[i][0]);
+					mCanBase[atom].add(Molecule.cBondQFNoOfBits, bondQFList[i][1]);
+				}
 			}
 			mNoOfRanks = canPerformRanking();
 		}
@@ -891,7 +911,7 @@ public class Canonizer {
 					thParityInfo |= mTHESRGroup[atom];
 				}
 
-				mCanBase[atom].add(2 * parityInfoBits, (long) thParityInfo << parityInfoBits); // generate space for
+				mCanBase[atom].add(2 * parityInfoBits,  thParityInfo << parityInfoBits); // generate space for
 																								// bond parity
 			}
 
@@ -904,8 +924,8 @@ public class Canonizer {
 					ezParityInfo |= mEZESRGroup[bond];
 				}
 
-				mCanBase[mMol.getBondAtom(0, bond)].add(ezParityInfo);
-				mCanBase[mMol.getBondAtom(1, bond)].add(ezParityInfo);
+				mCanBase[mMol.getBondAtom(0, bond)].addInt(ezParityInfo);
+				mCanBase[mMol.getBondAtom(1, bond)].addInt(ezParityInfo);
 			}
 
 			int newNoOfRanks = canPerformRanking();
@@ -935,12 +955,12 @@ public class Canonizer {
 		while ((mNoOfRanks < mMol.getAtoms()) && paritiesFound) {
 			for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 				mCanBase[atom].init(atom);
-				mCanBase[atom].add(mAtomBits + 4, ((long) mCanRank[atom] << 4) | (mTHParity[atom] << 2));
+				mCanBase[atom].add(mAtomBits + 4, ( mCanRank[atom] << 4) | (mTHParity[atom] << 2));
 			}
 
 			for (int bond = 0; bond < mMol.getBonds(); bond++) {
-				mCanBase[mMol.getBondAtom(0, bond)].add(mEZParity[bond]);
-				mCanBase[mMol.getBondAtom(1, bond)].add(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(0, bond)].addInt(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(1, bond)].addInt(mEZParity[bond]);
 			}
 
 			int newNoOfRanks = canPerformRanking();
@@ -991,8 +1011,8 @@ public class Canonizer {
 				// then only consider the ESR type and the rank of the group.
 
 				if (!mTHESRTypeNeedsNormalization[atom] && mTHESRType[atom] != Molecule.cESRTypeAbs)
-					mCanBase[atom].add(
-							(mTHESRType[atom] << 18) + ((long) groupRank[(mTHESRType[atom] == Molecule.cESRTypeAnd) ? 0
+					mCanBase[atom].addInt(
+							(mTHESRType[atom] << 18) + (groupRank[(mTHESRType[atom] == Molecule.cESRTypeAnd) ? 0
 									: 1][mTHESRGroup[atom]] << 8));
 
 //				if (!mTHParityNeedsNormalization[atom]) {
@@ -1003,14 +1023,14 @@ public class Canonizer {
 					else if (parity == Molecule.cAtomParity2)
 						parity = Molecule.cAtomParity1;
 				}
-				mCanBase[atom].add(parity << 4);
+				mCanBase[atom].addInt(parity << 4);
 			}
 //				}
 
 // TODO consider groupRank for bonds
 			for (int bond = 0; bond < mMol.getBonds(); bond++) {
-				mCanBase[mMol.getBondAtom(0, bond)].add(mEZParity[bond]);
-				mCanBase[mMol.getBondAtom(1, bond)].add(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(0, bond)].addInt(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(1, bond)].addInt(mEZParity[bond]);
 			}
 			/*
 			 * for (int atom=0; atom<mMol.getAtoms(); atom++)
@@ -1700,9 +1720,9 @@ public class Canonizer {
 			mTHParity[atom] = atomTHParity;
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (atomTHParity == Molecule.cAtomParity1) {
-				mCanBase[proTHAtom1].add(mCanRank[atom]);
+				mCanBase[proTHAtom1].addInt(mCanRank[atom]);
 			} else if (atomTHParity == Molecule.cAtomParity2) {
-				mCanBase[proTHAtom2].add(mCanRank[atom]);
+				mCanBase[proTHAtom2].addInt(mCanRank[atom]);
 			}
 		}
 
@@ -1949,16 +1969,16 @@ public class Canonizer {
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (halfParity1.mRanksEqual) {
 				if (alleneParity == Molecule.cAtomParity1) {
-					mCanBase[halfParity1.mHighConn].add(mCanRank[atom1]);
+					mCanBase[halfParity1.mHighConn].addInt(mCanRank[atom1]);
 				} else {
-					mCanBase[halfParity1.mLowConn].add(mCanRank[atom1]);
+					mCanBase[halfParity1.mLowConn].addInt(mCanRank[atom1]);
 				}
 			}
 			if (halfParity2.mRanksEqual) {
 				if (alleneParity == Molecule.cAtomParity2) {
-					mCanBase[halfParity2.mHighConn].add(mCanRank[atom2]);
+					mCanBase[halfParity2.mHighConn].addInt(mCanRank[atom2]);
 				} else {
-					mCanBase[halfParity2.mLowConn].add(mCanRank[atom2]);
+					mCanBase[halfParity2.mLowConn].addInt(mCanRank[atom2]);
 				}
 			}
 		}
@@ -2050,16 +2070,16 @@ public class Canonizer {
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (halfParity1.mRanksEqual) {
 				if (axialParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity1.mHighConn].add(mCanRank[atom2]);
+					mCanBase[halfParity1.mHighConn].addInt(mCanRank[atom2]);
 				} else {
-					mCanBase[halfParity1.mLowConn].add(mCanRank[atom2]);
+					mCanBase[halfParity1.mLowConn].addInt(mCanRank[atom2]);
 				}
 			}
 			if (halfParity2.mRanksEqual) {
 				if (axialParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity2.mHighConn].add(mCanRank[atom1]);
+					mCanBase[halfParity2.mHighConn].addInt(mCanRank[atom1]);
 				} else {
-					mCanBase[halfParity2.mLowConn].add(mCanRank[atom1]);
+					mCanBase[halfParity2.mLowConn].addInt(mCanRank[atom1]);
 				}
 			}
 		}
@@ -2196,16 +2216,16 @@ public class Canonizer {
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (halfParity1.mRanksEqual) {
 				if (bondDBParity == Molecule.cBondParityEor1) {
-					mCanBase[halfParity1.mHighConn].add(mCanRank[dbAtom1]);
+					mCanBase[halfParity1.mHighConn].addInt(mCanRank[dbAtom1]);
 				} else if (bondDBParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity1.mLowConn].add(mCanRank[dbAtom1]);
+					mCanBase[halfParity1.mLowConn].addInt(mCanRank[dbAtom1]);
 				}
 			}
 			if (halfParity2.mRanksEqual) {
 				if (bondDBParity == Molecule.cBondParityEor1) {
-					mCanBase[halfParity2.mHighConn].add(mCanRank[dbAtom2]);
+					mCanBase[halfParity2.mHighConn].addInt(mCanRank[dbAtom2]);
 				} else if (bondDBParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity2.mLowConn].add(mCanRank[dbAtom2]);
+					mCanBase[halfParity2.mLowConn].addInt(mCanRank[dbAtom2]);
 				}
 			}
 		}
@@ -2973,7 +2993,7 @@ public class Canonizer {
 			addAtomQueryFeatures(4, nbits, Molecule.cAtomQFRingState, Molecule.cAtomQFRingStateBits,
 					Molecule.cAtomQFRingStateShift);
 
-			addAtomQueryFeatures(5, nbits, Molecule.cAtomQFAromState, Molecule.cAtomQFAromStateBits,
+			addAtomQueryFeatures(5, nbits, Molecule.cAtomQFAromStateL, Molecule.cAtomQFAromStateBits,
 					Molecule.cAtomQFAromStateShift);
 
 			addAtomQueryFeatures(6, nbits, Molecule.cAtomQFAny, 1, -1);
@@ -3135,13 +3155,13 @@ public class Canonizer {
 		if (mMol.isFragment()) { // 29 = datatype 'reaction parity hint'
 			addAtomQueryFeatures(29, nbits, Molecule.cAtomQFRxnParityHint, Molecule.cAtomQFRxnParityBits,
 					Molecule.cAtomQFRxnParityShift);
-			addAtomQueryFeatures(30, nbits, Molecule.cAtomQFNewRingSize, Molecule.cAtomQFNewRingSizeBits,
-					Molecule.cAtomQFNewRingSizeShift);
-			addAtomQueryFeatures(32, nbits, Molecule.cAtomQFStereoState, Molecule.cAtomQFStereoStateBits,
-					Molecule.cAtomQFStereoStateShift);
-			addAtomQueryFeatures(33, nbits, Molecule.cAtomQFENeighbours, Molecule.cAtomQFENeighbourBits,
-					Molecule.cAtomQFENeighbourShift);
-			addAtomQueryFeatures(34, nbits, Molecule.cAtomQFHeteroAromatic, 1, -1);
+			addAtomQueryFeaturesEx(30, nbits, Molecule.cAtomQFNewRingSizeH, Molecule.cAtomQFNewRingSizeBitsH,
+					Molecule.cAtomQFNewRingSizeShiftH);
+			addAtomQueryFeaturesEx(32, nbits, Molecule.cAtomQFStereoStateH, Molecule.cAtomQFStereoStateBitsH,
+					Molecule.cAtomQFStereoStateShiftH);
+			addAtomQueryFeaturesEx(33, nbits, Molecule.cAtomQFENeighboursH, Molecule.cAtomQFENeighbourBitsH,
+					Molecule.cAtomQFENeighbourShiftH);
+			addAtomQueryFeaturesEx(34, nbits, Molecule.cAtomQFHeteroAromaticEx, 1, -1);
 			addBondQueryFeatures(35, nbits, Molecule.cBondQFMatchFormalOrder, 1, -1);
 			addBondQueryFeatures(36, nbits, Molecule.cBondQFRareBondTypes, Molecule.cBondQFRareBondTypesBits,
 					Molecule.cBondQFRareBondTypesShift);
@@ -3205,7 +3225,7 @@ public class Canonizer {
 		mIDCode = encodeBitsEnd();
 	}
 
-	private void addAtomQueryFeatures(int codeNo, int nbits, long qfMask, int qfBits, int qfShift) {
+	private void addAtomQueryFeatures(int codeNo, int nbits, int qfMask, int qfBits, int qfShift) {
 		int count = 0;
 		for (int atom = 0; atom < mMol.getAtoms(); atom++)
 			if ((mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask) != 0)
@@ -3217,7 +3237,28 @@ public class Canonizer {
 		encodeFeatureNo(codeNo);
 		encodeBits(count, nbits);
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
-			long feature = mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask;
+			int feature = mMol.getAtomQueryFeatures(mGraphAtom[atom]) & qfMask;
+			if (feature != 0) {
+				encodeBits(atom, nbits);
+				if (qfBits != 1)
+					encodeBits(feature >> qfShift, qfBits);
+			}
+		}
+	}
+
+	private void addAtomQueryFeaturesEx(int codeNo, int nbits, int qfMask, int qfBits, int qfShift) {
+		int count = 0;
+		for (int atom = 0; atom < mMol.getAtoms(); atom++)
+			if ((mMol.getAtomQueryFeaturesEx(mGraphAtom[atom]) & qfMask) != 0)
+				count++;
+
+		if (count == 0)
+			return;
+
+		encodeFeatureNo(codeNo);
+		encodeBits(count, nbits);
+		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
+			int feature = mMol.getAtomQueryFeaturesEx(mGraphAtom[atom]) & qfMask;
 			if (feature != 0) {
 				encodeBits(atom, nbits);
 				if (qfBits != 1)
@@ -3724,12 +3765,12 @@ public class Canonizer {
 		encodeBits(codeNo, 4);
 	}
 
-	private void encodeBits(long data, int bits) {
+	private void encodeBits(int data, int bits) {
 //System.out.println(bits+" bits:"+data+"  mode="+mode);
 		while (bits != 0) {
 			if (mEncodingBitsAvail == 0) {
 				if (!mEncodeAvoid127 || mEncodingTempData != 63)
-					mEncodingTempData += 64;
+					mEncodingTempData += 0x40;
 				mEncodingBuffer.append((char) mEncodingTempData);
 				mEncodingBitsAvail = 6;
 				mEncodingTempData = 0;

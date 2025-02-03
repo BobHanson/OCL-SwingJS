@@ -1994,11 +1994,11 @@ public class SmilesParser {
 								  { "CC(F)=[C@@]=CO", "allene-2", "gGQHJIAIgfZJ@" },
 								  { "CC(F)=[C@]=C(O)[H]", "allene-2", "gGQHJIAIgfZJ@" },
 								  { "CC(F)=[C@]=C(O)Cl", "allene-3", "gNqDDHbrBS[TmSH@" },
-								  { "OC(Cl)=[C@]=C(C)F", "allene-3", "gNqDDHbrBS[TmSH@" },
 								  { "ClC(O)=[C@]=C(F)C", "allene-3", "gNqDDHbrBS[TmSH@" },
 								  { "OC(Cl)=[C@]=C(C)F", "allene-3", "gNqDDHbrBS[TmSH@" },
 								  { "C1(Cl)=[C@]=C(C)F.O1", "allene-3", "gNqDDHbrBS[TmSH@" },
 								  { "C(O)(Cl)=[C@]=C(C)F", "allene-3", "gNqDDHbrBS[TmSH@" },
+								  { "[C@](=C(C)(F))=C(O)Cl", "allene-3", "gNqDDHbrBS[TmSH@" },
 
 									};
 
@@ -2011,7 +2011,11 @@ public class SmilesParser {
 					System.out.println("Should create error! "+test[1]+" smiles:"+test[0]+" idcode:"+idcode);
 				else if (!test[2].equals(idcode))
 					System.out.println("ERROR! "+test[1]+" smiles:"+test[0]+" is:"+idcode+" must:"+test[2]);
+				else {
+					System.out.println("OK " + test[0] + " == " + idcode);
+					ExtendedMoleculeFunctions.analyzeMolecule(mol);
 				}
+			}
 			catch (Exception e) {
 				if (!test[2].equals("error"))
 					System.out.println("ERROR! "+test[1]+" smiles:"+test[0]+" exception:"+e.getMessage());

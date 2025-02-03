@@ -75,6 +75,28 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 	}
 
 	@Override
+	protected void initAndRun(Runnable r) {
+		
+		
+		/**
+		 * @j2sNative
+		 *    
+		 *    if (!J2S) {
+		 *      alert("J2S has not been installed");
+		 *      System.exit(0);
+		 *    }
+		 *   var t = [];
+		 *   t[0] = setInterval(
+		 *      function(){
+		 *       if (J2S.inchiWasmLoaded && J2S.inchiWasmLoaded()) {
+		 *        clearInterval(t[0]);
+		 *        r.run$();
+		 *       }
+		 *      }, 50);
+		 */
+	}
+
+	@Override
 	protected boolean implementsMolDataToInChI() {
 		return true;
 	}

@@ -4935,6 +4935,10 @@ J2S.molfileFromAuxinfo = function(auxinfo, bDoNotAddH, bDiffUnkUndfStereo) {
   return JSON.parse(result);
 }
 
-console.log("inchi-web-SwingJS loaded");	
+
+J2S.inchiWasmLoaded = function() {
+	return !!module;
+}
 
 
+console.log("inchi-web-SwingJS loaded");

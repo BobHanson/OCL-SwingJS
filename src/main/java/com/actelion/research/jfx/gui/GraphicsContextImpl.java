@@ -67,12 +67,12 @@ public class GraphicsContextImpl implements IDrawContext<GraphicsContext>
     {
         return ctx;
     }
-    public static Color createColor(long color)
+    public static Color createColor(int color)
     {
-        double r = (double) ((color & 0xFF000000l) >> 24) / 255.0;
-        double g = (double) ((color & 0x00FF0000l) >> 16) / 255.0;
-        double b = (double) ((color & 0x0000FF00l) >> 8) / 255.0;
-        double a = (double) (color & 0x000000FFl ) / 255.0;
+        double r = ((color >> 24) & 0xFF) / 255.0;
+        double g = ((color >> 16) & 0xFF) / 255.0;
+        double b = ((color >> 8) & 0xFF) / 255.0;
+        double a = (color & 0xFF) / 255.0;
         return new Color(r, g, b, a);
     }
 
@@ -164,7 +164,7 @@ public class GraphicsContextImpl implements IDrawContext<GraphicsContext>
     }
 
     @Override
-    public void setFill(long color)
+    public void setFill(int color)
     {
         ctx.setFill(createColor(color));
     }
@@ -209,7 +209,7 @@ public class GraphicsContextImpl implements IDrawContext<GraphicsContext>
     }
 
     @Override
-    public void setStroke(long color)
+    public void setStroke(int color)
     {
         ctx.setStroke(createColor(color));
     }

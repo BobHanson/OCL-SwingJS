@@ -23,7 +23,7 @@ public class ParserUtils {
 		return getLimitedStreamBytes(c.getResourceAsStream(fileName), -1, null, true, true);
 	}
 
-	public static byte[] getLimitedStreamBytes(InputStream is, long n, OutputStream out, boolean andCloseInput,
+	public static byte[] getLimitedStreamBytes(InputStream is, int n, OutputStream out, boolean andCloseInput,
 			boolean andCloseOutput) throws IOException {
 
 		// Note: You cannot use InputStream.available() to reliably read

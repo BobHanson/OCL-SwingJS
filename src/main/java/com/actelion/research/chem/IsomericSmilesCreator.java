@@ -562,7 +562,7 @@ public class IsomericSmilesCreator {
 		if (charge == 0 && (mMode & MODE_CREATE_SMARTS) != 0) {
 			// Because SMARTS don't know a charge query feature, we set the atom charge in case of neg/pos charge required.
 			// There is no way to require an uncharged atom (Molecule.cAtomQFNotChargeNeg | Molecule.cAtomQFNotChargePos).
-			long chargeFeatures = mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFCharge;
+			int chargeFeatures = mMol.getAtomQueryFeatures(atom) & Molecule.cAtomQFCharge;
 			if (chargeFeatures == (Molecule.cAtomQFNotCharge0 | Molecule.cAtomQFNotChargePos))
 				charge = -1;    // 'require negative charge' is translated into charge := -1
 			else if (chargeFeatures == (Molecule.cAtomQFNotCharge0 | Molecule.cAtomQFNotChargeNeg))
@@ -645,7 +645,8 @@ public class IsomericSmilesCreator {
 	private String getAtomSMARTSFeatures(int atom, StringBuilder buffer) {
 		buffer.setLength(0);
 
-		long queryFeatures = mMol.getAtomQueryFeatures(atom);
+		int queryFeatures = mMol.getAtomQueryFeatures(atom);
+		int queryFeaturesEx = mMol.getAtomQueryFeaturesEx(atom);
 
 		// SMARTS don't distinguish between a charged atom and atom charge query features
 		int chargeFeatures = (int)((queryFeatures & Molecule.cAtomQFCharge) >> Molecule.cAtomQFChargeBits);
@@ -663,13 +664,13 @@ public class IsomericSmilesCreator {
 				break;
 			}
 
-		long aromState = queryFeatures & Molecule.cAtomQFAromState;
+		int aromState = queryFeatures & Molecule.cAtomQFAromStateL;
 		if (aromState == Molecule.cAtomQFAromatic)
 			buffer.append(";a");
 		else if (aromState == Molecule.cAtomQFNotAromatic)
 			buffer.append(";A");
 
-		long hydrogenQueryFeatures = queryFeatures & Molecule.cAtomQFHydrogen;
+		int hydrogenQueryFeatures = queryFeatures & Molecule.cAtomQFHydrogen;
 		if (hydrogenQueryFeatures != 0) {
 			if (hydrogenQueryFeatures == (Molecule.cAtomQFNot1Hydrogen | Molecule.cAtomQFNot2Hydrogen | Molecule.cAtomQFNot3Hydrogen))
 				buffer.append(";H0");
@@ -691,7 +692,7 @@ public class IsomericSmilesCreator {
 
 		// Atom membership of SSSR rings cannot be directly translated into number of ring bonds.
 		// We try to get close...
-		long ringState = queryFeatures & Molecule.cAtomQFRingState;
+		int ringState = queryFeatures & Molecule.cAtomQFRingState;
 		if (ringState == Molecule.cAtomQFNotChain)
 			buffer.append(";!R0");
 		else if (ringState == Molecule.cAtomQFNot2RingBonds)
@@ -709,39 +710,39 @@ public class IsomericSmilesCreator {
 		else if (ringState == (Molecule.cAtomQFNotChain | Molecule.cAtomQFNot2RingBonds | Molecule.cAtomQFNot3RingBonds))
 			buffer.append(";R3");
 
-		long ringSize = queryFeatures & Molecule.cAtomQFNewRingSize;
-		if (ringSize == Molecule.cAtomQFRingSize0)
+		int ringSize = queryFeaturesEx & Molecule.cAtomQFNewRingSizeH;
+		if (ringSize == Molecule.cAtomQFRingSize0Ex)
 			buffer.append(";!r" + ringSize);
-		else if (ringSize == (Molecule.cAtomQFNewRingSize & ~Molecule.cAtomQFRingSize0))
+		else if (ringSize == (Molecule.cAtomQFNewRingSizeH & ~Molecule.cAtomQFRingSize0Ex))
 			buffer.append(";r" + ringSize);
 		else if (ringSize != 0) {
-			if ((ringSize & Molecule.cAtomQFRingSizeLarge) != 0) {  // negative logic
-				if ((ringSize & Molecule.cAtomQFRingSize0) == 0)
+			if ((ringSize & Molecule.cAtomQFRingSizeLargeEx) != 0) {  // negative logic
+				if ((ringSize & Molecule.cAtomQFRingSize0Ex) == 0)
 					buffer.append(";!r0" + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize3) == 0)
+				if ((ringSize & Molecule.cAtomQFRingSize3Ex) == 0)
 					buffer.append(";!r3" + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize4) == 0)
+				if ((ringSize & Molecule.cAtomQFRingSize4Ex) == 0)
 					buffer.append(";!r4" + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize5) == 0)
+				if ((ringSize & Molecule.cAtomQFRingSize5Ex) == 0)
 					buffer.append(";!r5" + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize6) == 0)
+				if ((ringSize & Molecule.cAtomQFRingSize6Ex) == 0)
 					buffer.append(";!r6" + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize7) == 0)
+				if ((ringSize & Molecule.cAtomQFRingSize7Ex) == 0)
 					buffer.append(";!r7" + ringSize);
 			}
 			else {
 				buffer.append(";");
-				if ((ringSize & Molecule.cAtomQFRingSize0) != 0)
+				if ((ringSize & Molecule.cAtomQFRingSize0Ex) != 0)
 					buffer.append("r0," + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize3) != 0)
+				if ((ringSize & Molecule.cAtomQFRingSize3Ex) != 0)
 					buffer.append("r3," + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize4) != 0)
+				if ((ringSize & Molecule.cAtomQFRingSize4Ex) != 0)
 					buffer.append("r4," + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize5) != 0)
+				if ((ringSize & Molecule.cAtomQFRingSize5Ex) != 0)
 					buffer.append("r5," + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize6) != 0)
+				if ((ringSize & Molecule.cAtomQFRingSize6Ex) != 0)
 					buffer.append("r6," + ringSize);
-				if ((ringSize & Molecule.cAtomQFRingSize7) != 0)
+				if ((ringSize & Molecule.cAtomQFRingSize7Ex) != 0)
 					buffer.append("r7," + ringSize);
 				buffer.setLength(buffer.length()-1);
 			}
@@ -753,7 +754,7 @@ public class IsomericSmilesCreator {
 				buffer.append(";r" + ringSize);
 		}
 
-		long neighbourFeatures = queryFeatures & Molecule.cAtomQFNeighbours;
+		int neighbourFeatures = queryFeatures & Molecule.cAtomQFNeighbours;
 		if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot1Neighbour))
 			buffer.append(";D1");   // exactly 1
 		if (neighbourFeatures == (Molecule.cAtomQFNeighbours & ~Molecule.cAtomQFNot2Neighbours))
