@@ -117,7 +117,6 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	///// InChI to StereoMolecule //
 
 	/**
-	 * Currently implemented
 	 * 
 	 * @param inchi
 	 * @param mol
@@ -135,11 +134,50 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	
 	/// to SMILES
 
+	/**
+	 * 
+	 * @param inchi
+	 * @param options unused currently
+	 * @return
+	 */
 	public static String getSmilesFromInChI(String inchi, String options) {
 		StereoMolecule mol = new StereoMolecule();
 		return (getMoleculeFromInChI(inchi, mol) ? IsomericSmilesCreator.createSmiles(mol) : null);
 	}
 
+	///// InChI to StereoMolecule //
+
+	/**
+	 * Retrieve a standard InChI or the fixed-H InChI from the given InChI.
+	 * 
+	 * If the option is "reference", then the reference fixed-H InChI is returned,
+	 * provided there is a fixed hydrogen layer. Otherwise, the standard InChI is
+	 * returned.
+	 * 
+	 * 
+	 * @param inchi
+	 * @param options e.g. FIXEDH
+	 * @return inchi or null
+	 */
+	public static String getInChIFromInChI(String inchi, String options) {
+		boolean isReference = ("reference".equals(options));
+		try {
+			StereoMolecule mol = new StereoMolecule();
+			getMoleculeFromInChI(inchi, mol);
+			String inchiS = getInChI(mol, "standard");
+			if (inchiS == null || inchiS.length() == 0 || options == null || options.trim().length() == 0) {
+				return inchiS;
+			}
+			mol = new StereoMolecule();
+			getMoleculeFromInChI(inchiS, mol);				
+			inchi = getInChI(mol, isReference ? "fixedh" : options);
+			return (isReference && inchi.length() < inchiS.length() ? inchiS : inchi);
+		} catch (Throwable e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	
 	/// InChI to InChI model as JSON
 	
@@ -176,6 +214,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	protected boolean getInchiModel;
 	protected boolean isInputInChI;
 	protected boolean getKey;
+	protected boolean isFixedH;
 	
 	protected String inchi;
 
@@ -192,7 +231,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 */
 	private String getInchiPvt(StereoMolecule inputMol, String molDataOrInChI, String options, boolean retKey) {
 		try {
-			if (inputMol == null && molDataOrInChI == null)
+			if (inputMol == null && (molDataOrInChI == null || molDataOrInChI.length() == 0))
 				return null; // this is an error return
 			if (inputMol != null && inputMol.getAllAtoms() == 0) {
 				// not an error, just no atoms in the molecule
@@ -217,7 +256,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 			if (ret != null && options.length() == 0 
 					&& ret.startsWith("InChI=") 
 					&& !ret.startsWith("InChI=1S/")) {
-				reportInchicError("inchi C returned standard InChI without '1S/'! Fixing...");
+				reportInchicError("inchi C inchifrom standard InChI without '1S/'! Fixing...");
 				ret = "InChI=1S/" + ret.substring(8);
 			}				
 			return ret;
@@ -296,6 +335,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		this.getInchiModel = getInchiModel;
 		this.isInputInChI = (inputInChI || inchi != null);
 		this.inchi = inchi;
+		this.isFixedH = isFixedH;
 		this.getKey = optionKey || getKey;
 		this.mol = mol;
 		return (options == null ? null : options.trim());
