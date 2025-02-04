@@ -34,7 +34,9 @@
 package com.actelion.research.chem;
 
 import com.actelion.research.util.DoubleFormat;
+import com.actelion.research.util.StringFunctions;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -75,7 +77,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 	 * @return
 	 */
 	public StereoMolecule getCompactMolecule(String idcode) {
-		return (idcode == null || idcode.isEmpty()) ? null : getCompactMolecule(idcode.getBytes(StandardCharsets.UTF_8));
+		return (idcode == null || idcode.isEmpty()) ? null : getCompactMolecule(StringFunctions.getBytes(idcode));
 		}
 
 	/**
@@ -105,7 +107,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 	 * @return
 	 */
 	public StereoMolecule getCompactMolecule(String idcode, String coordinates) {
-		return (idcode == null) ? null : getCompactMolecule(idcode.getBytes(StandardCharsets.UTF_8),
+		return (idcode == null) ? null : getCompactMolecule(StringFunctions.getBytes(idcode),
 							(coordinates == null) ? null : coordinates.getBytes(StandardCharsets.UTF_8));
 		}
 
@@ -160,7 +162,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 		if (index > 0 && index < idcode.length()-1)
 			parse(mol, idcode.substring(0, index).getBytes(StandardCharsets.UTF_8), idcode.substring(index+1).getBytes(StandardCharsets.UTF_8));
 		else
-			parse(mol, idcode.getBytes(StandardCharsets.UTF_8), null);
+			parse(mol, StringFunctions.getBytes(idcode), null);
 		}
 
 	/**
@@ -179,7 +181,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 	 * @param coordinates may be null
 	 */
 	public void parse(StereoMolecule mol, String idcode, String coordinates) {
-		byte[] idcodeBytes = (idcode == null) ? null : idcode.getBytes(StandardCharsets.UTF_8);
+		byte[] idcodeBytes = (idcode == null) ? null : StringFunctions.getBytes(idcode);
 		byte[] coordinateBytes = (coordinates == null) ? null : coordinates.getBytes(StandardCharsets.UTF_8);
 		parse(mol, idcodeBytes, coordinateBytes);
 		}
@@ -1088,7 +1090,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 		}
 
 	public boolean coordinatesAre3D(String idcode, String coordinates) {
-		return coordinates != null && coordinatesAre3D(idcode.getBytes(StandardCharsets.UTF_8), coordinates.getBytes(StandardCharsets.UTF_8));
+		return coordinates != null && coordinatesAre3D(StringFunctions.getBytes(idcode), coordinates.getBytes(StandardCharsets.UTF_8));
 		}
 
 	public boolean coordinatesAre3D(byte[] idcode, byte[] coordinates) {
@@ -1145,7 +1147,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 		if (idcode == null || idcode.isEmpty())
 			return -1;
 
-		return getIDCodeVersion(idcode.getBytes(StandardCharsets.UTF_8));
+		return getIDCodeVersion(StringFunctions.getBytes(idcode));
 		}
 
 	public int getIDCodeVersion(byte[] idcode) {
@@ -1163,7 +1165,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 		if (idcode == null || idcode.isEmpty())
 			return 0;
 
-		return getAtomCount(idcode.getBytes(StandardCharsets.UTF_8), 0);
+		return getAtomCount(StringFunctions.getBytes(idcode), 0);
 		}
 
 	public int getAtomCount(byte[] idcode, int offset) {
@@ -1193,7 +1195,7 @@ public class IDCodeParserWithoutCoordinateInvention {
 		if (idcode == null || idcode.isEmpty())
 			return null;
 
-		return getAtomAndBondCounts(idcode.getBytes(StandardCharsets.UTF_8), 0, count);
+		return getAtomAndBondCounts(StringFunctions.getBytes(idcode), 0, count);
 		}
 
 	/**

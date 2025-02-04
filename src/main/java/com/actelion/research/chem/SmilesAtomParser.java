@@ -544,10 +544,10 @@ public class SmilesAtomParser {
 
 		if (smiles[position] >= 'A' && smiles[position] <= 'Z') {
 			info.labelLength = (smiles[position+1] >= 'a' && smiles[position+1] <= 'z') ? 2 : 1;
-			info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, StandardCharsets.UTF_8));
+			info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, "UTF-8"));
 			if (info.labelLength == 2 && info.atomicNo == 0) {
 				info.labelLength = 1;
-				info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, StandardCharsets.UTF_8));
+				info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, "UTF_8"));
 			}
 			info.mayBeAromatic = false;
 			if (info.atomicNo == 0)
@@ -558,7 +558,7 @@ public class SmilesAtomParser {
 		if ((smiles[position] == 'A' && smiles[position+1] == 's')
 		 || (smiles[position] == 'S' && smiles[position+1] == 'e')) {
 			info.labelLength = 2;
-			info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, StandardCharsets.UTF_8));
+			info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, "UTF_8"));
 			info.mayBeAliphatic = false;
 			return true;
 		}
@@ -569,7 +569,7 @@ public class SmilesAtomParser {
 		 || smiles[position] == 'p'
 		 || smiles[position] == 's') {
 			info.labelLength = 1;
-			info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, StandardCharsets.UTF_8));
+			info.atomicNo = Molecule.getAtomicNoFromLabel(new String(smiles, position, info.labelLength, "UTF_8"));
 			info.mayBeAliphatic = false;
 			return true;
 		}

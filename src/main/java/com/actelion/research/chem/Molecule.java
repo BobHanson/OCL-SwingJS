@@ -34,6 +34,7 @@
 package com.actelion.research.chem;
 
 import com.actelion.research.gui.generic.GenericRectangle;
+import com.actelion.research.util.StringFunctions;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -2241,7 +2242,7 @@ public class Molecule implements Serializable {
 	public String getAtomCustomLabel(int atom) {
 		return (mAtomCustomLabel == null) ? null
 			 : (mAtomCustomLabel[atom] == null) ? null
-			 : new String(mAtomCustomLabel[atom], StandardCharsets.UTF_8);
+			 : StringFunctions.newString(mAtomCustomLabel[atom]);
 		}
 
 
@@ -3762,7 +3763,7 @@ public class Molecule implements Serializable {
 		else {
 			if (mAtomCustomLabel == null)
 				mAtomCustomLabel = new byte[mMaxAtoms][];
-			mAtomCustomLabel[atom] = label.getBytes(StandardCharsets.UTF_8);
+			mAtomCustomLabel[atom] = StringFunctions.getBytes(label);
 			}
 		}
 

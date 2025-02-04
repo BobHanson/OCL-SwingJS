@@ -34,17 +34,17 @@
 
 package com.actelion.research.chem;
 
-import com.actelion.research.chem.coords.CoordinateInventor;
-import com.actelion.research.chem.reaction.Reaction;
-import com.actelion.research.util.ArrayUtils;
-
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+
+import com.actelion.research.chem.coords.CoordinateInventor;
+import com.actelion.research.chem.reaction.Reaction;
+import com.actelion.research.util.ArrayUtils;
+import com.actelion.research.util.StringFunctions;
 
 
 public class SmilesParser {
@@ -146,7 +146,7 @@ public class SmilesParser {
 		}
 
 	public StereoMolecule parseMolecule(String smiles) {
-		return smiles == null ? null : parseMolecule(smiles.getBytes(StandardCharsets.UTF_8));
+		return smiles == null ? null : parseMolecule(StringFunctions.getBytes(smiles));
 		}
 
 	/**
@@ -201,7 +201,7 @@ public class SmilesParser {
 		}
 
 	public Reaction parseReaction(String smiles) throws Exception {
-		return smiles == null ? null : parseReaction(smiles.getBytes(StandardCharsets.UTF_8));
+		return smiles == null ? null : parseReaction(StringFunctions.getBytes(smiles));
 		}
 
 	public Reaction parseReaction(byte[] smiles) throws Exception {
@@ -311,7 +311,7 @@ public class SmilesParser {
 		for (EnumerationPosition option : options) {
 			ArrayList<String> enumeration = new ArrayList<>();
 			for (String s : smartsList)
-				option.enumerate(this, s.getBytes(StandardCharsets.UTF_8), enumeration);
+				option.enumerate(this, StringFunctions.getBytes(s), enumeration);
 
 			smartsList = enumeration;
 		}
@@ -339,7 +339,7 @@ public class SmilesParser {
 	 * @throws Exception
 	 */
 	public void parse(StereoMolecule mol, String smiles) throws Exception {
-		parse(mol, smiles.getBytes(StandardCharsets.UTF_8), true, true);
+		parse(mol, StringFunctions.getBytes(smiles), true, true);
 		}
 
 	public void parse(StereoMolecule mol, byte[] smiles) throws Exception {

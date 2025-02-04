@@ -1505,4 +1505,23 @@ public class StringFunctions {
 	}
 
 
+	public static byte[] getBytes(String idcode) {
+		try {
+			return idcode.getBytes("UTF-8");
+		} catch (Exception e) {
+			// required
+			return null;
+		}
+	}
+
+
+	public static String newString(byte[] bytes) {
+		try {
+			return new String(bytes, "UTF-8");
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+
 }
