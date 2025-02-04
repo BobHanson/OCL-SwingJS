@@ -77,8 +77,8 @@ public class GenericDepictor extends AbstractDepictor<GenericDrawContext> {
 
 		for (int atom=0; atom<getMolecule().getAtoms(); atom++) {
 			if ((atomARGB[atom] & 0xFF000000) != 0) {
-				int x0 = (int)Math.round(getAtomX(atom)) - imageX;
-				int y0 = (int)Math.round(getAtomY(atom)) - imageY;
+				int x0 = Math.round((float)getAtomX(atom)) - imageX;
+				int y0 = Math.round((float)getAtomY(atom)) - imageY;
 				float alpha = (float)((atomARGB[atom] & 0xFF000000) >>> 24) / 255f;
 				pixelARGB[1] = (float)((atomARGB[atom] & 0x00FF0000) >> 16) / 255f;
 				pixelARGB[2] = (float)((atomARGB[atom] & 0x0000FF00) >> 8) / 255f;

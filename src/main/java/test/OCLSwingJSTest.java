@@ -52,6 +52,7 @@ public class OCLSwingJSTest {
 
 	protected static void runTests() {
 		long t = System.currentTimeMillis();
+		long u = 1738625318703000008L;
 		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
 		String outdir = null;//"C:/temp/";
 		testInChI1(outdir);

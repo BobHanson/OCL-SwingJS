@@ -143,7 +143,7 @@ public class SwingDrawContext implements GenericDrawContext {
 
 	@Override
 	public void drawString(double x, double y, String s) {
-		mG.drawString(s, Math.round(x), Math.round(y));
+		mG.drawString(s, Math.round((float) x), Math.round((float) y));
 		}
 
 	@SuppressWarnings("unused")

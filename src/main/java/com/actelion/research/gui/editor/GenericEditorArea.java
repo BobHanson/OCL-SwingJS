@@ -1217,8 +1217,8 @@ public abstract class GenericEditorArea implements GenericEventListener {
 		int lastX2 = 0;
 		int lastY2 = 0;
 		if (lastChainAtoms > 0) {
-			lastX1 = (int) Math.round(mChainAtomX[0]);
-			lastY1 = (int) Math.round(mChainAtomY[0]);
+			lastX1 = Math.round((float) mChainAtomX[0]);
+			lastY1 = Math.round((float) mChainAtomY[0]);
 		}
 		if (lastChainAtoms > 1) {
 			lastX2 = (int) Math.round(mChainAtomX[1]);

@@ -488,7 +488,8 @@ public class CDX2CDXML {
 	}
 
 	private static double toPoint(int i) {
-		return Math.round(i / 655.36) / 100.0;
+		// float here avoids long conversion
+		return Math.round(i / 655.36f) / 100.0;
 	}
 
 	public static void main(String[] args) {

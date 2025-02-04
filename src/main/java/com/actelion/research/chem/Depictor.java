@@ -70,8 +70,10 @@ public class Depictor extends AbstractDepictor<Graphics> {
 
 	@Override
 	protected void drawBlackLine(DepictorLine theLine) {
-		mContext.drawLine((int)Math.round(theLine.x1),(int)Math.round(theLine.y1),
-						  (int)Math.round(theLine.x2),(int)Math.round(theLine.y2));
+		mContext.drawLine(Math.round((float) theLine.x1),
+				Math.round((float) theLine.y1),
+						  Math.round((float) theLine.x2),
+						  Math.round((float) theLine.y2));
 		}
 
 
@@ -88,7 +90,8 @@ public class Depictor extends AbstractDepictor<Graphics> {
 	@Override
     public void drawString(String theString,double x, double y) {
 	    double strWidth = getStringWidth(theString);
-		mContext.drawString(theString,(int)Math.round(x-strWidth/2),(int)Math.round(y+1+mpTextSize/3));
+		mContext.drawString(theString,Math.round((float) (x-strWidth/2)),
+				Math.round((float) (y+1+mpTextSize/3)));
 		}
 
 
@@ -97,8 +100,8 @@ public class Depictor extends AbstractDepictor<Graphics> {
 		int[] px = new int[p.getSize()];
 		int[] py = new int[p.getSize()];
 		for (int i=0; i<p.getSize(); i++) {
-			px[i] = (int)Math.round(p.getX(i));
-			py[i] = (int)Math.round(p.getY(i));
+			px[i] = Math.round((float) p.getX(i));
+			py[i] = Math.round((float) p.getY(i));
 			}
 		mContext.drawPolygon(px, py, p.getSize());
 		mContext.fillPolygon(px, py, p.getSize());
@@ -107,7 +110,8 @@ public class Depictor extends AbstractDepictor<Graphics> {
 
 	@Override
 	protected void fillCircle(double x, double y, double d) {
-	    mContext.fillOval((int)Math.round(x), (int)Math.round(y), (int)Math.round(d), (int)Math.round(d));
+	    mContext.fillOval(Math.round((float) x), Math.round((float) y), 
+	    		Math.round((float) d), Math.round((float) d));
 		}
 
 

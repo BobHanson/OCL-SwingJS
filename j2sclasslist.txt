@@ -423,3 +423,22 @@ javax/swing/KeyboardManager.js
 javax/swing/Popup.js
 
 swingjs/OCLSwingTest.js
+com/actelion/research/chem/EZHalfParity.js
+com/actelion/research/chem/IsomericSmilesCreator.js
+com/actelion/research/chem/MolfileCreator.js
+com/actelion/research/chem/MolfileParser.js
+com/actelion/research/chem/SmilesAtom.js
+com/actelion/research/chem/SmilesAtomParser.js
+com/actelion/research/chem/inchi/InChIJS.js
+com/actelion/research/chem/inchi/InChIOCL.js
+com/actelion/research/chem/moreparsers/CDX2CDXML.js
+com/actelion/research/chem/moreparsers/CDXMLParser.js
+com/actelion/research/chem/moreparsers/CDXParser.js
+com/actelion/research/chem/moreparsers/InChIParser.js
+com/actelion/research/chem/moreparsers/ParserUtils.js
+com/actelion/research/chem/moreparsers/XmlReader.js
+com/actelion/research/gui/JStructureView.js
+com/actelion/research/gui/StructureListener.js
+com/actelion/research/gui/SwingCanvas.js
+com/actelion/research/gui/dnd/MoleculeDragAdapter.js
+com/actelion/research/util/Angle.js

@@ -2517,7 +2517,7 @@ public abstract class AbstractDepictor<T> {
 		double xdif = theLine.x2 - theLine.x1;
 		double ydif = theLine.y2 - theLine.y1;
 		double length = Math.sqrt(xdif * xdif + ydif * ydif);
-		int points = 2 * (int)Math.round(length / (4 * mpLineWidth));
+		int points = 2 * Math.round((float) (length / (4 * mpLineWidth)));
 
 		double xinc = xdif / (points-1);
 		double yinc = ydif / (points-1);

@@ -3557,7 +3557,7 @@ public class Canonizer {
 		boolean isNegative = (value < 0);
 		value = Math.abs(value);
 		double steepness = binCount / 32;
-		int intValue = Math.min(halfBinCount - 1, (int) Math.round(value * halfBinCount / (value + steepness)));
+		int intValue = Math.min(halfBinCount - 1, Math.round((float) (value * halfBinCount / (value + steepness))));
 		return isNegative ? halfBinCount + intValue : intValue;
 	}
 

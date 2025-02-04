@@ -512,7 +512,7 @@ public class InventorFragment {
 		double[] distance = new double[CIRCULAR_BINS];
 		for (int i = 0; i< mGlobalAtom.length; i++) {
 			double angle = InventorAngle.getAngle(x, y, mAtomX[i], mAtomY[i]);
-			int bin = correctBin((int)Math.round(angle * CIRCULAR_BINS / (2.0*Math.PI)));
+			int bin = correctBin(Math.round((float)(angle * CIRCULAR_BINS / (2.0*Math.PI))));
 			double dx = x - mAtomX[i];
 			double dy = y - mAtomY[i];
 			double sd = dx*dx + dy*dy;
