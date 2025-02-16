@@ -99,7 +99,7 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 	}
 
 	@Override
-	protected boolean implementsMolDataToInChI() {
+	protected boolean implementsMolDataOnlyToInChI() {
 		return true;
 	}
 

@@ -10,7 +10,6 @@ import com.actelion.research.chem.Canonizer;
 import com.actelion.research.chem.IsomericSmilesCreator;
 import com.actelion.research.chem.Molecule;
 import com.actelion.research.chem.MolfileCreator;
-import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.coords.CoordinateInventor;
@@ -35,7 +34,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	private /*nonfinal*/ static boolean isJS = /** @j2sNative true || */Boolean.FALSE.booleanValue();
 	
 
-	protected abstract boolean implementsMolDataToInChI();
+	protected abstract boolean implementsMolDataOnlyToInChI();
 
 	protected abstract String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options);
 
@@ -208,7 +207,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return the appropriate interface
 	 */
 	private static InChIOCL getPlatformSubclass() {
-		return (isJS ? new InChIJS() : new InChIJNI1());
+		return (isJS ? new InChIJS() : new InChIJNA());
 	}
 
 	protected boolean getInchiModel;
@@ -220,6 +219,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 
 	private StereoMolecule mol;
 
+	static int ntests = 0;
 
 	/**
 	 * 
@@ -230,6 +230,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return
 	 */
 	private String getInchiPvt(StereoMolecule inputMol, String molDataOrInChI, String options, boolean retKey) {
+		System.out.println("test " + ++ntests);
 		try {
 			if (inputMol == null && (molDataOrInChI == null || molDataOrInChI.length() == 0))
 				return null; // this is an error return
@@ -350,24 +351,23 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @param mol
 	 * @param molDataOrInChI
 	 * @param inputInChI     true if molDataOrInChI starts with "inchi="
-	 * @param options coming in with "fixedh?" along with possibly other options
+	 * @param options        coming in with "fixedh?" along with possibly other
+	 *                       options
 	 * @return
 	 */
 	private String getInChIOptionallyFixedH(StereoMolecule mol, String molDataOrInChI, boolean inputInChI,
 			String options) {
 		if (mol == null) {
 			// create a mol if necessary only
-			boolean useMolData = implementsMolDataToInChI();
+			boolean mustUseMolData= implementsMolDataOnlyToInChI();
 			if (inputInChI) {
 				// inchi from inchi
+				// create a molecule from the first inchi
+				// then create the inchi from that
 				mol = new StereoMolecule();
 				getMoleculeFromInChI(molDataOrInChI, mol);
-			} else if (!useMolData){			
-				mol = new StereoMolecule();
-				new MolfileParser().parse(mol, molDataOrInChI);
-			}
-			if (mol != null) {
-				if (useMolData) {
+				if (mustUseMolData) {
+					// WASM only
 					molDataOrInChI = new MolfileCreator(mol).getMolfile();
 					mol = null;
 				} else {
