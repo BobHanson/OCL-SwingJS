@@ -230,6 +230,9 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	 * @return
 	 */
 	private String getInchiPvt(StereoMolecule inputMol, String molDataOrInChI, String options, boolean retKey) {
+		if ("version".equals(options)) {
+			return getInchiImpl(null, null, "version");
+		}
 		System.out.println("test " + ++ntests);
 		try {
 			if (inputMol == null && (molDataOrInChI == null || molDataOrInChI.length() == 0))

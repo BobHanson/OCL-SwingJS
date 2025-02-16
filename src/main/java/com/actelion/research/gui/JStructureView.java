@@ -191,7 +191,11 @@ public class JStructureView extends SwingCanvas implements ActionListener,MouseL
 		updateBackground();
 		addMouseListener(this);
 		addMouseMotionListener(this);
+		try {
 		initializeDragAndDrop(dragAction, dropAction);
+		} catch (Exception e) {
+			// headless linux operation will fail gracefully here
+		}
 	    }
 
 	public void setSelectable(boolean s) {

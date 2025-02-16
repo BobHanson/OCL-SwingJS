@@ -45,6 +45,7 @@ public class OCLSwingJSTest {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		// load JavaScript:
+		System.out.println(InChIOCL.getInChI("",  "version"));
 		InChIOCL.init(()->{
 			runTests();
 		});
@@ -137,8 +138,6 @@ public class OCLSwingJSTest {
 		} else {
 			checkEquals(name, "not found", true, 109);
 		}
-		
-
 	}
 
 	private static void testInChI1(String outdir) { 

@@ -105,6 +105,14 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 
 	@Override
 	protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options) {
+      if (options.equals("version")) {
+          /**
+           * @j2sNative return (J2S.modelFromInchi ?
+           *            J2S.modelFromInchi('').ver : ""); 
+           */
+          {
+          }
+        }
 		options = options.replace('-', ' ').replaceAll("\\s+", " ").trim().replaceAll(" ", " -").toLowerCase();
 		if (options.length() > 0)
 			options = "-" + options;

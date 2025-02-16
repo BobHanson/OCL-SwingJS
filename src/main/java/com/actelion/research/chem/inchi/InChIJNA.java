@@ -18,6 +18,8 @@
  */
 package com.actelion.research.chem.inchi;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -29,6 +31,7 @@ import org.iupac.InchiUtils;
 import com.actelion.research.chem.Molecule;
 import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.StereoMolecule;
+import com.sun.jna.Native;
 
 import io.github.dan2097.jnainchi.InchiBondType;
 import io.github.dan2097.jnainchi.InchiFlag;
@@ -38,6 +41,7 @@ import io.github.dan2097.jnainchi.InchiBond;
 import io.github.dan2097.jnainchi.InchiInput;
 import io.github.dan2097.jnainchi.InchiOptions;
 import io.github.dan2097.jnainchi.InchiOptions.InchiOptionsBuilder;
+import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 import io.github.dan2097.jnainchi.InchiOutput;
 import io.github.dan2097.jnainchi.InchiStereo;
 import io.github.dan2097.jnainchi.JnaInchi;
@@ -64,9 +68,11 @@ public class InChIJNA extends InChIOCL {
 	 * 
 	 * @param mol
 	 * @param options
-	 * @return
+	 * @return a string 
 	 */
 	protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options) {
+	    if ("version".equals(options))
+	    	  return getInternalInchiVersion(); 
 		try {
 			String inchi = null;
 			InchiOptions ops = getOptions(options);
@@ -461,5 +467,59 @@ public class InChIJNA extends InChIOCL {
 	protected boolean implementsMolDataOnlyToInChI() {
 		return false;
 	}
+
+	  private static String inchiVersionInternal;
+
+	  /**
+	   * Get the InChI version directly from the inchi code without an API.
+	   * To be replaced in the future with a simple inchi IXA call?
+	   * 
+	   * Future format may change.
+	   * 
+	   * @param f
+	   * @return something like "InChI version 1, Software 1.07.2 (API Library)"
+	   */
+	  public static String getInternalInchiVersion() {
+	    if (inchiVersionInternal == null) {
+	      File f = InchiLibrary.JNA_NATIVE_LIB.getFile();
+	      inchiVersionInternal = extractInchiVersionInternal(f);
+	      if (inchiVersionInternal == null) {
+	        // linux will be here after Native libary deletes the file
+	        try {
+	          // that's OK; we can get it ourselves
+	          f = Native.extractFromResourcePath(InchiLibrary.JNA_NATIVE_LIB.getName());
+	          inchiVersionInternal = extractInchiVersionInternal(f);
+	        } catch (Exception e) {
+	        }
+	      }
+	      if (inchiVersionInternal == null)
+	        inchiVersionInternal = "unknown";
+	    }
+	    return inchiVersionInternal;
+	  }
+
+	  private static String extractInchiVersionInternal(File f) {
+		  System.out.println(f);
+	    String s = null;
+	    try (FileInputStream fis = new FileInputStream(f)) {
+	      byte[] b = new byte[(int) f.length()];
+	      fis.read(b);
+	      s = new String(b);
+	      int pt = s.indexOf("InChI version");
+	      if (pt < 0) {
+	        s = null;
+	      } else {
+	        s = s.substring(pt, s.indexOf('\0', pt));
+	      }
+	      fis.close();
+	      f.delete();
+	   } catch (Exception e) {
+	      //System.out.println(f);
+	      //e.printStackTrace();
+	      // it's gone already in Linux
+	    }
+	    return s;
+	  }
+
 
 }
