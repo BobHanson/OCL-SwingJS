@@ -552,4 +552,8 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		}
 	}
 
+	public static String getInChIVersion() {
+		return getInChI("", "version");
+	}
+
 }

@@ -45,7 +45,7 @@ public class OCLSwingJSTest {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		// load JavaScript:
-		System.out.println(InChIOCL.getInChI("",  "version"));
+		System.out.println(InChIOCL.getInChIVersion());
 		InChIOCL.init(()->{
 			runTests();
 		});
