@@ -50,7 +50,7 @@
     </target>
 
     <target name="dist" depends="jar">
-    	<copy file="${build.dir}/${project}.jar" todir="${build.dir}" />
+    	<copy file="${build.dir}/${project}.jar" todir="${dist.dir}" />
         <zip basedir="${site.dir}" 
         	 includes="**/*"
        	     destfile="${dist.dir}/${project}.zip" 
