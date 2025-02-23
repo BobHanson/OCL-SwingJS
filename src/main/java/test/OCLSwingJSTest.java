@@ -40,7 +40,7 @@ import com.actelion.research.gui.swing.SwingDialog;
 public class OCLSwingJSTest {
 
 	public static int nFrame;
-	private final static boolean showFrames = false;
+	private final static boolean showFrames = true;//false;
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
@@ -54,6 +54,10 @@ public class OCLSwingJSTest {
 	protected static void runTests() {
 		long t = System.currentTimeMillis();
 		long u = 1738625318703000008L;
+		
+		test0();
+		if(true)return;
+		
 		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
 		String outdir = null;//"C:/temp/";
 		testInChI1(outdir);
@@ -64,6 +68,52 @@ public class OCLSwingJSTest {
 		testEne(outdir);
 		//testResolvers(outdir);
 		System.out.println("DONE " + nChecked + " " + (System.currentTimeMillis() - t) + " ms");
+	}
+
+	private static void test0() {
+		String inchi = "InChI=1S/C41H44O22/c42-13-27-31(50)33(52)36(55)40(61-27)59-25-11-19(44)10-24-20(25)12-26(37(58-24)17-4-7-21(45)22(46)9-17)60-41-38(63-39-35(54)30(49)23(47)14-57-39)34(53)32(51)28(62-41)15-56-29(48)8-3-16-1-5-18(43)6-2-16/h1-12,23,27-28,30-36,38-42,47,49-55H,13-15H2,(H3-,43,44,45,46,48)/p+1/t23-,27-,28-,30+,31-,32-,33+,34+,35-,36-,38-,39+,40-,41-/m1/s1";
+		String filein = "LMPK12010169.mol";
+		String moldata = getString(filein, "c:/temp/mol");
+		StereoMolecule mol = new StereoMolecule();
+		if (!new MolfileParser().parse(mol, moldata)) {
+			System.err.println("OCLSwingJSTest parser failed for " + moldata);
+		}
+		testShowViewAndWriteMol(mol, "", null, null);
+		testInChIOut(mol, inchi, true, 3);
+		
+		filein = "LMPK12010169b.mol";
+		moldata = getString(filein, "c:/temp/mol");
+		mol = new StereoMolecule();
+		if (!new MolfileParser().parse(mol, moldata)) {
+			System.err.println("OCLSwingJSTest parser failed for " + moldata);
+		}
+		testShowViewAndWriteMol(mol, "", null, null);
+		testInChIOut(mol, inchi, true, 3);
+
+		filein = "LMPK12010169.mol";
+		moldata = getString(filein, "c:/temp/mol");
+		testInChIOut(moldata, inchi, true, 3);
+
+		filein = "LMPK12010169b.mol";
+		moldata = getString(filein, "c:/temp/mol");
+		testInChIOut(moldata, inchi, true, 3);
+		
+		String smiles = InChIOCL.getSmilesFromInChI(inchi, null);
+		System.out.println(smiles);
+
+
+		filein = "LMPK12010169N.mol";
+		inchi = "InChI=1S/C41H45NO21/c43-13-27-32(51)34(53)37(56)40(61-27)59-25-11-19(45)10-21-20(25)12-26(30(42-21)17-4-7-22(46)23(47)9-17)60-41-38(63-39-36(55)31(50)24(48)14-58-39)35(54)33(52)28(62-41)15-57-29(49)8-3-16-1-5-18(44)6-2-16/h1-12,24,27-28,31-41,43-48,50-56H,13-15H2"
+				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1";
+		moldata = getString(filein, "c:/temp/mol");
+		testInChIOut(moldata, inchi, true, 3);
+
+		filein = "LMPK12010169O.mol";
+		inchi = "InChI=1S/C41H45NO21/c43-13-27-32(51)34(53)37(56)40(61-27)59-25-11-19(45)10-21-20(25)12-26(30(42-21)17-4-7-22(46)23(47)9-17)60-41-38(63-39-36(55)31(50)24(48)14-58-39)35(54)33(52)28(62-41)15-57-29(49)8-3-16-1-5-18(44)6-2-16/h1-12,24,27-28,31-41,43-48,50-56H,13-15H2"
+				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1";
+		moldata = getString(filein, "c:/temp/mol");
+		testInChIOut(moldata, inchi, true, 3);
+
 	}
 
 	private static void testResolvers(String outdir) {
@@ -521,6 +571,14 @@ public class OCLSwingJSTest {
 	private static boolean testInChIOut(StereoMolecule mol, String inchi, boolean throwError, int testpt) {
 		String options = "";
 		String s = InChIOCL.getInChI(mol, options);
+		if (s.length() == 0)
+			s = "<inchi was null>";
+		return checkEquals(inchi, s,throwError, testpt);
+	}
+	
+	private static boolean testInChIOut(String molData, String inchi, boolean throwError, int testpt) {
+		String options = "";
+		String s = InChIOCL.getInChI(molData, options);
 		if (s.length() == 0)
 			s = "<inchi was null>";
 		return checkEquals(inchi, s,throwError, testpt);

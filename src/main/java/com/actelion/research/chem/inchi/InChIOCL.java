@@ -218,6 +218,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	protected String inchi;
 
 	private StereoMolecule mol;
+	protected boolean getAuxInfo;
 
 	static int ntests = 0;
 
@@ -298,6 +299,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		String lc = options.toLowerCase().trim();
 		boolean getInchiModel = (lc.indexOf("model") == 0);
 		boolean optionKey = (lc.indexOf("key") >= 0);
+	    boolean getAuxInfo = (lc.indexOf("auxinfo") >= 0);
 		String inchi = this.inchi = null;
 		boolean isFixedH = (lc.indexOf("fixedh") >= 0);
 		boolean optionalFixedH = (lc.indexOf("fixedh?") >= 0);
@@ -342,6 +344,7 @@ public abstract class InChIOCL implements InChIStructureProvider {
 		this.isFixedH = isFixedH;
 		this.getKey = optionKey || getKey;
 		this.mol = mol;
+		this.getAuxInfo = getAuxInfo;
 		return (options == null ? null : options.trim());
 	}
 
@@ -412,6 +415,8 @@ public abstract class InChIOCL implements InChIStructureProvider {
 			// System.out.println("inchi " + i + "=" + sym);
 			int atom = mol.addAtom(Molecule.getAtomicNoFromLabel(sym));
 			mol.setAtomCharge(atom, getCharge());
+			int mass = getIsotopicMass();
+			mol.setAtomMass(atom, mass);
 		}
 		Map<Integer, Integer> doubleBonds = new HashMap<>();
 		for (int i = 0; i < nBonds; i++) {
@@ -555,5 +560,4 @@ public abstract class InChIOCL implements InChIStructureProvider {
 	public static String getInChIVersion() {
 		return getInChI("", "version");
 	}
-
 }

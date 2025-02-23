@@ -95,6 +95,8 @@ public class InChIJNA extends InChIOCL {
 		        out = JnaInchi.toInchi(newInchiStructure(mol), getOptions(options));
 			}
 			if (out != null) {
+				if (getAuxInfo)
+					return out.getAuxInfo();
 				String msg = out.getMessage();
 				if (msg != null)
 					System.err.println(msg);
@@ -120,7 +122,13 @@ public class InChIJNA extends InChIOCL {
 			String o = t.nextToken();
 			InchiFlag f = InchiFlag.getFlagFromName(o);
 			if (f == null) {
-				System.err.println("InChIJNA InChI option " + o + " not recognized -- ignored");
+				switch (o) {
+				case "auxinfo":
+					break;
+				default:
+					System.err.println("InChIJNA InChI option " + o + " not recognized -- ignored");
+					break;
+				}
 			} else {
 				builder.withFlag(f);
 			}

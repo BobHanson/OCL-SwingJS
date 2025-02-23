@@ -42,13 +42,13 @@ import com.actelion.research.chem.StereoMolecule;
  * LLVM-derived Web Assembly implementation of IUPAC InChI v. 1.05. see
  * https://depth-first.com/articles/2020/03/02/compiling-inchi-to-webassembly-part-2-from-molfile-to-inchi/
  * 
- * Note that this initialiation is asynchronous. One has to either use
+ * Note that this initialiation is asynchronous. Use the call
  * 
- * sync inchi
  * 
- * or invoke a call to generate an InChI, such as:
  * 
- * x = {none}.find("inchi")
+ * 
+ * 
+
  * 
  */
 public class InChIJS extends InChIOCL implements InChIStructureProvider {
@@ -122,7 +122,8 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 		if (!isLoaded)
 			return "";
 		String inchi = (isInputInChI ? molFileDataOrInChI
-				: execute("inchiFromMolfile", molFileDataOrInChI, options, "inchi"));
+				: execute("inchiFromMolfile", molFileDataOrInChI, options, (getAuxInfo ? "auxinfo" : "inchi")));
+		
 		return (getInchiModel ? execute("modelFromInchi", inchi, options, "model")  //
 				: getKey ? execute("inchikeyFromInchi", inchi, options, "inchikey") //
 				: isInputInChI ? execute("inchiFromInchi", inchi, options, "inchi") //
@@ -130,6 +131,9 @@ public class InChIJS extends InChIOCL implements InChIStructureProvider {
 	}
 
 	/**
+	 * Execute J2S[method](data, optoins) to return a JSON structure, and
+	 * select from that a given key. 
+	 * 
 	 * If key is null, just return the method itself. (Used to confirm that the
 	 * module has loaded.)
 	 * 

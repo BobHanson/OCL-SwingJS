@@ -1,5 +1,5 @@
 /**
- * JNA-InChI - Library for calling InChI from Java
+JnaInchi.java * JNA-InChI - Library for calling InChI from Java
  * Copyright © 2018 Daniel Lowe
  *
  * This library is free software; you can redistribute it and/or
