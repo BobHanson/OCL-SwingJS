@@ -1,5 +1,5 @@
 /**
-JnaInchi.java * JNA-InChI - Library for calling InChI from Java
+ * JNA-InChI - Library for calling InChI from Java
  * Copyright © 2018 Daniel Lowe
  *
  * This library is free software; you can redistribute it and/or
@@ -16,6 +16,8 @@ JnaInchi.java * JNA-InChI - Library for calling InChI from Java
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.github.dan2097.jnainchi;
+
+import java.util.HashMap;
 
 public enum InchiFlag {
 
@@ -116,11 +118,23 @@ public enum InchiFlag {
     return super.toString();
   }
   
+  private static HashMap<String, InchiFlag> map;
+
+  /**
+   * Get a flag from a string, case insensitive.
+   * Cache the names for better performance.
+   * 
+   * @param name
+   * @return the matching InchiFlag or null
+   * @author Bob Hanson
+   */
   public static InchiFlag getFlagFromName(String name) {
-    for (InchiFlag item : values())
-      if (item.toString().equalsIgnoreCase(name))
-        return item;
-    return null;
+    if (map == null) {
+      map = new HashMap<>();
+      for (InchiFlag item : values())
+        map.put(item.toString().toLowerCase(), item);
+    }
+    return map.get(name.toLowerCase());
   }
 
 }

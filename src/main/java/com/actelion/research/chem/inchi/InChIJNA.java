@@ -29,22 +29,21 @@ import org.iupac.InChIStructureProvider;
 import org.iupac.InchiUtils;
 
 import com.actelion.research.chem.Molecule;
-import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.sun.jna.Native;
 
-import io.github.dan2097.jnainchi.InchiBondType;
-import io.github.dan2097.jnainchi.InchiFlag;
-import io.github.dan2097.jnainchi.InchiBondStereo;
 import io.github.dan2097.jnainchi.InchiAtom;
 import io.github.dan2097.jnainchi.InchiBond;
+import io.github.dan2097.jnainchi.InchiBondStereo;
+import io.github.dan2097.jnainchi.InchiBondType;
+import io.github.dan2097.jnainchi.InchiFlag;
 import io.github.dan2097.jnainchi.InchiInput;
 import io.github.dan2097.jnainchi.InchiOptions;
 import io.github.dan2097.jnainchi.InchiOptions.InchiOptionsBuilder;
-import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 import io.github.dan2097.jnainchi.InchiOutput;
 import io.github.dan2097.jnainchi.InchiStereo;
 import io.github.dan2097.jnainchi.JnaInchi;
+import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 
 /**
  * Interface with inchi.c via JNA (David Lowe)

@@ -56,7 +56,6 @@ public class OCLSwingJSTest {
 		long u = 1738625318703000008L;
 		
 		test0();
-		if(true)return;
 		
 		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
 		String outdir = null;//"C:/temp/";
@@ -107,12 +106,12 @@ public class OCLSwingJSTest {
 				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1";
 		moldata = getString(filein, "c:/temp/mol");
 		testInChIOut(moldata, inchi, true, 3);
-
-		filein = "LMPK12010169O.mol";
-		inchi = "InChI=1S/C41H45NO21/c43-13-27-32(51)34(53)37(56)40(61-27)59-25-11-19(45)10-21-20(25)12-26(30(42-21)17-4-7-22(46)23(47)9-17)60-41-38(63-39-36(55)31(50)24(48)14-58-39)35(54)33(52)28(62-41)15-57-29(49)8-3-16-1-5-18(44)6-2-16/h1-12,24,27-28,31-41,43-48,50-56H,13-15H2"
-				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1";
-		moldata = getString(filein, "c:/temp/mol");
-		testInChIOut(moldata, inchi, true, 3);
+// this one should fail, because InChI algoritm removes stereochemistry for the cationic species.
+//		filein = "LMPK12010169O.mol";
+//		inchi = "InChI=1S/C41H45NO21/c43-13-27-32(51)34(53)37(56)40(61-27)59-25-11-19(45)10-21-20(25)12-26(30(42-21)17-4-7-22(46)23(47)9-17)60-41-38(63-39-36(55)31(50)24(48)14-58-39)35(54)33(52)28(62-41)15-57-29(49)8-3-16-1-5-18(44)6-2-16/h1-12,24,27-28,31-41,43-48,50-56H,13-15H2"
+//				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1";
+//		moldata = getString(filein, "c:/temp/mol");
+//		testInChIOut(moldata, inchi, true, 3);
 
 	}
 
