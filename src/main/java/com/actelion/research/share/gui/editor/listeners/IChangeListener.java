@@ -39,7 +39,7 @@ package com.actelion.research.share.gui.editor.listeners;
  * Date: 11/24/2014
  * Time: 3:25 PM
  */
-public interface IChangeListener
+@Deprecated public interface IChangeListener
 {
     void onChange();
 

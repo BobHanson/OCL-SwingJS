@@ -33,23 +33,19 @@
 
 package com.actelion.research.util;
 
+import com.actelion.research.util.datamodel.DoubleArray;
+
 import java.awt.Point;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class StringFunctions {
 
@@ -73,6 +69,14 @@ public class StringFunctions {
 			arrDouble[i]=Double.parseDouble(a[i]);
 		}
 		return arrDouble;
+	}
+	public static int[] parse2Int(String s, String sepRegEx){
+		String [] a = s.split(sepRegEx);
+		int [] vals = new int[a.length];
+		for (int i = 0; i < a.length; i++) {
+			vals[i]=Integer.parseInt(a[i]);
+		}
+		return vals;
 	}
 
 

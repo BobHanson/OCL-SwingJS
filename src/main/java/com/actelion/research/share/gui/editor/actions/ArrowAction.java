@@ -47,7 +47,7 @@ import com.actelion.research.share.gui.editor.io.IMouseEvent;
  * Date: 5/16/13
  * Time: 3:46 PM
  */
-public class ArrowAction extends DrawAction
+@Deprecated public class ArrowAction extends DrawAction
 {
     GenericPoint origin,last;
     IArrow arrow = null;

@@ -53,6 +53,7 @@ import javafx.scene.text.TextAlignment;
  * Date: 11/24/2014
  * Time: 6:24 PM
  */
+@Deprecated
 public class GraphicsContextImpl implements IDrawContext<GraphicsContext>
 {
     GraphicsContext ctx;

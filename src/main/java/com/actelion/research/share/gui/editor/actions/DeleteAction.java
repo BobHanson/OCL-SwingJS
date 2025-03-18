@@ -45,7 +45,7 @@ import com.actelion.research.share.gui.editor.io.IMouseEvent;
  * Date: 3/26/13
  * Time: 4:15 PM
  */
-public class DeleteAction extends BondHighlightAction
+@Deprecated public class DeleteAction extends BondHighlightAction
 {
     public DeleteAction(Model model)
     {

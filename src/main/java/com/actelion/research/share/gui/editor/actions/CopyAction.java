@@ -42,7 +42,7 @@ import com.actelion.research.share.gui.editor.Model;
  * Date: 5/16/13
  * Time: 3:31 PM
  */
-public abstract class CopyAction extends CommandAction
+@Deprecated public abstract class CopyAction extends CommandAction
 {
     public CopyAction(Model model)
     {

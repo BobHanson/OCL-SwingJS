@@ -1254,7 +1254,7 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	 * If small fragments were removed, then canonizeCharge() is called to
 	 * neutralize charges after potential removal of counter ions.
 	 * Metal ligand bonds may or may not be considered a connection.
-	 * @param considerMetalBonds
+	 * @param considerMetalBonds, if true the connected metal is not removed
 	 * @return atom mapping from old to new index; null if no fragments were removed
 	 */
 	public int[] stripSmallFragments(boolean considerMetalBonds) {
@@ -1644,6 +1644,9 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		return false;
 		}
 
+	/**
+	 * @return number of distinct aromatic rings in the molecule
+	 */
 	public int getAromaticRingCount() {
 		ensureHelperArrays(cHelperRings);
 		int count = 0;
@@ -1785,6 +1788,7 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 
 	/**
+	 * Requires helper arrays state cHelperRings.
 	 * @param atom
 	 * @return whether the atom is a member of a delocalized ring (subset of aromatic rings)
 	 */
@@ -1793,11 +1797,21 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	}
 
 
+	/**
+	 * Requires helper arrays state cHelperRings.
+	 * @param bond
+	 * @return whether the bond is a member of an aromatic ring
+	 */
 	public boolean isAromaticBond(int bond) {
 		return bond<mBonds && mRingSet.isAromaticBond(bond);
 	}
 
 
+	/**
+	 * Requires helper arrays state cHelperRings.
+	 * @param bond
+	 * @return whether the bond is a member of an aromatic ring that contains at least one hetero atom
+	 */
 	public boolean isHeteroAromaticBond(int bond) {
 		return bond<mBonds && mRingSet.isHeteroAromaticBond(bond);
 	}
@@ -1810,26 +1824,38 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	 * Indole has 6 delocalized bonds.
 	 * This method also returns true, if the molecule is a fragment and if the bond is explicitly
 	 * defined to be delocalized.
+	 * Requires helper arrays state cHelperRings.
 	 * @param bond
 	 * @return
 	 */
 	@Override
 	public boolean isDelocalizedBond(int bond) {
-		return (bond < mBonds) ? mRingSet.isDelocalizedBond(bond) || mBondType[bond] == cBondTypeDelocalized : false;
-		}
-
-
-	public boolean isRingAtom(int atom) {
-		return (mAtomFlags[atom] & cAtomFlagsRingBonds) != 0;
-		}
-
-
-	public boolean isRingBond(int bnd) {
-		return (mBondFlags[bnd] & cBondFlagRing) != 0;
+		return bond<mBonds && (mRingSet.isDelocalizedBond(bond) || mBondType[bond] == cBondTypeDelocalized);
 		}
 
 
 	/**
+	 * Requires helper arrays state cHelperRings.
+	 * @param atom
+	 * @return whether the atom is a member of ring of any size
+	 */
+	public boolean isRingAtom(int atom) {
+return (mAtomFlags[atom] & cAtomFlagsRingBonds) != 0;
+		}
+
+
+	/**
+	 * Requires helper arrays state cHelperRings.
+	 * @param bond
+	 * @return whether the bond is a member of ring of any size
+	 */
+	public boolean isRingBond(int bond) {
+		return (mBondFlags[bond] & cBondFlagRing) != 0;
+		}
+
+
+	/**
+	 * Requires helper arrays state cHelperRings.
 	 * @param atom
 	 * @return whether atom is a member of a ring not larger than 7 atoms
 	 */
@@ -1839,6 +1865,7 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 
 	/**
+	 * Requires helper arrays state cHelperRings.
 	 * @param bond
 	 * @return whether bond is a member of a ring not larger than 7 atoms
 	 */
@@ -1848,6 +1875,7 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 
 	/**
+	 * Requires helper arrays state cHelperNeighbours.
 	 * @param atom
 	 * @return whether atom has a neighbor that is connected through a double/triple bond to a hetero atom
 	 */
@@ -1856,6 +1884,11 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		}
 
 
+	/**
+	 * Requires helper arrays state cHelperRings.
+	 * @param atom
+	 * @return number of connected bonds, which are member of a ring
+	 */
 	public int getAtomRingBondCount(int atom) {
 		int flags = (mAtomFlags[atom] & cAtomFlagsRingBonds);
 		return (flags == 0) ? 0
@@ -1979,34 +2012,23 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 			}
 		}
 
-	/**
-	 * the parities that result from different choices of preferred bond;
-	 * stereobond type to achieve parity = 1
-	 * 
-	 * first dimension: one of the 6 angle orders
-	 * 
-	 * second dimension: index of ConnAtom bearing stereobond
-	 */
-	final static int[][] up_down = { //
-			{ 2, 1, 2, 1 }, // 
-			{ 1, 2, 2, 1 }, // 
-			{ 1, 1, 2, 2 }, // 
-			{ 2, 1, 1, 2 }, // 
-			{ 2, 2, 1, 1 }, // 
-			{ 1, 2, 1, 2 }  //
-	}; 
 
-
+	private final static int[][] up_down = { { 2,1,2,1 },	// stereobond type to
+			  { 1,2,2,1 },	// achieve parity = 1
+			  { 1,1,2,2 },	// first dimension:
+			  { 2,1,1,2 },	// one of the 6 angle orders
+			  { 2,2,1,1 },	// second dimension:
+			  { 1,2,1,2 } };// index of ConnAtom bearing stereobond
 	/**
 	 * Requires helper arrays level cHelperRings!
-	 * 
 	 * @param atom
 	 */
 	public void setStereoBondFromAtomParity(int atom) {
 		convertStereoBondsToSingleBonds(atom);
 
 		// set an optimal bond to up/down to reflect the atom parity
-		if (getAtomParity(atom) == Molecule.cAtomParityNone || getAtomParity(atom) == Molecule.cAtomParityUnknown)
+		if (getAtomParity(atom) == Molecule.cAtomParityNone
+		 || getAtomParity(atom) == Molecule.cAtomParityUnknown)
 			return;
 
 		if (mPi[atom] == 2 && mConnAtoms[atom] == 2) {
@@ -2035,30 +2057,16 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 
 		int[] sortedConnMap = getSortedConnMap(atom);
 
-		for (int i = 0; i < allConnAtoms; i++)
-			if (mBondAtom[0][mConnBond[atom][i]] == atom && getBondOrder(mConnBond[atom][i]) == 1)
-				mBondType[mConnBond[atom][i]] = cBondTypeSingle;
-
 		double angle[] = new double[allConnAtoms];
-		int[] catoms = new int[allConnAtoms];
-		for (int i=0; i<allConnAtoms; i++) {
-			int atom2 = mConnAtom[atom][sortedConnMap[i]];
-			angle[i] = getBondAngle(atom2, atom);
-			catoms[i] = atom2;
-		}
-		
-		for (int i = 1; i < allConnAtoms; i++)
-			if (angle[i] < angle[0])
-				angle[i] += Math.PI * 2;
+		for (int i = 0; i < allConnAtoms; i++)
+			angle[i] = getBondAngle(mConnAtom[atom][sortedConnMap[i]], atom);
 
-		double[] dangles = new double[angle.length];
-		for (int i = 0; i < allConnAtoms; i++) {
-			dangles[i] = angle[i] / Math.PI * 180;
-		}
+		for (int i=0; i<allConnAtoms; i++)
+			if (mBondAtom[0][mConnBond[atom][i]] == atom
+			 && getBondOrder(mConnBond[atom][i]) == 1)
+					mBondType[mConnBond[atom][i]] = cBondTypeSingle;
 
-
-		// Don't allow Fisher projection for large rings, which may have multiple almost
-		// vertical bonds
+		// Don't allow Fisher projection for large rings, which may have multiple almost vertical bonds
 		if (getAtomRingSize(atom) <= FISCHER_PROJECTION_RING_LIMIT
 				&& setFisherProjectionStereoBondsFromParity(atom, sortedConnMap, angle))
 			return;
@@ -2079,32 +2087,38 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 			}
 		}
 
-		/*
-		 * int preferredBondIndex = -1; int sortedConn[] = new int[4]; for (int i=0;
-		 * i<mAllConnAtoms[atom]; i++) { int lowestConnAtom = Integer.MAX_VALUE; int
-		 * lowestConnIndex = -1; for (int j=0; j<mAllConnAtoms[atom]; j++) { if ((i == 0
-		 * || mConnAtom[atom][j] > sortedConn[i-1]) && lowestConnAtom >
-		 * mConnAtom[atom][j]) { lowestConnAtom = mConnAtom[atom][j]; lowestConnIndex =
-		 * j; } }
-		 * 
-		 * sortedConn[i] = lowestConnAtom; if (mConnBond[atom][lowestConnIndex] ==
-		 * preferredBond) preferredBondIndex = i; }
-		 */
+/*		int preferredBondIndex = -1;
+		int sortedConn[] = new int[4];
+		for (int i=0; i<mAllConnAtoms[atom]; i++) {
+			int lowestConnAtom = Integer.MAX_VALUE;
+			int lowestConnIndex = -1;
+			for (int j=0; j<mAllConnAtoms[atom]; j++) {
+				if ((i == 0 || mConnAtom[atom][j] > sortedConn[i-1]) && lowestConnAtom > mConnAtom[atom][j]) {
+					lowestConnAtom = mConnAtom[atom][j];
+					lowestConnIndex = j;
+					}
+				}
+
+			sortedConn[i] = lowestConnAtom;
+			if (mConnBond[atom][lowestConnIndex] == preferredBond)
+				preferredBondIndex = i;
+			}	*/
+
+		for (int i=1; i<allConnAtoms; i++)
+			if (angle[i] < angle[0])
+				angle[i] += Math.PI*2;
 
 		int bondType;
-		int order = 0;
 		if (allConnAtoms == 3) {
-			// new handling!!! TLS 17.Oct.2005
-			// Originally the parity depended solely on clockwise/anti-clockwise orientation
-			// of three (priority sorted) angles, which included the angle of the stereo
-			// bond.
-			// Now to handle strained rings with 'invalid' projections in an expected way
-			// (all three bonds are within 180 degrees and the middle bond is the stereo
-			// bond
-			// then treat this as if the stereo bond would be drawn 180 degrees rotated)
-			// the angle of the stereobond is not considered anymore and the parity depends
-			// solely on the question if the angle difference between higher priority bond
-			// to lower priority bond is less or larger than 180 degrees.
+				// new handling!!! TLS 17.Oct.2005
+				// Originally the parity depended solely on clockwise/anti-clockwise orientation
+				// of three (priority sorted) angles, which included the angle of the stereo bond.
+				// Now to handle strained rings with 'invalid' projections in an expected way
+				// (all three bonds are within 180 degrees and the middle bond is the stereo bond
+				// then treat this as if the stereo bond would be drawn 180 degrees rotated)
+				// the angle of the stereobond is not considered anymore and the parity depends
+				// solely on the question if the angle difference between higher priority bond
+				// to lower priority bond is less or larger than 180 degrees.
 			boolean inverted = false;
 			switch (preferredBondIndex) {
 			case 0:
@@ -2119,30 +2133,26 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 				break;
 			}
 
-			bondType = ((getAtomParity(atom) == cAtomParity1) ^ inverted) ? cBondTypeUp : cBondTypeDown;
+			bondType = ((getAtomParity(atom) == cAtomParity1) ^ inverted) ?
+						cBondTypeUp : cBondTypeDown;
 
-			/*
-			 * // original handling where parity depended solely on the
-			 * clockwise/anti-clockwise of three angles bondType = ((getAtomParity(atom) ==
-			 * cAtomParity1) ^ (angle[1] > angle[2])) ? cBondTypeDown : cBondTypeUp;
-			 */
-		} else {
-			if (angle[1] <= angle[2] && angle[2] <= angle[3])
-				order = 0;
-			else if (angle[1] <= angle[3] && angle[3] <= angle[2])
-				order = 1;
-			else if (angle[2] <= angle[1] && angle[1] <= angle[3])
-				order = 2;
-			else if (angle[2] <= angle[3] && angle[3] <= angle[1])
-				order = 3;
-			else if (angle[3] <= angle[1] && angle[1] <= angle[2])
-				order = 4;
-			else if (angle[3] <= angle[2] && angle[2] <= angle[1])
-				order = 5;
-			bondType = ((getAtomParity(atom) == cAtomParity1) ^ (up_down[order][preferredBondIndex] == 1))
-					? cBondTypeDown
-					: cBondTypeUp;
-		}
+/*				// original handling where parity depended solely on the clockwise/anti-clockwise of three angles
+			bondType = ((getAtomParity(atom) == cAtomParity1)
+					  ^ (angle[1] > angle[2])) ?
+						cBondTypeDown : cBondTypeUp;	*/
+			}
+		else {
+			int order = 0;
+			if		(angle[1] <= angle[2] && angle[2] <= angle[3]) order = 0;
+			else if (angle[1] <= angle[3] && angle[3] <= angle[2]) order = 1;
+			else if (angle[2] <= angle[1] && angle[1] <= angle[3]) order = 2;
+			else if (angle[2] <= angle[3] && angle[3] <= angle[1]) order = 3;
+			else if (angle[3] <= angle[1] && angle[1] <= angle[2]) order = 4;
+			else if (angle[3] <= angle[2] && angle[2] <= angle[1]) order = 5;
+			bondType = ((getAtomParity(atom) == cAtomParity1)
+					  ^ (up_down[order][preferredBondIndex] == 1)) ?
+						cBondTypeDown : cBondTypeUp;
+}
 		mBondType[preferredBond] = bondType;
 	}
 
@@ -2255,9 +2265,13 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 	
 	private void setAlleneStereoBondFromParity(int atom) {
 		// find preferred bond to serve as stereobond
-		if (mConnAtoms[atom] != 2 || mConnBondOrder[atom][0] != 2 || mConnBondOrder[atom][1] != 2
-				|| mConnAtoms[mConnAtom[atom][0]] < 2 || mConnAtoms[mConnAtom[atom][1]] < 2
-				|| mPi[mConnAtom[atom][0]] != 1 || mPi[mConnAtom[atom][1]] != 1) {
+		if (mConnAtoms[atom] != 2
+		 || mConnBondOrder[atom][0] != 2
+		 || mConnBondOrder[atom][1] != 2
+		 || mConnAtoms[mConnAtom[atom][0]] < 2
+		 || mConnAtoms[mConnAtom[atom][1]] < 2
+		 || mPi[mConnAtom[atom][0]] != 1
+		 || mPi[mConnAtom[atom][1]] != 1) {
 			setAtomParity(atom, cAtomParityNone, false);
 			return;
 		}
@@ -2267,12 +2281,17 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		int preferredAlleneAtom = -1;
 		int oppositeAlleneAtom = -1;
 		int bestScore = 0;
+		// SwingJS fix here for allenes, 
+		// I don't see it, but something is 
+		// different about this code and the code currently at OCL.
 		for (int i = 0; i < 2; i++) {
 			int alleneAtom = mConnAtom[atom][i];
 			int nTerm = 0;
 			int n = mAllConnAtoms[alleneAtom];
 			int connBond = -1;
 			int connAtom = -1;
+			// BH some variable removed from for loop
+			// because we need them later.
 			for (int j = 0; j < n; j++) {
 				int a = mConnAtom[alleneAtom][j];
 				if (a == atom)
@@ -2309,7 +2328,8 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 			for (int j = 0; j < mAllConnAtoms[alleneAtom]; j++) {
 				int connAtom = mConnAtom[alleneAtom][j];
 				int connBond = mConnBond[alleneAtom][j];
-				if (connAtom != atom && mBondAtom[0][connBond] == alleneAtom)
+				if (connAtom != atom
+				 && mBondAtom[0][connBond] == alleneAtom)
 					mBondType[connBond] = cBondTypeSingle;
 			}
 		}
@@ -2353,13 +2373,22 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 			double hpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
 			double lpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[1]));
 			angleDif = hpAngleDif - lpAngleDif;
-		} else {
+			}
+		else {
 			angleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
 		}
 
 		boolean isUp = ((angleDif < 0.0) ^ (getAtomParity(atom) == cAtomParity1) ^ (highPriorityAtom == preferredAtom));
 		mBondType[preferredBond] = (isUp ? cBondTypeUp : cBondTypeDown);
 		// BH need second wedge/hash for InChI
+		// That is, it does not work with just 
+		// 
+		// ...a||||C=C=C....
+		// .........\
+		// ..........b
+		//
+		// without a wedge to b, as is commonly drawn in CDK and OLC 
+		//
 		if (otherAtom >= 0) {
 			int bond = getBond(preferredAlleneAtom, otherAtom);
 			if (getBondType(bond) == cBondTypeSingle) {
@@ -2618,26 +2647,18 @@ public class ExtendedMolecule extends Molecule implements Serializable {
 		int bestScore = 0;
 		for (int i = 0; i < 2; i++) {
 			int alleneAtom = mConnAtom[atom][i];
-			int nTerm = 0;
-			int connBond = -1;
-			int connAtom = -1;
-			int n = mAllConnAtoms[alleneAtom];
-			for (int j = 0; j < n; j++) {
-				int a = mConnAtom[alleneAtom][j];
-				if (a == atom) 
-					continue;
-				connAtom = a;
-				if (mConnAtom[connAtom].length == 1)
-					nTerm++;
-				connBond = mConnBond[alleneAtom][j];
+			for (int j=0; j<mAllConnAtoms[alleneAtom]; j++) {
+				int connAtom = mConnAtom[alleneAtom][j];
+				if (connAtom != atom) {
+					int connBond = mConnBond[alleneAtom][j];
 				int score = getStereoBondScore(connBond, connAtom);
-				if (bestScore < score && (!excludeStereoBonds || !isStereoBond(connBond))) {
+					if (bestScore < score
+					 && (!excludeStereoBonds || !isStereoBond(connBond))) {
 					bestScore = score;
 					preferredBond = connBond;
 				}
 			}
-			if (connBond >= 0 && nTerm == n - 1)
-				return connBond;
+			}
 		}
 		return preferredBond;
 	}

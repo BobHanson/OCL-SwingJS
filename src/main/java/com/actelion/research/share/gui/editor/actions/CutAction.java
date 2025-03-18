@@ -41,7 +41,7 @@ import com.actelion.research.share.gui.editor.Model;
  * Date: 5/16/13
  * Time: 3:43 PM
  */
-public class CutAction extends CommandAction
+@Deprecated public class CutAction extends CommandAction
 {
     public CutAction(Model model)
     {

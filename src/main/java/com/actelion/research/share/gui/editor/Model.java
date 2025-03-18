@@ -60,14 +60,14 @@ import java.util.List;
  * Date: 1/24/13
  * Time: 5:02 PM
  */
-public abstract class Model
+@Deprecated public abstract class Model
 {
-    public interface AtomHighlightCallback
+    @Deprecated public interface AtomHighlightCallback
     {
         void onHighlight(int atom, boolean selected);
     }
 
-    public interface BondHighlightCallback
+    @Deprecated public interface BondHighlightCallback
     {
         void onHighlight(int atom, boolean selected);
     }

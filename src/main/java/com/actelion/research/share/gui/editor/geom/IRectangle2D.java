@@ -39,7 +39,7 @@ package com.actelion.research.share.gui.editor.geom;
  * Date: 11/24/2014
  * Time: 3:17 PM
  */
-public interface IRectangle2D
+@Deprecated public interface IRectangle2D
 {
     boolean contains(double x, double y);
 

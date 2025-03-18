@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public abstract class AbstractExtendedDepictor<T, C>
+@Deprecated public abstract class AbstractExtendedDepictor<T, C>
 {
     protected StereoMolecule[] mMolecule;
     protected AbstractDepictor[] mDepictor;

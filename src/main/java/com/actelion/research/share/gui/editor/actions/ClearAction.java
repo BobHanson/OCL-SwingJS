@@ -41,7 +41,7 @@ import com.actelion.research.share.gui.editor.Model;
  * Date: 1/24/13
  * Time: 5:09 PM
  */
-public class ClearAction extends CommandAction
+@Deprecated public class ClearAction extends CommandAction
 {
 
   public ClearAction(Model model)

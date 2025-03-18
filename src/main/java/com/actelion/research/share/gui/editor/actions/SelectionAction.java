@@ -58,7 +58,7 @@ import java.util.List;
  * Date: 1/24/13
  * Time: 5:57 PM
  */
-public class SelectionAction extends BondHighlightAction//DrawAction
+@Deprecated public class SelectionAction extends BondHighlightAction//DrawAction
 {
 
     private volatile IPolygon polygon ;

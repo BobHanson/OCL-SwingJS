@@ -53,7 +53,7 @@ import com.actelion.research.share.gui.editor.io.IMouseEvent;
  * Date: 2/1/13
  * Time: 4:13 PM
  */
-public abstract class AtomHighlightAction extends DrawAction
+@Deprecated public abstract class AtomHighlightAction extends DrawAction
 {
 
     AtomHighlightAction(Model model)

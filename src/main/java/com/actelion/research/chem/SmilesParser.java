@@ -2011,10 +2011,6 @@ public class SmilesParser {
 					System.out.println("Should create error! "+test[1]+" smiles:"+test[0]+" idcode:"+idcode);
 				else if (!test[2].equals(idcode))
 					System.out.println("ERROR! "+test[1]+" smiles:"+test[0]+" is:"+idcode+" must:"+test[2]);
-				else {
-					System.out.println("OK " + test[0] + " == " + idcode);
-					ExtendedMoleculeFunctions.analyzeMolecule(mol);
-				}
 			}
 			catch (Exception e) {
 				if (!test[2].equals("error"))

@@ -44,7 +44,7 @@ import com.actelion.research.share.gui.editor.io.IMouseEvent;
 /**
  * Basic Interface for all editor actions
  */
-public interface Action
+@Deprecated public interface Action
 {
     /**
      * Handles Mouse down events

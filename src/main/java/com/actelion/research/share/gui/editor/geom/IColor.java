@@ -39,7 +39,7 @@ package com.actelion.research.share.gui.editor.geom;
  * Date: 11/24/2014
  * Time: 3:21 PM
  */
-public interface IColor
+@Deprecated public interface IColor
 {
     public static final int BLACK = 0x000000FF;
     public static final int WHITE = 0xFFFFFFFF;

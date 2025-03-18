@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class Polygon implements IPolygon
+@Deprecated public class Polygon implements IPolygon
 {
     List<GenericPoint> list = new ArrayList<>();
 

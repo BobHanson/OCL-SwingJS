@@ -145,14 +145,14 @@ public abstract class AbstractDepictor<T> {
 	public static final int cDModeBHNoSimpleHydrogens = 0x100000;
 	public static final int cDModeNoImplicitCHydrogens = 0x200000;
 
-	private static final double cFactorTextSize = 0.6;
+	private static double cFactorTextSize = 0.6;
+	private static double cFactorLineWidth = 0.06;
+	private static double cFactorBondSpacing = 0.15;
 	private static final double cFactorChiralTextSize = 0.5;
-	private static final double cFactorBondSpacing = 0.15;
 	private static final double cFactorBondHiliteRadius = 0.38;
 	private static final double cFactorExcludeGroupRadius = 0.47;
 	private static final double cFactorDotDiameter = 0.12;
 	private static final double cFactorQFDiameter = 0.40;
-	private static final double cFactorLineWidth = 0.06;
 
 	private boolean[]				mAtomIsConnected;
 	private boolean[]				mAtomLabelDisplayed;
@@ -675,24 +675,31 @@ public abstract class AbstractDepictor<T> {
 			mpDrawBondQueryFeatures();
 		}
 
-		for (int i = 0, n = mMol.getAllAtoms(); i < n; i++) {
+		for (int i=0; i<mMol.getAllAtoms(); i++) {
 			if (isHighlightedAtom(i)) {
 				setColorCode(COLOR_HILITE_BOND_FG);
 				mpDrawAtom(i, esrGroupMemberCount);
 				setColorCode(mStandardForegroundColor);
-			} else if (mAtomColor[i] != 0) {
+				}
+			else if (mAtomColor[i] != 0) {
 				setColorCode(mAtomColor[i]);
 				mpDrawAtom(i, esrGroupMemberCount);
 				setColorCode(mStandardForegroundColor);
-			} else if (!explicitAtomColors && mMol.getMoleculeColor() != Molecule.cMoleculeColorNeutral
-					&& mMol.getAtomicNo(i) != 1 && mMol.getAtomicNo(i) != 6
-					&& ((mDisplayMode & cDModeNoImplicitAtomLabelColors) == 0) && mMol.getAtomList(i) == null
-					&& mMol.getAtomicNo(i) < ATOM_LABEL_COLOR.length && ATOM_LABEL_COLOR[mMol.getAtomicNo(i)] != 0) {
+				}
+			else if (!explicitAtomColors
+					&& mMol.getMoleculeColor() != Molecule.cMoleculeColorNeutral
+					&& mMol.getAtomicNo(i) != 1 
+					&& mMol.getAtomicNo(i) != 6
+					&& ((mDisplayMode & cDModeNoImplicitAtomLabelColors) == 0) 
+					&& mMol.getAtomList(i) == null
+					&& mMol.getAtomicNo(i) < ATOM_LABEL_COLOR.length 
+					&& ATOM_LABEL_COLOR[mMol.getAtomicNo(i)] != 0) {
 				int rgb = ATOM_LABEL_COLOR[mMol.getAtomicNo(i)];
 				setRGBColor(getContrastColor(rgb, i));
 				mpDrawAtom(i, esrGroupMemberCount);
 				setColorCode(mStandardForegroundColor);
-			} else {
+				}
+			else {
 				mpDrawAtom(i, esrGroupMemberCount);
 			}
 		}
@@ -904,24 +911,25 @@ public abstract class AbstractDepictor<T> {
 
 					if (mMol.getBondCIPParity(i) == Molecule.cBondCIPParityEorP
 							|| mMol.getBondCIPParity(i) == Molecule.cBondCIPParityZorM) {
-						if (mMol.getBondOrder(i) == 2 || mMol.getBondESRType(i) == Molecule.cESRTypeAbs
+						if (mMol.getBondOrder(i) == 2
+								|| mMol.getBondESRType(i) == Molecule.cESRTypeAbs
 								|| esrGroupMemberCount == null
 								|| esrGroupMemberCount[mMol.getBondESRType(i)][mMol.getBondESRGroup(i)] > 1) {
 							if (mMol.getBondCIPParity(i) == Molecule.cBondCIPParityEorP)
 								cipStr = (mMol.getBondOrder(i) == 2) ? "E" : mMol.isBondParityPseudo(i) ? "p" : "P";
 							else
 								cipStr = (mMol.getBondOrder(i) == 2) ? "Z" : mMol.isBondParityPseudo(i) ? "m" : "M";
+						    }
 						}
-					} else {
+					else {
 						cipStr = "?";
 					}
 
 					if (cipStr != null) {
 						mpSetSmallLabelSize();
-						setColorCode(mMol.isBondForegroundHilited(i) ? COLOR_HILITE_BOND_FG
-								: (mMol.getMoleculeColor() == Molecule.cMoleculeColorNeutral
-										|| (mDisplayMode & cDModeNoColorOnESRAndCIP) != 0) ? mStandardForegroundColor
-												: COLOR_CIP_LETTER);
+						setColorCode(mMol.isBondForegroundHilited(i) ? COLOR_HILITE_BOND_FG :
+								(mMol.getMoleculeColor() == Molecule.cMoleculeColorNeutral || (mDisplayMode & cDModeNoColorOnESRAndCIP) != 0) ?
+										mStandardForegroundColor : COLOR_CIP_LETTER);
 						int atom1 = mMol.getBondAtom(0, i);
 						int atom2 = mMol.getBondAtom(1, i);
 						double x = (getAtomX(atom1) + getAtomX(atom2)) / 2;
@@ -942,7 +950,8 @@ public abstract class AbstractDepictor<T> {
 			for (int i = 0; i < mMol.getAllBonds(); i++) {
 				int atom1 = mMol.getBondAtom(0, i);
 				int atom2 = mMol.getBondAtom(1, i);
-				String type = mMol.isDelocalizedBond(i) ? "d" : mMol.isAromaticBond(i) ? "a" : "";
+				String type = mMol.isDelocalizedBond(i) ? "d"
+							: mMol.isAromaticBond(i) ? "a" : "";
 				double x = (getAtomX(atom1) + getAtomX(atom2)) / 2;
 				double y = (getAtomY(atom1) + getAtomY(atom2)) / 2;
 				mpDrawString(x, y, type + String.valueOf(i), true);
@@ -2781,6 +2790,18 @@ public abstract class AbstractDepictor<T> {
 	protected abstract void setTextSize(int theSize);
 	protected abstract void setLineWidth(double lineWidth);
 	protected abstract void setRGB(int rgb);
+
+	public static void setBondSpacingFactor(double bs) {
+		cFactorBondSpacing = bs;
+	}
+
+	public static void setTextSizeFactor(double ts) {
+		cFactorTextSize = ts;
+	}
+
+	public static void setLineWidthFactor(double lw) {
+		cFactorLineWidth = lw;
+	}
 
     public static class DepictorDot {
         public double x,y;

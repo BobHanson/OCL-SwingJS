@@ -47,7 +47,7 @@ import com.actelion.research.share.gui.editor.io.IMouseEvent;
  * Date: 3/26/13
  * Time: 3:42 PM
  */
-public class NewChainAction extends BondHighlightAction {
+@Deprecated public class NewChainAction extends BondHighlightAction {
 
     private int sourceAtom = -1;
     private int numChainAtoms = 0;

@@ -42,7 +42,7 @@ import com.actelion.research.share.gui.editor.Model;
  * Date: 3/26/13
  * Time: 4:39 PM
  */
-public class UndoAction extends CommandAction
+@Deprecated public class UndoAction extends CommandAction
 {
 
     public UndoAction(Model m)

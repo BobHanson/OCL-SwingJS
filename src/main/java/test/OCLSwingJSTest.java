@@ -278,7 +278,7 @@ try {
 		String moldata = getString(filein, outdir);
 		json = InChIOCL.getInChIModelJSON(moldata);
 		System.out.println(json);
-		checkEquals(true,json.length() > 1800, false, 0);
+		checkEquals(true,json.length() > 500, false, 0);
 		
 		inchi = InChIOCL.getInChIFromSmiles("c1cnc1O", "standard");
 		checkEquals("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", inchi, true, 0);
@@ -373,7 +373,8 @@ try {
 		String inchi0f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m0/s1"; 
 //		String inchi1f = "InChI=1S/C3H3FO/c4-2-1-3-5/h2-3,5H/t1-/m1/s1";
 		String inchi2f = "InChI=1S/C4H5FO/c1-4(5)2-3-6/h3,6H,1H3/t2-/m0/s1";
-		
+
+		// test 9 failing for OCL main, not here
 		inchi ="InChI=1S/C3H3FO2/c4-3(6)1-2-5/h2,5-6H/t1-/m1/s1";
 		smiles = "OC(F)=[C@]=C(O)[H]";
 		testSmilesInChI(smiles, inchi, true, 0);

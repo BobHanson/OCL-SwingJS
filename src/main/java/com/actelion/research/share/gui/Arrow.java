@@ -38,7 +38,7 @@ import com.actelion.research.gui.generic.GenericRectangle;
 import com.actelion.research.share.gui.editor.chem.IDrawingObject;
 import com.actelion.research.share.gui.editor.geom.IDrawContext;
 
-public class Arrow implements IDrawingObject
+@Deprecated public class Arrow implements IDrawingObject
 {
 
     protected final DrawConfig gfxConfig;/* = GeomFactory.getGeomFactory();*/

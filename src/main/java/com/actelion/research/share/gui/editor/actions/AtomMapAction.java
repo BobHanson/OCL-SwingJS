@@ -48,7 +48,7 @@ import com.actelion.research.share.gui.editor.io.IMouseEvent;
  * Date: 5/22/13
  * Time: 4:00 PM
  */
-public class AtomMapAction extends AtomHighlightAction
+@Deprecated public class AtomMapAction extends AtomHighlightAction
 {
 
     private GenericPoint firstPoint = null;

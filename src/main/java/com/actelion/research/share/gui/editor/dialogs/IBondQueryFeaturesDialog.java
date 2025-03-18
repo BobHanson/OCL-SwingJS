@@ -39,6 +39,6 @@ package com.actelion.research.share.gui.editor.dialogs;
  * Date: 11/24/2014
  * Time: 4:57 PM
  */
-public interface IBondQueryFeaturesDialog extends IDialog
+@Deprecated public interface IBondQueryFeaturesDialog extends IDialog
 {
 }

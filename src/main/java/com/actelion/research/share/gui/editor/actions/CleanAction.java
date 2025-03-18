@@ -42,7 +42,7 @@ import com.actelion.research.share.gui.editor.Model;
  * Date: 1/28/13
  * Time: 10:09 AM
  */
-public class CleanAction extends CommandAction
+@Deprecated public class CleanAction extends CommandAction
 {
 
     public CleanAction(Model model)

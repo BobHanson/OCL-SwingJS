@@ -40,7 +40,7 @@ package com.actelion.research.share.gui.editor.geom;
  * Date: 11/24/2014
  * Time: 3:22 PM
  */
-public interface IDrawContext<T>
+@Deprecated public interface IDrawContext<T>
 {
 
     T getNative();

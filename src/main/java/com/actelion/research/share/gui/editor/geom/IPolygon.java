@@ -41,7 +41,7 @@ import com.actelion.research.gui.generic.GenericPoint;
  * Date: 11/24/2014
  * Time: 4:45 PM
  */
-public interface IPolygon
+@Deprecated public interface IPolygon
 {
     void add(GenericPoint pt);
 

@@ -41,7 +41,7 @@ import java.awt.*;
  * Date: 11/24/2014
  * Time: 3:21 PM
  */
-public interface ICursor
+@Deprecated public interface ICursor
 {
 
     int DEFAULT = java.awt.Cursor.DEFAULT_CURSOR;
