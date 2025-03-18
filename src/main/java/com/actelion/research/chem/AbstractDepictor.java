@@ -143,6 +143,7 @@ public abstract class AbstractDepictor<T> {
 	public static final int cDModeNoImplicitHydrogen = 0x2000;
 	public static final int cDModeDrawBondsInGray = 0x4000;
 	public static final int cDModeBHNoSimpleHydrogens = 0x100000;
+	public static final int cDModeNoImplicitCHydrogens = 0x200000;
 
 	private static final double cFactorTextSize = 0.6;
 	private static final double cFactorChiralTextSize = 0.5;
@@ -175,6 +176,8 @@ public abstract class AbstractDepictor<T> {
 	protected T                     mContext;
 
 	private boolean noSimpleH;
+
+	private boolean noImplicitCH;
 
 	public AbstractDepictor(StereoMolecule mol) {
 		this(mol, 0);
@@ -381,6 +384,7 @@ public abstract class AbstractDepictor<T> {
 			return null;
 
 		noSimpleH = ((mDisplayMode & cDModeBHNoSimpleHydrogens) == cDModeBHNoSimpleHydrogens);
+		noImplicitCH = ((mDisplayMode & cDModeNoImplicitCHydrogens) == cDModeNoImplicitCHydrogens);
 		mMol.ensureHelperArrays(requiredHelperArrays());
 		DepictorTransformation t1 = simpleValidateView(viewRect, mode);
 

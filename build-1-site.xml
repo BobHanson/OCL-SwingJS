@@ -46,7 +46,7 @@
   	<echo> Unzipping ${swingjs.zip} into ${site.dir} </echo>
   	<unzip src="${swingjs.zip}" dest="${site.dir}/" overwrite="true"/>  	
 
-<!--
+
   	<echo> Unzipping ${libjs.dir} *.zip into ${site.dir} </echo>
 
   		<unzip dest="${site.dir}">
@@ -55,7 +55,6 @@
   		    </fileset>
   		</unzip>
   	
-  	-->
 	<!-- transfer site-level resources -->
 
   	<echo> Copying ${html.dir} files into ${site.dir} </echo>

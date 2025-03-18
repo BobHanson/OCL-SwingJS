@@ -40,7 +40,7 @@ import com.actelion.research.gui.swing.SwingDialog;
 public class OCLSwingJSTest {
 
 	public static int nFrame;
-	private final static boolean showFrames = true;//false;
+	private final static boolean showFrames = false;
 
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
@@ -53,12 +53,12 @@ public class OCLSwingJSTest {
 
 	protected static void runTests() {
 		long t = System.currentTimeMillis();
-		long u = 1738625318703000008L;
 		
-		test0();
+		String outdir = null;//"C:/temp/";
+
+		test0(outdir);
 		
 		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
-		String outdir = null;//"C:/temp/";
 		testInChI1(outdir);
 		testSmilesParser(outdir);
 		testCDXParsers(outdir);	
@@ -69,7 +69,11 @@ public class OCLSwingJSTest {
 		System.out.println("DONE " + nChecked + " " + (System.currentTimeMillis() - t) + " ms");
 	}
 
-	private static void test0() {
+	private static int test;
+	
+	private static void test0(String outdir) {
+		
+try {		
 		String inchi = "InChI=1S/C41H44O22/c42-13-27-31(50)33(52)36(55)40(61-27)59-25-11-19(44)10-24-20(25)12-26(37(58-24)17-4-7-21(45)22(46)9-17)60-41-38(63-39-35(54)30(49)23(47)14-57-39)34(53)32(51)28(62-41)15-56-29(48)8-3-16-1-5-18(43)6-2-16/h1-12,23,27-28,30-36,38-42,47,49-55H,13-15H2,(H3-,43,44,45,46,48)/p+1/t23-,27-,28-,30+,31-,32-,33+,34+,35-,36-,38-,39+,40-,41-/m1/s1";
 		String filein = "LMPK12010169.mol";
 		String moldata = getString(filein, "c:/temp/mol");
@@ -77,7 +81,7 @@ public class OCLSwingJSTest {
 		if (!new MolfileParser().parse(mol, moldata)) {
 			System.err.println("OCLSwingJSTest parser failed for " + moldata);
 		}
-		testShowViewAndWriteMol(mol, "", null, null);
+		testShowViewAndWriteMol(mol, "", "inchiout" + (++test), outdir);
 		testInChIOut(mol, inchi, true, 3);
 		
 		filein = "LMPK12010169b.mol";
@@ -113,6 +117,9 @@ public class OCLSwingJSTest {
 //		moldata = getString(filein, "c:/temp/mol");
 //		testInChIOut(moldata, inchi, true, 3);
 
+} catch(Throwable e) {
+	
+}
 	}
 
 	private static void testResolvers(String outdir) {
@@ -524,7 +531,11 @@ public class OCLSwingJSTest {
 
 	private static JStructureView testShowViewAndWriteMol(StereoMolecule mol, String title, String fileout, String outdir) {
 		JStructureView view = JStructureView.getStandardView(
-				JStructureView.classicView
+				// really want this to be no chiral H unless bicyclic
+				JStructureView.defaultChemistsMode
+				//not on OH, either 
+//				| AbstractDepictor.cDModeNoImplicitHydrogen
+				//JStructureView.classicView
 				, mol);
 		if (showFrames) 
 			view.showInFrame(title, nextLoc());
@@ -548,6 +559,8 @@ public class OCLSwingJSTest {
 				"InChI=1S/C6H10BrCl/c7-5-3-1-2-4-6(5)8/h5-6H,1-4H2/t5-,6+/m1/s1",
 				"InChI=1S/C12H22Br4/c1-3-5-10(14)7-12(16)8-11(15)6-9(13)4-2/h9-12H,3-8H2,1-2H3/t9-,10+,11-,12+/m1/s1",
 				"InChI=1S/C17H19NO3/c1-18-7-6-17-10-3-5-13(20)16(17)21-15-12(19)4-2-9(14(15)17)8-11(10)18/h2-5,10-11,13,16,19-20H,6-8H2,1H3/t10-,11+,13-,16-,17-/m0/s1",
+				"InChI=1S/C41H45NO21/c43-13-27-32(51)34(53)37(56)40(61-27)59-25-11-19(45)10-21-20(25)12-26(30(42-21)17-4-7-22(46)23(47)9-17)60-41-38(63-39-36(55)31(50)24(48)14-58-39)35(54)33(52)28(62-41)15-57-29(49)8-3-16-1-5-18(44)6-2-16/h1-12,24,27-28,31-41,43-48,50-56H,13-15H2"
+				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1"
 		};
 
 		for (int i = 0; i < tests.length; i++)
@@ -558,11 +571,11 @@ public class OCLSwingJSTest {
 	private static void testInChI(String inchi, String outdir, int testpt) {
 		String fileout = "tinchi";
  		StereoMolecule mol = new StereoMolecule();
- 		fileout= "tinchi-jni";
+ 		fileout= "tinchi-jna" + (++test);
 		System.out.println(inchi + " => " + fileout);
 		System.out.println(InChIOCL.getInChIModelJSON(inchi));
 		if (new InChIParser().parse(mol, inchi)) {
-			testShowViewAndWriteMol(mol, "fromInchi", fileout, outdir);
+			testShowViewAndWriteMol(mol, "fromInchi" + (++test), fileout, outdir);
 			testInChIOut(mol, inchi, true, 0);
 		}
 	}

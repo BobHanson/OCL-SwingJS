@@ -30,7 +30,7 @@ com/actelion/research/chem/coords/InventorChain.js
 com/actelion/research/chem/coords/InventorDefaultTemplateList.js
 com/actelion/research/chem/coords/InventorFragment.js
 com/actelion/research/chem/coords/InventorTemplate.js
-com/actelion/research/chem/inchi/InChIJS.js
+com/actelion/research/chem/inchi/InchiUtils.js
 com/actelion/research/chem/inchi/InChIOCL.js
 com/actelion/research/chem/moreparsers/CDX2CDXML.js
 com/actelion/research/chem/moreparsers/CDXMLParser.js
