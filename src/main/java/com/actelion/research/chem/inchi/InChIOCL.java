@@ -3,6 +3,7 @@ package com.actelion.research.chem.inchi;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -613,7 +614,7 @@ public abstract class InChIOCL {
 	   * atomic mass)
 	   * 
 	   * 
-	   * @return inchi's value of of the average mass
+	   * @return inchi's value of the average mass
 	   */
 	  abstract int getIsotopicMass();
 	 
@@ -724,21 +725,26 @@ public abstract class InChIOCL {
 			InchiInput struc = new InchiInput();
 			int nAtoms = mol.getAllAtoms();
 			InchiAtom[] atoms = new InchiAtom[nAtoms];
+			BitSet bsCarbonAtoms = new BitSet();
 			for (int i = 0; i < nAtoms; i++) {
 				int elem = mol.getAtomicNo(i);
 				String sym = Molecule.cAtomLabel[elem];
 				int iso = mol.getAtomMass(i);
 				if (elem == 1) {
 					sym = "H"; // in case this is D
-				}
+				} else if (elem == 6)
+					bsCarbonAtoms.set(i);
 				InchiAtom a = atoms[i] = new InchiAtom(sym, mol.getAtomX(i), -mol.getAtomY(i), mol.getAtomZ(i));
-				struc.addAtom(a);
 				a.setCharge(mol.getAtomCharge(i));
 				if (iso > 0)
 					a.setIsotopicMass(iso);
 				a.setImplicitHydrogen(mol.getImplicitHydrogens(i));
 			}
 			int nBonds = mol.getAllBonds();
+			BitSet bsDoubleBondAtoms = new BitSet();
+			BitSet bsStereoAtoms = new BitSet();
+			BitSet bsStereoBonds = new BitSet();
+			InchiBond[] bonds = new InchiBond[nBonds];
 			for (int i = 0; i < nBonds; i++) {
 				int oclOrder = mol.getBondTypeSimple(i);
 				InchiBondType order = getInChIOrder(oclOrder);
@@ -748,13 +754,91 @@ public abstract class InChIOCL {
 					int oclType = mol.getBondType(i);
 					int oclParity = mol.getBondParity(i);
 					InchiBondStereo stereo = getInChIStereo(oclOrder, oclType, oclParity);
-					// System.out.println("Inchi-out bond " + i + " " + order + " " + oclType + " "
-					// + oclParity + " " + stereo);
-					InchiBond bond = new InchiBond(atoms[atom1], atoms[atom2], order, stereo);
-					struc.addBond(bond);
+					switch (stereo) {
+					case NONE:
+						if (order == InchiBondType.DOUBLE) {
+							bsDoubleBondAtoms.set(atom1);
+							bsDoubleBondAtoms.set(atom2);
+						}
+						break;
+					case SINGLE_1DOWN:
+					case SINGLE_1UP:
+						if (mol.getAllConnAtoms(atom1) == 3) {
+							bsStereoBonds.set(i);
+							bsStereoAtoms.set(atom1, !bsStereoAtoms.get(atom1));
+						}
+						break;
+					default:
+						break;
+					
+					}
+					bonds[i] = new InchiBond(atoms[atom1], atoms[atom2], order, stereo);
 				}
 			}
+			bsStereoAtoms.and(bsDoubleBondAtoms);
+			bsStereoAtoms.and(bsCarbonAtoms);
+			if (!bsStereoAtoms.isEmpty()) {
+				checkAllenes(mol, atoms, bonds, bsStereoAtoms, bsStereoBonds);
+			}
+			
+			for (int i = 0; i < nAtoms; i++) {
+					struc.addAtom(atoms[i]);
+			}
+			for (int i = 0; i < nBonds; i++) {
+				if (bonds[i] != null)
+					struc.addBond(bonds[i]);
+			}
 			return struc;
+		}
+
+		/**
+		 * We have found wedges or hashes starting on a double bonded carbon. This is
+		 * almost certainly an allene. But there is only one stereochemical marking. So
+		 * we need to add the other, or InChI will consider this an ambiguous marking.
+		 * 
+		 * InChI Technical Manual:
+		 * 
+		 * Allenes belong to the tetrahedral layer. However, to indicate stereochemistry
+		 * of allenes in the input MOL-file a special effort may be required. Namely,
+		 * the two bonds at the same end of allene system should be indicated by wedge
+		 * as stereogenic (and having opposite Up/Down marks). This is a limitation of
+		 * current InChI software (as per versions up to 1.04)
+		 * 
+		 * 
+		 * @param mol
+		 * @param atoms
+		 * @param bonds
+		 * @param bsStereoAtoms
+		 * @param bsStereoBonds
+		 */
+		private static void checkAllenes(StereoMolecule mol, InchiAtom[] atoms, InchiBond[] bonds,
+				BitSet bsStereoAtoms, BitSet bsStereoBonds) {
+			// we have stereochemistry marked at double-bonded atoms.
+			// make sure there are TWO such markings, opposite each other.
+			
+			for (int iatom = bsStereoAtoms.nextSetBit(0); iatom >= 0; iatom = bsStereoAtoms.nextSetBit(iatom + 1)) {
+				// there should be VERY few of these.
+				int ibondStereo = -1, ibondNone = -1;
+				int n = mol.getAllConnAtoms(iatom);
+				for (int i=0; i < n; i++) {
+					int ibond = mol.getConnBond(iatom, i);
+					if (mol.getConnBondOrder(iatom, i) == 1) {
+						if (bsStereoBonds.get(ibond))
+							ibondStereo = ibond;
+						else
+							ibondNone = ibond;
+					}
+				}
+				if (ibondNone >= 0 && ibondStereo >= 0) {
+					InchiBondStereo stereo = (bonds[ibondStereo].getStereo() == InchiBondStereo.SINGLE_1UP ? InchiBondStereo.SINGLE_1DOWN : InchiBondStereo.SINGLE_1UP);
+					InchiAtom iatom1 = bonds[ibondNone].getStart();
+					InchiAtom iatom2 = bonds[ibondNone].getEnd();
+					
+					boolean isAtom1 = (iatom1 == atoms[iatom]);
+					bonds[ibondNone] = new InchiBond(isAtom1 ? iatom1 : iatom2, 
+							isAtom1 ? iatom2: iatom1, InchiBondType.SINGLE, stereo);
+				}
+			}
 		}
 
 		private static InchiBondType getInChIOrder(int oclOrder) {
@@ -1130,10 +1214,9 @@ public abstract class InChIOCL {
 			}
 		}
 
-		@SuppressWarnings("deprecation")
 		private InchiOutput molToInchi(String molFileData, InchiOptions options) {
 			if (useIXA) {
-				return InchiAPI.molToInchi(molFileData, options);
+				return InchiAPI.molFileToInchi(molFileData, options);
 			} else {
 				return JnaInchi.molToInchi(molFileData, options);
 			}

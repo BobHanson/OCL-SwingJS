@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -17,7 +15,6 @@ import java.io.OutputStreamWriter;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.MolfileCreator;
@@ -40,9 +37,8 @@ import com.actelion.research.gui.swing.SwingDialog;
 public class OCLSwingJSTest {
 
 	public static int nFrame;
-	private final static boolean showFrames = false;
+	private final static boolean showFrames = true;
 
-	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		// load JavaScript:
 		System.out.println(InChIOCL.getInChIVersion());
@@ -58,7 +54,6 @@ public class OCLSwingJSTest {
 
 		test0(outdir);
 		
-		Object x = InChIOCL.getInChI("adfadsf", "FixedH");
 		testInChI1(outdir);
 		testSmilesParser(outdir);
 		testCDXParsers(outdir);	
@@ -345,6 +340,7 @@ try {
 		// note that PubChem will return allene structures with no stereochemistry
 		String inchi;
 		// InChI to mol and back
+		// this is a triply conjugated tri-allene.
 		inchi = "InChI=1S/C9H5BBr2ClFO/c10-7(2-4-15)6(5-9(12)14)8(11)1-3-13/h3-4,15H,10H2/t1-,2+,5-/m1/s1";
 		testInChI(inchi, outdir, 1);
 		inchi = "InChI=1S/C3HBrClF/c4-2-1-3(5)6/h2H/t1-/m0/s1";

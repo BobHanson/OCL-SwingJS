@@ -2262,151 +2262,102 @@ return (mAtomFlags[atom] & cAtomFlagsRingBonds) != 0;
 		return isUsed[0] && isUsed[2];
 		}
 
-	
 	private void setAlleneStereoBondFromParity(int atom) {
 		// find preferred bond to serve as stereobond
-		if (mConnAtoms[atom] != 2
-		 || mConnBondOrder[atom][0] != 2
-		 || mConnBondOrder[atom][1] != 2
-		 || mConnAtoms[mConnAtom[atom][0]] < 2
-		 || mConnAtoms[mConnAtom[atom][1]] < 2
-		 || mPi[mConnAtom[atom][0]] != 1
-		 || mPi[mConnAtom[atom][1]] != 1) {
-			setAtomParity(atom, cAtomParityNone, false);
-			return;
+	if (mConnAtoms[atom] != 2
+	 || mConnBondOrder[atom][0] != 2
+	 || mConnBondOrder[atom][1] != 2
+	 || mConnAtoms[mConnAtom[atom][0]] < 2
+	 || mConnAtoms[mConnAtom[atom][1]] < 2
+	 || mPi[mConnAtom[atom][0]] != 1
+	 || mPi[mConnAtom[atom][1]] != 1) {
+		setAtomParity(atom, cAtomParityNone, false);
+		return;
 		}
 
-		int preferredBond = -1;
-		int preferredAtom = -1;
-		int preferredAlleneAtom = -1;
-		int oppositeAlleneAtom = -1;
-		int bestScore = 0;
-		// SwingJS fix here for allenes, 
-		// I don't see it, but something is 
-		// different about this code and the code currently at OCL.
-		for (int i = 0; i < 2; i++) {
-			int alleneAtom = mConnAtom[atom][i];
-			int nTerm = 0;
-			int n = mAllConnAtoms[alleneAtom];
-			int connBond = -1;
-			int connAtom = -1;
-			// BH some variable removed from for loop
-			// because we need them later.
-			for (int j = 0; j < n; j++) {
-				int a = mConnAtom[alleneAtom][j];
-				if (a == atom)
-					continue;
-				if (mConnAtom[a].length == 1)
-					nTerm++;
-				connAtom = a;
-				connBond = mConnBond[alleneAtom][j];
-				int score = getStereoBondScore(connBond, connAtom);
+	int preferredBond = -1;
+	int preferredAtom = -1;
+	int preferredAlleneAtom = -1;
+	int oppositeAlleneAtom = -1;
+	int bestScore = 0;
+	for (int i=0; i<2; i++) {
+		int alleneAtom = mConnAtom[atom][i];
+		for (int j=0; j<mAllConnAtoms[alleneAtom]; j++) {
+			int connAtom = mConnAtom[alleneAtom][j];
+			if (connAtom != atom) {
+				int connBond = mConnBond[alleneAtom][j];
+				int score = getStereoBondScore(connBond,connAtom);
 				if (bestScore < score) {
 					bestScore = score;
 					preferredAtom = connAtom;
 					preferredBond = connBond;
 					preferredAlleneAtom = alleneAtom;
-					oppositeAlleneAtom = mConnAtom[atom][1 - i];
-				}
-			}
-			if (connBond >= 0 && nTerm == n - 1) {
-				// force terminal =X(Y)Z when Y and Z are terminal
-				// this allows for more complex situations
-				preferredAtom = connAtom;
-				preferredBond = connBond;
-				preferredAlleneAtom = alleneAtom;
-				oppositeAlleneAtom = mConnAtom[atom][1 - i];
-				break;
-			}
-		}
-
-		if (preferredAtom == -1)
-			return;
-
-		for (int i = 0; i < 2; i++) {
-			int alleneAtom = mConnAtom[atom][i];
-			for (int j = 0; j < mAllConnAtoms[alleneAtom]; j++) {
-				int connAtom = mConnAtom[alleneAtom][j];
-				int connBond = mConnBond[alleneAtom][j];
-				if (connAtom != atom
-				 && mBondAtom[0][connBond] == alleneAtom)
-					mBondType[connBond] = cBondTypeSingle;
-			}
-		}
-
-		if (mBondAtom[1][preferredBond] != preferredAtom) {
-			mBondAtom[0][preferredBond] = mBondAtom[1][preferredBond];
-			mBondAtom[1][preferredBond] = preferredAtom;
-		}
-
-		int highPriorityAtom = Integer.MAX_VALUE;
-		int otherAtom = -1;
-		for (int i = 0; i < mConnAtoms[preferredAlleneAtom]; i++) {
-			int connAtom = mConnAtom[preferredAlleneAtom][i];
-			if (connAtom != atom) {
-				if (connAtom != preferredAtom)
-					otherAtom = connAtom;
-				if (highPriorityAtom > connAtom)
-					highPriorityAtom = connAtom;
-			}
-		}
-
-		int[] oppositeAtom = new int[2];
-		int oppositeAtoms = 0;
-		for (int i = 0; i < mConnAtoms[oppositeAlleneAtom]; i++) {
-			int connAtom = mConnAtom[oppositeAlleneAtom][i];
-			if (connAtom != atom) {
-				oppositeAtom[oppositeAtoms++] = connAtom;
-			}
-		}
-
-		double alleneAngle = getBondAngle(atom, oppositeAlleneAtom);
-		double angleDif = 0.0;
-
-		if (oppositeAtoms == 2) {
-			if (oppositeAtom[0] > oppositeAtom[1]) {
-				int temp = oppositeAtom[0];
-				oppositeAtom[0] = oppositeAtom[1];
-				oppositeAtom[1] = temp;
-			}
-
-			double hpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
-			double lpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[1]));
-			angleDif = hpAngleDif - lpAngleDif;
-			}
-		else {
-			angleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
-		}
-
-		boolean isUp = ((angleDif < 0.0) ^ (getAtomParity(atom) == cAtomParity1) ^ (highPriorityAtom == preferredAtom));
-		mBondType[preferredBond] = (isUp ? cBondTypeUp : cBondTypeDown);
-		// BH need second wedge/hash for InChI
-		// That is, it does not work with just 
-		// 
-		// ...a||||C=C=C....
-		// .........\
-		// ..........b
-		//
-		// without a wedge to b, as is commonly drawn in CDK and OLC 
-		//
-		if (otherAtom >= 0) {
-			int bond = getBond(preferredAlleneAtom, otherAtom);
-			if (getBondType(bond) == cBondTypeSingle) {
-				mBondType[bond] = (isUp ? cBondTypeDown : cBondTypeUp);
-				if (getBondAtom(0, bond) == otherAtom) {
-					switchBondAtoms(bond);
+					oppositeAlleneAtom = mConnAtom[atom][1-i];
+					}
 				}
 			}
 		}
+
+	if (preferredAtom == -1)
+		return;
+
+	for (int i=0; i<2; i++) {
+		int alleneAtom = mConnAtom[atom][i];
+		for (int j = 0; j<mAllConnAtoms[alleneAtom]; j++) {
+			int connAtom = mConnAtom[alleneAtom][j];
+			int connBond = mConnBond[alleneAtom][j];
+			if (connAtom != atom
+			 && mBondAtom[0][connBond] == alleneAtom)
+				mBondType[connBond] = cBondTypeSingle;
+			}
+		}
+
+	if (mBondAtom[1][preferredBond] != preferredAtom) {
+		mBondAtom[0][preferredBond] = mBondAtom[1][preferredBond];
+		mBondAtom[1][preferredBond] = preferredAtom;
+		}
+
+	int highPriorityAtom = Integer.MAX_VALUE;
+	for (int i = 0; i< mConnAtoms[preferredAlleneAtom]; i++) {
+		int connAtom = mConnAtom[preferredAlleneAtom][i];
+		if ((connAtom != atom) && (highPriorityAtom > connAtom))
+			highPriorityAtom = connAtom;
+		}
+
+	int[] oppositeAtom = new int[2];
+	int oppositeAtoms = 0;
+	for (int i = 0; i< mConnAtoms[oppositeAlleneAtom]; i++) {
+		int connAtom = mConnAtom[oppositeAlleneAtom][i];
+		if (connAtom != atom)
+			oppositeAtom[oppositeAtoms++] = connAtom;
+		}
+
+	double alleneAngle = getBondAngle(atom, oppositeAlleneAtom);
+	double angleDif = 0.0;
+
+	if (oppositeAtoms == 2) {
+		if (oppositeAtom[0] > oppositeAtom[1]) {
+			int temp = oppositeAtom[0];
+			oppositeAtom[0] = oppositeAtom[1];
+			oppositeAtom[1] = temp;
+			}
+
+		double hpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
+		double lpAngleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[1]));
+		angleDif = hpAngleDif - lpAngleDif;
+		}
+	else {
+		angleDif = getAngleDif(alleneAngle, getBondAngle(oppositeAlleneAtom, oppositeAtom[0]));
+		}
+
+	if ((angleDif < 0.0)
+	  ^ (getAtomParity(atom) == cAtomParity1)
+	  ^ (highPriorityAtom == preferredAtom))
+		mBondType[preferredBond] = cBondTypeUp;
+	else
+		mBondType[preferredBond] = cBondTypeDown;
 	}
-
-	private void switchBondAtoms(int bond) {
-		int a = mBondAtom[0][bond];
-		mBondAtom[0][bond] = mBondAtom[1][bond];
-		mBondAtom[1][bond] = a;
-	}
-
-
+	
 	/**
 	 * In case bond is a BINAP kind of chiral bond with defined parity,
 	 * then the preferred neighbour single bond is converted into a
