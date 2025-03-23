@@ -31,6 +31,7 @@ import java.util.Set;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 
+import io.github.dan2097.jnainchi.InchiOptions.InchiOptionsBuilder;
 import io.github.dan2097.jnainchi.inchi.IXA;
 import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 import io.github.dan2097.jnainchi.inchi.InchiLibrary.IXA_BOND_WEDGE;
@@ -325,6 +326,25 @@ public class InchiAPI {
 		aveMass.put("Lv", 293);
 		aveMass.put("Ts", 297);
 		aveMass.put("Og", 294);
+	}
+
+	public static String getInChIFromInchiInput(InchiInput inchiInput, String options) {
+		return toInchi(inchiInput, parseOptions(options)).getInchi();
+	}
+	private static InchiOptions parseOptions(String options) {
+		if (options == null)
+			return null;
+		InchiOptionsBuilder builder = new InchiOptions.InchiOptionsBuilder();
+		String[] s = options.split("\\s");
+		for (int i = 0; i < s.length; i++) {
+			InchiFlag flag = InchiFlag.getFlagFromName(s[i]);
+			if (flag == null) {
+				System.err.println("InchiAPI unrecognized flag " + s[i]);
+			} else {
+				builder.withFlag(flag);
+			}	
+		}
+		return builder.build();
 	}
 
 	public static InchiOutput toInchi(InchiInput inchiInput) {
@@ -691,12 +711,9 @@ public class InchiAPI {
 	}
 
 	/**
-	 * Generate an InChI from a MOL file as input.
+	 * Generate an InChI from a MOL file as input
 	 * 
-	 * For compatibility with JnaInchi. Deprecated only because of its ambiguous
-	 * name; Replacement is molFileToInch(String molText).
-	 * 
-	 * @param molText molfile text
+	 * @param molText  molfile text
 	 * @param options
 	 * @return
 	 */
@@ -768,6 +785,16 @@ public class InchiAPI {
 			IXA.IXA_MOL_Destroy(hStatus, hMolecule);
 			IXA.IXA_STATUS_Destroy(hStatus);
 		}
+	}
+
+	/**
+	 * Simple string return with no InchiKeyOutput structure.
+	 * 
+	 * @param inchi
+	 * @return
+	 */
+	public static String getInChIKeyFromInChI(String inchi) {
+		return inchiToInchiKeyIXA(inchi).getInchiKey();		
 	}
 
 	/**
@@ -894,19 +921,32 @@ public class InchiAPI {
 //    }
 //  }
 
+	/**
+	 * nonstandard "Inchi" instead of "InChI" here 
+	 * @param inchi
+	 * @return
+	 */
 	public static InchiInputFromInchiOutput getInchiInputFromInchi(String inchi) {
-		return getInchiInputFromInchi(inchi, InchiOptions.DEFAULT_OPTIONS);
+		return getInchiInputFromInchi(inchi, InchiOptions.DEFAULT_OPTIONS, null);
 	}
 
-	public static InchiInputFromInchiOutput getInchiInputFromInchi(String inchi, String moreOptions) {
-		return getInchiInputFromInchi(inchi, InchiOptions.DEFAULT_OPTIONS, moreOptions);
+	public static InchiInput getInchiInputFromInChI(String inchi, String moreOptions) {
+		return getInchiInputFromInchi(inchi, InchiOptions.DEFAULT_OPTIONS, moreOptions).getInchiInput();
 	}
 
+	/**
+	 * This is just here to match JniInchi. Most of the time we do not need the 
+	 * full Output structure. 
+	 * 
+	 * @param inchi
+	 * @param options
+	 * @return
+	 */
 	public static InchiInputFromInchiOutput getInchiInputFromInchi(String inchi, InchiOptions options) {
 		return getInchiInputFromInchi(inchi, options, null);
 	}
 	
-	public static InchiInputFromInchiOutput getInchiInputFromInchi(String inchi, InchiOptions options, String moreOptions) {
+	private static InchiInputFromInchiOutput getInchiInputFromInchi(String inchi, InchiOptions options, String moreOptions) {
 		checkLibrary();
 		Pointer hStatus = IXA.IXA_STATUS_Create();
 		Pointer hMolecule = IXA.IXA_MOL_Create(hStatus);
@@ -1186,7 +1226,8 @@ public class InchiAPI {
 	private static void checkStatus(Pointer hStatus) {
 		int n = (hStatus == null ? 0 : IXA.IXA_STATUS_GetCount(hStatus));
 		if (n > 0) {
-			System.out.println("STATUS_getCount: " + n + " " + IXA.IXA_STATUS_GetMessage(hStatus, n - 1));
+			System.out.println(n);
+			System.out.println(IXA.IXA_STATUS_GetMessage(hStatus, n - 1));
 		}
 	}
 
@@ -1196,21 +1237,7 @@ public class InchiAPI {
 	 * @return Version number String
 	 */
 	public static String getInchiLibraryVersion() {
-		/**
-		 * needs IXA implementation
-		 * 
-		 * @j2sNative
-		 * 
-		 * return null;
-		 * 
-		 */
-		try (InputStream is = JnaInchi.class.getResourceAsStream("jnainchi_build.props")) {
-			Properties props = new Properties();
-			props.load(is);
-			return props.getProperty("inchi_version");
-		} catch (Exception e) {
-			return null;
-		}
+		return getInChIVersion(false);
 	}
 
 	/**
@@ -1224,6 +1251,7 @@ public class InchiAPI {
 		 * 
 		 * @j2sNative
 		 */
+		{
 		try (InputStream is = JnaInchi.class.getResourceAsStream("jnainchi_build.props")) {
 			Properties props = new Properties();
 			props.load(is);
@@ -1231,6 +1259,163 @@ public class InchiAPI {
 		} catch (Exception e) {
 			return null;
 		}
+		}
 	}
 	
+	public static String getInChIVersion(boolean fullDescription) {
+		//return IXA.IXA_INCHIBUILDER_GetInChIVersion(fullDescription);
+		/**
+		 * temporary only
+		 * @j2sNative
+		 *  var module = J2S._module;
+		 * 	  var ptr = module.ccall("IXA_INCHIBUILDER_GetInChIVersion", "number", ["number"], [fullDescription]);
+	  		var ret = module.UTF8ToString(ptr);
+	        module._free(ptr);	
+		 *  return ret;
+		 */
+		{
+		
+		    try(InputStream is = InchiAPI.class.getResourceAsStream("jnainchi_build.props")) {
+		        Properties props = new Properties();
+		        props.load(is);
+		        return props.getProperty("inchi_version");
+		      }
+		      catch (Exception e) {
+		        return null;
+		      }
+		}
+	}
+
+	public static String getJSONFromInchiInput(InchiInput inchiInput) {
+		int na = inchiInput.getAtoms().size();
+		int nb = inchiInput.getBonds().size();
+		int ns = inchiInput.getStereos().size();
+		Map<InchiAtom, Integer> mapAtoms = new HashMap<>();
+		boolean haveXYZ = false;
+		for (int i = 0; i < na; i++) {
+			InchiAtom a = inchiInput.getAtom(i);
+			if (a.getX() != 0 || a.getY() != 0 || a.getZ() != 0) {
+				haveXYZ = true;
+				break;
+			}
+		}
+		String s = "{";
+		s += "\n\"atomCount\":" + na + ",\n";
+		s += "\"atoms\":[\n";
+		for (int i = 0; i < na; i++) {
+			InchiAtom a = inchiInput.getAtom(i);
+			mapAtoms.put(a, Integer.valueOf(i));
+			if (i > 0)
+				s += ",\n";
+			s += "{";
+			s += toJSONInt("index", Integer.valueOf(i), "");
+			s += toJSONNotNone("elname", a.getElName(), ",");
+			if (haveXYZ) {
+				s += toJSONDouble("x", a.getX(), ",");
+				s += toJSONDouble("y", a.getY(), ",");
+				s += toJSONDouble("z", a.getZ(), ",");
+			}
+			s += toJSONNotNone("radical", a.getRadical(), ",");
+			s += toJSONNonZero("charge", a.getCharge(), ",");
+			s += toJSONNonZero("isotopeMass", a.getIsotopicMass(), ",");
+			if (a.getImplicitHydrogen() > 0)
+				s += toJSONNonZero("implicitH", a.getImplicitHydrogen(), ",");
+			s += toJSONNonZero("implicitDeuterium", a.getImplicitDeuterium(), ",");
+			s += toJSONNonZero("implicitProtium", a.getImplicitProtium(), ",");
+			s += toJSONNonZero("implicitTritium", a.getImplicitTritium(), ",");
+			s += "}";
+		}
+		s += "\n],";
+		s += "\n\"bondCount\":" + nb + ",";
+		s += "\n\"bonds\":[\n";
+
+		for (int i = 0; i < nb; i++) {
+			if (i > 0)
+				s += ",\n";
+			s += "{";
+			InchiBond b = inchiInput.getBond(i);
+			s += toJSONInt("originAtom", mapAtoms.get(b.getStart()).intValue(), "");
+			s += toJSONInt("targetAtom", mapAtoms.get(b.getEnd()).intValue(), ",");
+			String bt = b.getType().toString().toUpperCase(Locale.ROOT);
+			if (!bt.equals("SINGLE"))
+				s += toJSONString("type", bt, ",");
+			s += toJSONNotNone("stereo", b.getStereo().toString().toUpperCase(Locale.ROOT), ",");
+			s += "}";
+		}
+		s += "\n]";
+		if (ns > 0) {
+			s += ",\n\"stereoCount\":" + ns + ",\n";
+			s += "\"stereo\":[\n";
+			for (int i = 0; i < ns; i++) {
+				if (i > 0)
+					s += ",\n";
+				s += "{";
+				InchiStereo d = inchiInput.getStereos().get(i);
+				InchiAtom a = d.getCentralAtom();
+				s += toJSONNotNone("parity", d.getParity(), "");
+				s += toJSONNotNone("type", d.getType(), ",");
+				if (a != null)
+					s += toJSONInt("centralAtom", mapAtoms.get(a).intValue(), ",");
+				// s += toJSON("debugString",d.getDebugString(), ",");
+				// never implemented? s +=
+				// toJSON("disconnectedParity",d.getDisconnectedParity(), ",");
+				InchiAtom[] an = d.getAtoms();
+				int[] nbs = new int[an.length];
+				for (int j = 0; j < an.length; j++) {
+					nbs[j] = mapAtoms.get(an[j]).intValue();
+				}
+				s += toJSONArray("neighbors", nbs, ",");
+				s += "}";
+			}
+			s += "\n]";
+		}
+		s += "}";
+		return s;
+	}
+
+	private static String toJSONArray(String key, int[] val, String term) {
+		String s = term + "\"" + key + "\":[" + val[0];
+		for (int i = 1; i < val.length; i++) {
+			s += "," + val[i];
+		}
+		return s + "]";
+	}
+
+	private static String toJSONNonZero(String key, int val, String term) {
+		return (val == 0 ? "" : toJSONInt(key, val, term));
+	}
+
+	private static String toJSONInt(String key, int val, String term) {
+		return term + "\"" + key + "\":" + val;
+	}
+
+	private static String toJSONDouble(String key, double val, String term) {
+		String s;
+		if (val == 0) {
+			s = "0";
+		} else {
+			s = "" + (val + (val > 0 ? 0.00000001 : -0.00000001));
+			s = s.substring(0, s.indexOf(".") + 5);
+			int n = s.length();
+			while (s.charAt(--n) == '0') {
+			}
+			s = s.substring(0, n + 1);
+		}
+		return term + "\"" + key + "\":" + s;
+	}
+
+	private static String toJSONString(String key, String val, String term) {
+		return term + "\"" + key + "\":\"" + val + "\"";
+	}
+
+	private static String toJSONNotNone(String key, Object val, String term) {
+		String s = val.toString();
+		return ("NONE".equals(s) ? "" : term + "\"" + key + "\":\"" + s + "\"");
+	}
+
+	public static int getCallCount() {
+		return IXA.ncalls;
+	}
+
+
 }

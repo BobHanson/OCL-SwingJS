@@ -28,7 +28,7 @@ public class InChIParser {
 	}
     
 	public boolean parse(StereoMolecule mol, String inchi) {
-		return InChIOCL.getMoleculeFromInChI(inchi, mol);
+		return InChIOCL.getMoleculeFromInChI(inchi, mol); 
 	}
 
 	

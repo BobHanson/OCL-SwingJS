@@ -25,6 +25,11 @@ public class HiDPIHelper {
 	 * @return 1.0 on standard resolution devices and 2.0 for retina screens
 	 */
 	public static float getRetinaScaleFactor() {
+		/**
+		 * @j2sNative 
+		 * return 1;
+		 */
+		{
 		if (!Platform.isMacintosh())
 			return 1f;
 
@@ -53,6 +58,7 @@ public class HiDPIHelper {
 			GraphicsDevice sd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 			sRetinaFactor = (float) sd.getDefaultConfiguration().getDefaultTransform().getScaleX();
 		}
+		}
 		return sRetinaFactor;
 	}
 
@@ -71,7 +77,8 @@ public class HiDPIHelper {
 		 * @j2sNative
 		 * return 1;
 		 */
-		if (sUIScaleFactor == -1) {
+		{
+		if (sUIScaleFactor == -1) { 
 			float f = 0;
 			String dpiFactor = System.getProperty("dpifactor");
 			if (dpiFactor != null)
@@ -115,6 +122,7 @@ public class HiDPIHelper {
 			if (sUIScaleFactor < 1.1f)
 				sUIScaleFactor = 1.0f;
 			}
+		}
 		return sUIScaleFactor;
 		}
 
@@ -130,9 +138,10 @@ public class HiDPIHelper {
 		 * @j2sNative
 		 * return 1;
 		 */
+		{
 		if (sPixelPerComponentSizeFactor == -1)
 			sPixelPerComponentSizeFactor = Platform.isWindows() ? getMaxDeviceUIScaling() : Platform.isMacintosh() ? getRetinaScaleFactor() : 1.0f;
-
+		 }
 		return sPixelPerComponentSizeFactor;
 		}
 
@@ -145,9 +154,10 @@ public class HiDPIHelper {
 		 * @j2sNative
 		 * return 1;
 		 */
+		{
 		if (sIconScaleFactor == -1)
 			sIconScaleFactor = Platform.isWindows() ? getMaxDeviceUIScaling() : Platform.isMacintosh() ? getRetinaScaleFactor() : getUIScaleFactor();
-
+		 }
 		return sIconScaleFactor;
 		}
 

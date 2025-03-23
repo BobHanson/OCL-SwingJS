@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -21,7 +22,6 @@ import com.actelion.research.chem.MolfileCreator;
 import com.actelion.research.chem.MolfileParser;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
-import com.actelion.research.chem.inchi.InChIOCL;
 import com.actelion.research.chem.moreparsers.CDXParser;
 import com.actelion.research.chem.moreparsers.ChemicalNameResolver;
 import com.actelion.research.chem.moreparsers.InChIKeyResolver;
@@ -34,15 +34,17 @@ import com.actelion.research.gui.editor.SwingEditorArea;
 import com.actelion.research.gui.editor.SwingEditorPanel;
 import com.actelion.research.gui.swing.SwingDialog;
 
+import swingjs.OCL;
+
 public class OCLSwingJSTest {
 
 	public static int nFrame;
-	private final static boolean showFrames = true;
+	private final static boolean showFrames = false;//true;
 
 	public static void main(String[] args) {
 		// load JavaScript:
-		System.out.println(InChIOCL.getInChIVersion());
-		InChIOCL.init(()->{
+		OCL.init(()->{	
+			System.out.println(OCL.getInChIVersion(false));
 			runTests();
 		});
 	}
@@ -56,7 +58,7 @@ public class OCLSwingJSTest {
 		
 		testInChI1(outdir);
 		testSmilesParser(outdir);
-		testCDXParsers(outdir);	
+		//testCDXParsers(outdir);	
 		testInChIParsers(outdir);
 		testAllene(outdir);
 		testEne(outdir);
@@ -71,7 +73,7 @@ public class OCLSwingJSTest {
 try {		
 		String inchi = "InChI=1S/C41H44O22/c42-13-27-31(50)33(52)36(55)40(61-27)59-25-11-19(44)10-24-20(25)12-26(37(58-24)17-4-7-21(45)22(46)9-17)60-41-38(63-39-35(54)30(49)23(47)14-57-39)34(53)32(51)28(62-41)15-56-29(48)8-3-16-1-5-18(43)6-2-16/h1-12,23,27-28,30-36,38-42,47,49-55H,13-15H2,(H3-,43,44,45,46,48)/p+1/t23-,27-,28-,30+,31-,32-,33+,34+,35-,36-,38-,39+,40-,41-/m1/s1";
 		String filein = "LMPK12010169.mol";
-		String moldata = getString(filein, "c:/temp/mol");
+		String moldata = getString(filein);
 		StereoMolecule mol = new StereoMolecule();
 		if (!new MolfileParser().parse(mol, moldata)) {
 			System.err.println("OCLSwingJSTest parser failed for " + moldata);
@@ -80,7 +82,7 @@ try {
 		testInChIOut(mol, inchi, true, 3);
 		
 		filein = "LMPK12010169b.mol";
-		moldata = getString(filein, "c:/temp/mol");
+		moldata = getString(filein);
 		mol = new StereoMolecule();
 		if (!new MolfileParser().parse(mol, moldata)) {
 			System.err.println("OCLSwingJSTest parser failed for " + moldata);
@@ -89,21 +91,21 @@ try {
 		testInChIOut(mol, inchi, true, 3);
 
 		filein = "LMPK12010169.mol";
-		moldata = getString(filein, "c:/temp/mol");
+		moldata = getString(filein);
 		testInChIOut(moldata, inchi, true, 3);
 
 		filein = "LMPK12010169b.mol";
-		moldata = getString(filein, "c:/temp/mol");
+		moldata = getString(filein);
 		testInChIOut(moldata, inchi, true, 3);
 		
-		String smiles = InChIOCL.getSmilesFromInChI(inchi, null);
+		String smiles = OCL.getSmilesFromInChI(inchi);
 		System.out.println(smiles);
 
 
 		filein = "LMPK12010169N.mol";
 		inchi = "InChI=1S/C41H45NO21/c43-13-27-32(51)34(53)37(56)40(61-27)59-25-11-19(45)10-21-20(25)12-26(30(42-21)17-4-7-22(46)23(47)9-17)60-41-38(63-39-36(55)31(50)24(48)14-58-39)35(54)33(52)28(62-41)15-57-29(49)8-3-16-1-5-18(44)6-2-16/h1-12,24,27-28,31-41,43-48,50-56H,13-15H2"
 				+ "/b8-3+/t24-,27-,28-,31+,32-,33-,34+,35+,36-,37-,38-,39+,40-,41-/m1/s1";
-		moldata = getString(filein, "c:/temp/mol");
+		moldata = getString(filein);
 		testInChIOut(moldata, inchi, true, 3);
 // this one should fail, because InChI algoritm removes stereochemistry for the cationic species.
 //		filein = "LMPK12010169O.mol";
@@ -129,7 +131,7 @@ try {
 		mol = new StereoMolecule();
 		if (new InChIKeyResolver().setSource(InChIKeyResolver.SOURCE_CIR).resolve(mol, inchiKey)) {
 			testShowViewAndWriteMol(mol, "inchikey", fileout, outdir);
-			String keyReturned = InChIOCL.getInChIKey(mol, null);
+			String keyReturned = OCL.getInChIKey(mol, null);
 			checkEquals(inchiKey, keyReturned, true, 101);
 			//String smiles = "CN(CC[C@]12c3c(C4)ccc(O)c3O[C@H]11)[C@H]4[C@@H]2C=C[C@@H]1O";
 			//checkEquals(new IsomericSmilesCreator(mol).getSmiles(), smiles, true, 101);
@@ -175,15 +177,13 @@ try {
 			checkEquals(inchi, "not found at CIR", true, 107);
 		}
 
-		
-		
 		// oddball chemical name to NCI/CADD CIR
 		
 		String name = "(R)-cis-4-hydroxyhex-2-ene";
 		// is actually (Z,3R)-hex-4-en-3-ol
 		mol = new StereoMolecule();
 		if (new ChemicalNameResolver().resolve(mol, name)) {
-		inchi = InChIOCL.getInChI(mol, null);
+		inchi = OCL.getInChIFromOCLMolecule(mol, null);
 		testShowMol(mol, name);
 		checkEquals("InChI=1S/C6H12O/c1-3-5-6(7)4-2/h3,5-7H,4H2,1-2H3/b5-3-/t6-/m1/s1", inchi, true, 108);
 		} else {
@@ -196,105 +196,104 @@ try {
 		String inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
 		
 		// SMILES from inchi
-		String smiles = InChIOCL.getSmilesFromInChI(inchi, null);
+		String smiles = OCL.getSmilesFromInChI(inchi);
 		// inchi from SMILES
 		System.out.println(smiles);
 		// OC1=NC=C1
 
-		String inchiOut = InChIOCL.getInChIFromSmiles(smiles, "fixedh");
+		String inchiOut = OCL.getInChIFromSmiles(smiles, "fixedh");
 		System.out.println(inchiOut);
 		
 		
 		// FixedH-InChI from InChI
 		
-		String inchiOut1 = InChIOCL.getInChIFromInChI(inchi, "standard");
-		String inchiOut1f = InChIOCL.getInChIFromInChI(inchi, "fixedH");
+		String inchiOut1 = OCL.getInChIFromInChI(inchi, "standard");
+		String inchiOut1f = OCL.getInChIFromInChI(inchi, "fixedH");
 		System.out.println(smiles);
 		System.out.println(inchiOut1);
 		System.out.println(inchiOut1f);
 		
 		// FixedH-InChI from FixedH-InChI
 
+		// smiles to inchi
 		smiles = "O=C1-NC=C1";
 
 		System.out.println(smiles);
 		
-		inchiOut1f = InChIOCL.getInChIFromSmiles(smiles, "fixedh");
+		inchiOut1f = OCL.getInChIFromSmiles(smiles, "fixedh");
 		System.out.println(inchiOut1f);		
-		String inchiOut2f = InChIOCL.getInChIFromInChI(inchiOut1f, "fixedH");
+		String inchiOut2f = OCL.getInChIFromInChI(inchiOut1f, "fixedH");
 		System.out.println(inchiOut2f);
-		smiles = InChIOCL.getSmilesFromInChI(inchiOut2f, null);
+		smiles = OCL.getSmilesFromInChI(inchiOut2f);
 		System.out.println(smiles);
 		
 		// and
 		
-		inchi = InChIOCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "reference");
+		inchi = OCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "reference");
 		System.out.println(inchi);		
-		inchi = InChIOCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h4H", "reference");
+		inchi = OCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h4H", "reference");
 		System.out.println(inchi);		
-		inchi = InChIOCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "reference");
+		inchi = OCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "reference");
 		System.out.println(inchi);		
 
 		// all give the same thing. 
 		
 		// inchi model from inchi
-		System.out.println(InChIOCL.getInChIModelJSON(inchi));
+		System.out.println(OCL.getInChIModelJSON(inchi));
 		
 		inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
 		// molecule from inchi
-		mol = new StereoMolecule();
-		InChIOCL.getMoleculeFromInChI(inchi, mol);
+		mol = OCL.getOCLMoleculeFromInChI(inchi, "");
 		testShowMol(mol, "from inchi");
 	
 		// optional fixed-H inchi from standard inchi
-		String i2 = InChIOCL.getInChI(inchi, "fixedH?");
+		String i2 = OCL.getInChIFromInChI(inchi, "fixedH?");
 		String inchiFixedH = "InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H";
 		checkEquals(inchiFixedH, i2, true, 4);
 		
 		// standard inchi from fixed-H inchi
-		i2 = InChIOCL.getInChI(inchiFixedH, null);
+		i2 = OCL.getInChIFromInChI(inchiFixedH, null);
 		checkEquals(inchi, i2, true, 5);
 		
 		// molecule from inchi
-		mol = new StereoMolecule();
-		InChIOCL.getMoleculeFromInChI(inchi, mol);
+		mol = OCL.getOCLMoleculeFromInChI(inchi, "fixamides");
 		testShowMol(mol, "from inchi");
 
 		String json;
 		
 		// inchi model from inchi
 		inchi = "InChI=1S/C13H18BBrCl2O/c1-4-10(15)7-8(2)5-6-11(14)13(18)12(17)9(3)16/h4-6,9,18H,7,14H2,1-3H3/b8-5+,10-4-,11-6+,13-12+/t9-/m0/s1";
-		json = InChIOCL.getInChIModelJSON(inchi);
+		json = OCL.getInChIModelJSON(inchi);
 		System.out.println(json);
 		checkEquals(true,json.length() > 1800, false, 0);
 	
 		// inchi model from MOL data
 		String filein = "tallene.mol";
-		String moldata = getString(filein, outdir);
-		json = InChIOCL.getInChIModelJSON(moldata);
+		String moldata = getString(filein);
+		json = OCL.getInChIModelJSON(moldata);
 		System.out.println(json);
 		checkEquals(true,json.length() > 500, false, 0);
 		
-		inchi = InChIOCL.getInChIFromSmiles("c1cnc1O", "standard");
+		inchi = OCL.getInChIFromSmiles("c1cnc1O", "standard");
 		checkEquals("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", inchi, true, 0);
-		inchi = InChIOCL.getInChIFromSmiles("c1cnc1O", "fixedh");
+		inchi = OCL.getInChIFromSmiles("c1cnc1O", "fixedh");
 		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
-		inchi = InChIOCL.getInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "fixedh");
+		inchi = OCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "fixedh");
 		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
-		json = InChIOCL.getInChIModelJSON(inchi);
+		json = OCL.getInChIModelJSON(inchi);
 		System.out.println(json);
 		//inchi C does not add fixed hydrogens to its model
-		inchi = InChIOCL.getInChI("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "fixedH");
+		inchi = OCL.getInChIFromInChI("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "fixedH");
 		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
 		// and here as well, which is surprising to me:
-		inchi = InChIOCL.getInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "standard");
+		inchi = OCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "standard");
 		checkEquals("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", inchi, true, 0);
 		return;
 	}
 
 	private static String smilesToMolfile(String smiles) {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			StereoMolecule mol = new SmilesParser().parseMolecule(smiles);
 			MolfileCreator creator = new MolfileCreator(mol);
 			OutputStreamWriter writer = new OutputStreamWriter(bos);
@@ -349,7 +348,7 @@ try {
 		// mol to InChI
 		String filein = "tallene.mol";
 		String fileout = "tallene";
-		String moldata = getString(filein, outdir);
+		String moldata = getString(filein);
 		StereoMolecule mol = new StereoMolecule();
 		if (!new MolfileParser().parse(mol, moldata)) {
 			System.err.println("OCLSwingJSTest parser failed for " + moldata);
@@ -570,7 +569,7 @@ try {
  		StereoMolecule mol = new StereoMolecule();
  		fileout= "tinchi-jna" + (++test);
 		System.out.println(inchi + " => " + fileout);
-		System.out.println(InChIOCL.getInChIModelJSON(inchi));
+		System.out.println(OCL.getInChIModelJSON(inchi));
 		if (new InChIParser().parse(mol, inchi)) {
 			testShowViewAndWriteMol(mol, "fromInchi" + (++test), fileout, outdir);
 			testInChIOut(mol, inchi, true, 0);
@@ -579,7 +578,7 @@ try {
 
 	private static boolean testInChIOut(StereoMolecule mol, String inchi, boolean throwError, int testpt) {
 		String options = "";
-		String s = InChIOCL.getInChI(mol, options);
+		String s = OCL.getInChIFromOCLMolecule(mol, options);
 		if (s.length() == 0)
 			s = "<inchi was null>";
 		return checkEquals(inchi, s,throwError, testpt);
@@ -587,7 +586,7 @@ try {
 	
 	private static boolean testInChIOut(String molData, String inchi, boolean throwError, int testpt) {
 		String options = "";
-		String s = InChIOCL.getInChI(molData, options);
+		String s = OCL.getInChIFromMOL(molData, options);
 		if (s.length() == 0)
 			s = "<inchi was null>";
 		return checkEquals(inchi, s,throwError, testpt);
@@ -642,7 +641,7 @@ try {
 		// one can also use tye parseFile method with CDX or CDXML
 		//		mol = CDXParser.parseFile(filein);
 		StereoMolecule mol = new StereoMolecule();
-		cdxml = getString(filein, outdir);
+		cdxml = getString(filein);
 		if (new CDXParser().parse(mol, cdxml)) {
 			testShowViewAndWriteMol(mol, "cdxml", fileout, outdir);
 		}
@@ -677,10 +676,10 @@ try {
 		}
 	}
 
-	private static String getString(String filein, String dir) {
+	private static String getString(String filein) {
 		try {
-			return new String(getBytes(filein, dir));
-		} catch (Exception e) {
+			return new String(ParserUtils.getResourceBytes(OCLSwingJSTest.class, filein));
+		} catch (IOException e) {
 			return null;
 		}
 	}
@@ -708,7 +707,7 @@ try {
 			frameY += 110;
 			nFrame = 0;
 		}
-		return new Point(130 * nFrame++, frameY);
+		return new Point(130 * nFrame++	, frameY);
 	}
 
 	private static void writeImage(BufferedImage bi, String fname, String dir) {
@@ -752,7 +751,7 @@ try {
 				mol = (StereoMolecule) list.get(0);
 			}
 
-			showEditFrame(mol);
+			//showEditFrame(mol);
 			// test for SVG output
 //
 //			SVGDepictor svgd = new SVGDepictor(mol, mode, "");

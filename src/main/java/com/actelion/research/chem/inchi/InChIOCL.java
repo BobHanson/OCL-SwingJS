@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -17,23 +18,22 @@ import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.coords.CoordinateInventor;
 import com.sun.jna.Native;
 
+import io.github.dan2097.jnainchi.InchiAPI;
 import io.github.dan2097.jnainchi.InchiAtom;
 import io.github.dan2097.jnainchi.InchiBond;
 import io.github.dan2097.jnainchi.InchiBondStereo;
 import io.github.dan2097.jnainchi.InchiBondType;
 import io.github.dan2097.jnainchi.InchiFlag;
 import io.github.dan2097.jnainchi.InchiInput;
-import io.github.dan2097.jnainchi.InchiInputFromInchiOutput;
 import io.github.dan2097.jnainchi.InchiKeyOutput;
 import io.github.dan2097.jnainchi.InchiOptions;
 import io.github.dan2097.jnainchi.InchiOptions.InchiOptionsBuilder;
 import io.github.dan2097.jnainchi.InchiOutput;
 import io.github.dan2097.jnainchi.InchiStereo;
-import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 import io.github.dan2097.jnainchi.JnaInchi;
-import io.github.dan2097.jnainchi.InchiAPI;
+import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 
-public abstract class InChIOCL {
+public class InChIOCL {
 
 	/**
 	 * allow testing performance of JnaInchi vs InchiAPI
@@ -51,21 +51,23 @@ public abstract class InChIOCL {
 	 * 
 	 * 
 	 */
-	protected final static boolean useIXA = true; 
-	
+	private static boolean isJS = /** @j2sNative true || */
+			false;
+	protected static boolean useIXA = true;// false;
+
 	/**
-	 * Just loads this class, initiating JavaScript loading of the WASM.
-	 * ini
-	 * Note that a clock tick is required to continue after this asynchronous load.
-	 * @param r 
+	 * Just loads this class, initiating JavaScript loading of the WASM. ini Note
+	 * that a clock tick is required to continue after this asynchronous load.
+	 * 
+	 * @param r
 	 */
 	public static void init(Runnable r) {
-		getPlatformSubclass().initAndRun(r);
+		if (isJS)
+			useIXA = true;
+		getInstance().initAndRun(r);
 	}
 
-	protected abstract void initAndRun(Runnable r);
-
-	protected abstract String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options);
+	protected InchiInput inchiInput;
 
 	///// molecule to InChI //
 
@@ -75,14 +77,15 @@ public abstract class InChIOCL {
 	 * @param mol
 	 * @param options standard InChI options and "fixedh?", meaning fixedh only if
 	 *                it is different from standard
-	 * @return InChI 
+	 * @return InChI
 	 */
 	public static String getInChI(StereoMolecule mol, String options) {
-		return getPlatformSubclass().getInchiPvt(mol, null, options, false);
+		return getInstance().getInChIPvt(mol, null, options, false);
 	}
 
 	/**
-	 * Get an InChI from V2 or V3 MOL file data or from an InChI (a string starting with "InChI=")
+	 * Get an InChI from V2 or V3 MOL file data or from an InChI (a string starting
+	 * with "InChI=")
 	 * 
 	 * @param molFileDataOrInChI V2 or V3 MOL file data or an InChI string
 	 * @param options            standard InChI options and "fixedh?", meaning
@@ -90,15 +93,15 @@ public abstract class InChIOCL {
 	 * @return InChIKey
 	 */
 	public static String getInChI(String molFileDataOrInChI, String options) {
-		return getPlatformSubclass().getInchiPvt(null, molFileDataOrInChI, options, false);
+		return getInstance().getInChIPvt(null, molFileDataOrInChI, options, false);
 	}
 
 	/**
 	 * Get an InChI from a SMILES string
 	 * 
 	 * @param smiles
-	 * @param options            standard InChI options and "fixedh?", meaning
-	 *                           fixedh only if it is different from standard
+	 * @param options standard InChI options and "fixedh?", meaning fixedh only if
+	 *                it is different from standard
 	 * @return
 	 */
 	public static String getInChIFromSmiles(String smiles, String options) {
@@ -123,11 +126,12 @@ public abstract class InChIOCL {
 	 * @return InChIKey
 	 */
 	public static String getInChIKey(StereoMolecule mol, String options) {
-		return getPlatformSubclass().getInchiPvt(mol, null, options, true);
+		return getInstance().getInChIPvt(mol, null, options, true);
 	}
 
 	/**
-	 * Get an InChIKey from V2 or V3 MOL file data or from an InChI (a string starting with "InChI=")
+	 * Get an InChIKey from V2 or V3 MOL file data or from an InChI (a string
+	 * starting with "InChI=")
 	 * 
 	 * @param molFileDataOrInChI
 	 * @param options            standard InChI options and "fixedh?", meaning
@@ -135,7 +139,25 @@ public abstract class InChIOCL {
 	 * @return InChIKey
 	 */
 	public static String getInChIKey(String molFileDataOrInChI, String options) {
-		return getPlatformSubclass().getInchiPvt(null, molFileDataOrInChI, options, true);
+		return getInstance().getInChIPvt(null, molFileDataOrInChI, options, true);
+	}
+
+	/**
+	 * Get an InchiInput instance from an OCL molecule. Called by an
+	 * 
+	 * @param inchi
+	 * @return InchiInput
+	 */
+	public static InchiInput getInchiInputFromInChI(String inchi, String moreOptions) {
+		return getInstance().getInchiInputFromInChIPvt(inchi, moreOptions);
+	}
+
+	public static InchiInput getInchiInputFromOCLMolecule(StereoMolecule mol) {
+		return getInstance().getInchiInputFromMolPvt(mol);
+	}
+
+	public static void getOCLMoleculeFromInchiInput(InchiInput input, StereoMolecule mol) throws Exception {
+		getInstance().getMoleculeFromInchiInput(input, mol);
 	}
 
 	///// InChI to StereoMolecule //
@@ -146,27 +168,28 @@ public abstract class InChIOCL {
 	 * @param mol
 	 * @return
 	 */
-	public static boolean getMoleculeFromInChI(String inchi, StereoMolecule mol) {
+	public static boolean getMoleculeFromInChIRaw(String inchi, StereoMolecule mol) {
 		try {
-			getPlatformSubclass().getOCLMoleculeFromInChI(inchi, mol);
+			getInstance().getMoleculeFromInChIPvt(inchi, mol, null);
 			return true;
 		} catch (Throwable e) {
 			e.printStackTrace();
 			return false;
 		}
 	}
-	
+
 	/// to SMILES
 
 	/**
 	 * 
 	 * @param inchi
-	 * @param options unused currently
-	 * @return
+	 * @return SMILES; automatically fixes amides
+	 * @throws Exception
 	 */
-	public static String getSmilesFromInChI(String inchi, String options) {
+	public static String getSmilesFromInChI(String inchi) throws Exception {
 		StereoMolecule mol = new StereoMolecule();
-		return (getMoleculeFromInChI(inchi, mol) ? IsomericSmilesCreator.createSmiles(mol) : null);
+		getMoleculeFromInChI(inchi, mol);
+		return IsomericSmilesCreator.createSmiles(mol);
 	}
 
 	///// InChI to StereoMolecule //
@@ -187,13 +210,13 @@ public abstract class InChIOCL {
 		boolean isReference = ("reference".equals(options));
 		try {
 			StereoMolecule mol = new StereoMolecule();
-			getMoleculeFromInChI(inchi, mol);
+			getMoleculeFromInChIOpt(inchi, mol, null);
 			String inchiS = getInChI(mol, "standard");
 			if (inchiS == null || inchiS.length() == 0 || options == null || options.trim().length() == 0) {
 				return inchiS;
 			}
 			mol = new StereoMolecule();
-			getMoleculeFromInChI(inchiS, mol);				
+			getMoleculeFromInChIOpt(inchiS, mol, null);
 			inchi = getInChI(mol, isReference ? "fixedh" : options);
 			return (isReference && inchi.length() < inchiS.length() ? inchiS : inchi);
 		} catch (Throwable e) {
@@ -201,45 +224,44 @@ public abstract class InChIOCL {
 			return null;
 		}
 	}
-	
-	
+
 	/// InChI to InChI model as JSON
-	
+
 	/**
 	 * Starting with a standard or nonstandard (FixedH, for example), return a JSON
 	 * string containing details of the internal inchi C model, including
 	 * "atomCount", "atoms", "bondCount", "bonds", "stereoCount", and "stereo". The
-	 * model includes explicit hydrogen atoms as well as implicit hydrogen counts. 
-	 * Of significance, the "stereo" entries include center atom, an ordered list of 
-	 * neighbors, a "and a parity flag "ODD" or "EVEN" that indicates the relation 
+	 * model includes explicit hydrogen atoms as well as implicit hydrogen counts.
+	 * Of significance, the "stereo" entries include center atom, an ordered list of
+	 * neighbors, a "and a parity flag "ODD" or "EVEN" that indicates the relation
 	 * 
 	 * @param inchi
 	 * @return
 	 */
 	public static String getInChIModelJSON(String inchi) {
-		return getPlatformSubclass().getInchiPvt(null, inchi, "model", false);		
+		return getInstance().getInChIPvt(null, inchi, "model", false);
 	}
-	
+
 	/**
 	 * This private method selects between:
 	 * 
-	 * InChIJS -- JavaScript-WASM interface 
+	 * InChIJS -- JavaScript-WASM interface
 	 * 
-	 * and 
+	 * and
 	 * 
 	 * InChIJNI1 -- JNI-InChI interface
 	 * 
 	 * @return the appropriate interface
 	 */
-	private static InChIOCL getPlatformSubclass() {
-		return new InChIJNA();
+	private static InChIOCL getInstance() {
+		return new InChIOCL();
 	}
 
 	protected boolean getInchiModel;
 	protected boolean isInputInChI;
 	protected boolean getKey;
 	protected boolean isFixedH;
-	
+
 	protected String inchi;
 
 	private StereoMolecule mol;
@@ -255,9 +277,9 @@ public abstract class InChIOCL {
 	 * @param getKey
 	 * @return
 	 */
-	private String getInchiPvt(StereoMolecule inputMol, String molDataOrInChI, String options, boolean retKey) {
-		if ("version".equals(options)) {
-			return getInchiImpl(null, null, "version");
+	private String getInChIPvt(StereoMolecule inputMol, String molDataOrInChI, String options, boolean retKey) {
+		if ("version".equals(options) || "description".equals(options)) {
+			return getInChIVersion("description".equals(options));
 		}
 		System.out.println("test " + ++ntests);
 		try {
@@ -268,9 +290,9 @@ public abstract class InChIOCL {
 				return "";
 			}
 			options = setFieldsPvt(inputMol, molDataOrInChI, options, retKey);
-			if (options == null) { 
+			if (options == null) {
 				// probably an error processing mol or inchi data
-				return null; 
+				return null;
 			}
 			if (mol != null)
 				molDataOrInChI = null;
@@ -283,12 +305,10 @@ public abstract class InChIOCL {
 				molDataOrInChI = inchi;
 			}
 			String ret = getInchiImpl(mol, molDataOrInChI, options);
-			if (ret != null && options.length() == 0 
-					&& ret.startsWith("InChI=") 
-					&& !ret.startsWith("InChI=1S/")) {
+			if (ret != null && options.length() == 0 && ret.startsWith("InChI=") && !ret.startsWith("InChI=1S/")) {
 				reportInchicError("inchi C inchifrom standard InChI without '1S/'! Fixing...");
 				ret = "InChI=1S/" + ret.substring(8);
-			}				
+			}
 			return ret;
 		} catch (Throwable e) {
 			// oddly, e may be a string, not an error
@@ -303,13 +323,12 @@ public abstract class InChIOCL {
 			return null;
 		}
 	}
-	
+
 	protected void reportInchicError(String msg) {
-	    System.out.flush();
+		System.out.flush();
 		System.err.println(msg);
 		System.err.flush();
 	}
-
 
 	/**
 	 * 
@@ -317,22 +336,24 @@ public abstract class InChIOCL {
 	 * @param molDataOrInChI
 	 * @param options
 	 * @return options to pass on, or null if there is an error
+	 * @throws Exception
 	 */
-	private String setFieldsPvt(StereoMolecule mol, String molDataOrInChI, String options, boolean getKey) {
+	private String setFieldsPvt(StereoMolecule mol, String molDataOrInChI, String options, boolean getKey)
+			throws Exception {
 		if (options == null)
 			options = "";
 		String lc = options.toLowerCase().trim();
 		boolean getInchiModel = (lc.indexOf("model") == 0);
 		boolean optionKey = (lc.indexOf("key") >= 0);
-	    boolean getAuxInfo = (lc.indexOf("auxinfo") >= 0);
+		boolean getAuxInfo = (lc.indexOf("auxinfo") >= 0);
 		String inchi = this.inchi = null;
 		boolean isFixedH = (lc.indexOf("fixedh") >= 0);
 		boolean optionalFixedH = (lc.indexOf("fixedh?") >= 0);
 		if (lc.indexOf("fixedh") < 0) {
 			options = lc = lc.replace("standard", "");
 		}
-		boolean inputInChI = (molDataOrInChI != null && molDataOrInChI.startsWith("InChI="));
-		if (!inputInChI) {
+		boolean inputIsInChI = (molDataOrInChI != null && molDataOrInChI.startsWith("InChI="));
+		if (!inputIsInChI) {
 			options = lc;
 			if (optionKey) {
 				// remove any key-based options
@@ -349,22 +370,22 @@ public abstract class InChIOCL {
 		if (optionalFixedH) {
 			// we do this here because we will re-enter
 			// this.inchi will be set to a non-null value if no error
-			inchi = getInChIOptionallyFixedH(mol, molDataOrInChI, inputInChI, lc);
+			inchi = getInChIOptionallyFixedH(mol, molDataOrInChI, inputIsInChI, lc);
 			mol = null;
 			molDataOrInChI = null;
 			if (inchi == null)
 				options = null;
-		} else if (inputInChI && isFixedH) {
+		} else if (inputIsInChI && isFixedH) {
 			// getInChIFromInChI(inchi,"fixedH")
 			// but inchi.c cannot actually do this
 			// so we first create a model, and get the inchi from that.
 			mol = new StereoMolecule();
 			getMoleculeFromInChI(molDataOrInChI, mol);
 			inchi = null;
-			inputInChI = false;
+			inputIsInChI = false;
 		}
 		this.getInchiModel = getInchiModel;
-		this.isInputInChI = (inputInChI || inchi != null);
+		this.isInputInChI = (inputIsInChI || inchi != null);
 		this.inchi = inchi;
 		this.isFixedH = isFixedH;
 		this.getKey = optionKey || getKey;
@@ -374,56 +395,92 @@ public abstract class InChIOCL {
 	}
 
 	/**
-	 * Optionally return standard or fixedH InChI.
+	 * A general method for getting an InChI from a molecule, anothor InChI, or MOL
+	 * data.
 	 * 
-	 * The fixedH InChI is only returned if it has a /f layer (i.e. its length is
-	 * longe than the standard InChI.
+	 * For option "fixedh?", optionally return standard or fixedH InChI. In this case, both
+	 * are calculated, and the fixedH InChI is only returned if it has a /f layer
 	 * 
 	 * @param mol
 	 * @param molDataOrInChI
-	 * @param inputInChI     true if molDataOrInChI starts with "inchi="
+	 * @param inputInChI     true if molDataOrInChI starts with "inchi=", otherwise assumed to be MOL file data
 	 * @param options        coming in with "fixedh?" along with possibly other
 	 *                       options
 	 * @return
+	 * @throws Exception
 	 */
-	private String getInChIOptionallyFixedH(StereoMolecule mol, String molDataOrInChI, boolean inputInChI,
-			String options) {
+	private String getInChIOptionallyFixedH(StereoMolecule mol, String molDataOrInChI, 
+			boolean inputInChI, String options) throws Exception {
 		if (mol == null) {
 			// create a mol if necessary only
 			if (inputInChI) {
 				// inchi from inchi
 				// create a molecule from the first inchi
 				// then create the inchi from that
-				mol = new StereoMolecule();
-				getMoleculeFromInChI(molDataOrInChI, mol);
+				String inchi = molDataOrInChI;
 				molDataOrInChI = null;
+				mol = new StereoMolecule();
+				getMoleculeFromInChI(inchi, mol);
 			}
 		}
-		String fxd = getInchiPvt(mol, molDataOrInChI, options.replace('?', ' '), false);
+		String fxd = getInChIPvt(mol, molDataOrInChI, options.replace('?', ' '), false);
 		if (fxd == null) {
 			// error reading mol data or inchi
 			return null;
 		}
 		options = options.replace("fixedh?", "");
 		// not that this next still might not be actually standard
-		String std = getInchiPvt(mol, molDataOrInChI, options, false);
+		String std = getInChIPvt(mol, molDataOrInChI, options, false);
 		return (fxd.indexOf("/f") < 0 ? std : fxd);
 	}
 
-
 	/**
-	 * the real thing
-	 * 
 	 * Create an OCL molecule from an InChI output structure.
+	 * Iminols will be converted to amides.
 	 * 
 	 * @param struc
 	 * @param mol
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	final private void getOCLMoleculeFromInChI(String inchi, StereoMolecule mol) throws Exception {
-		
-		// uses subclass implementations
-		initializeInchiModel(inchi);
+	public static boolean getMoleculeFromInChI(String inchi, StereoMolecule mol) {
+		try {
+			getMoleculeFromInChIOpt(inchi, mol, "fixamides");
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Allows the option of fixing amides
+	 * @param inchi
+	 * @param mol
+	 * @param moreOptions  may be "fixamide"
+	 * @return
+	 */
+	public static boolean getMoleculeFromInChIOpt(String inchi, StereoMolecule mol, String moreOptions) {
+		try {
+			getInstance().getMoleculeFromInChIPvt(inchi, mol, moreOptions);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Allow the option of fixing amides
+	 * @param inchi
+	 * @param mol
+	 * @param moreOptions may be "fixamide"
+	 * @throws Exception
+	 */
+	private void getMoleculeFromInChIPvt(String inchi, StereoMolecule mol, String moreOptions) throws Exception {
+		getMoleculeFromInchiInput(getInchiInputFromInChI(inchi, moreOptions), mol);
+	}
+
+	public void getMoleculeFromInchiInput(InchiInput input, StereoMolecule mol) throws Exception {
+		inchiInput = input;
+		initializeInchiModel();
 		int nAtoms = getNumAtoms();
 		int nBonds = getNumBonds();
 		int nStereo = getNumStereo0D();
@@ -501,7 +558,7 @@ public abstract class InChIOCL {
 	}
 
 	private static int findDoubleBond(Map<Integer, Integer> doubleBonds, int[] neighbors) {
-		Integer ib = doubleBonds.get(getBondKey(neighbors[1],  neighbors[2]));
+		Integer ib = doubleBonds.get(getBondKey(neighbors[1], neighbors[2]));
 		return (ib == null ? -1 : ib.intValue());
 	}
 
@@ -575,662 +632,453 @@ public abstract class InChIOCL {
 		}
 	}
 
-	public static String getInChIVersion() {
-		return getInChI("", "version");
+	protected void initAndRun(Runnable r) {
+		InchiAPI.initAndRun(r);
 	}
-	
 
-	  abstract void initializeInchiModel(String inchi) throws Exception;
-
-	  //InChIStructureProvider Setters
-	  abstract void setAtom(int i);
-	  abstract void setBond(int i);
-	  abstract void setStereo0D(int i);
-	  
-	  // general counts
-	  abstract int getNumAtoms();
-	  abstract int getNumBonds();
-	  abstract int getNumStereo0D();
-	  
-	  //Atom Methods
-	  abstract String getElementType();
-	  abstract double getX();
-	  abstract double getY();
-	  abstract double getZ();
-	  abstract int getCharge();
-	  abstract int getImplicitH();
-	  
-	  /**
-	   * from inchi_api.h
-	   * 
-	   * #define ISOTOPIC_SHIFT_FLAG 10000
-	   * 
-	   * add to isotopic mass if isotopic_mass = (isotopic mass - average atomic
-	   * mass)
-	   * 
-	   * AT_NUM isotopic_mass;
-	   * 
-	   * 0 => non-isotopic; isotopic mass or ISOTOPIC_SHIFT_FLAG + mass - (average
-	   * atomic mass)
-	   * 
-	   * 
-	   * @return inchi's value of the average mass
-	   */
-	  abstract int getIsotopicMass();
-	 
-	  //Bond Methods
-	  abstract int getIndexOriginAtom();
-	  abstract int getIndexTargetAtom();
-	  abstract String getInchiBondType();
-	  
-	  //Stereo Methods
-	  abstract String getParity();
-	  abstract String getStereoType();
-	  abstract int getCenterAtom();
-	  abstract int[] getNeighbors();
-
-	
 	/**
-	 * Interface with inchi.c via JNA (David Lowe)
+	 * OCL molecule to InChI
 	 * 
-	 * For InChI to SMILES, we use JNA-InChI to read InChI's input structure, via
-	 * -InChI.
-	 * 
-	 * 
+	 * @param mol
+	 * @param options
+	 * @return a string
 	 */
-	private static class InChIJNA extends InChIOCL {
-
-		@Override
-		protected void initAndRun(Runnable r) {
-			InchiAPI.initAndRun(r);
-		}
-
-		private InchiInput inchiModel;
-
-		/**
-		 * OCL molecule to InChI
-		 * 
-		 * @param mol
-		 * @param options
-		 * @return a string
-		 */
-		protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options) {
-			if ("version".equals(options))
-				return getInternalInchiVersion();
-			try {
-				String inchi = null;
-				InchiOptions ops = getOptions(options);
-				InchiOutput out = null;
-				// set either inchi or InchiOutput
-				if (isInputInChI) {
-					if (getKey) {
-						// inchi => inchikey
-						inchi = molFileDataOrInChI;
-						// get key below
-					} else {
-						// inchi => inchi
-						out = inchiToInchi(molFileDataOrInChI, ops);
-					}
-				} else if (mol == null) {
-					// molfile data => inchi
-					out = molToInchi((String) molFileDataOrInChI, ops);
+	protected String getInchiImpl(StereoMolecule mol, String molFileDataOrInChI, String options) {
+		try {
+			String inchi = null;
+			String moreOptions = (options.toLowerCase(Locale.ROOT).indexOf("fixamides") >= 0 ? "fixamides" : null);
+			InchiOptions ops = getOptions(options);
+			InchiOutput out = null;
+			// set either inchi or InchiOutput
+			if (isInputInChI) {
+				if (getKey) {
+					// inchi => inchikey
+					inchi = molFileDataOrInChI;
+					// get key below
 				} else {
-					// molecule to inchi
-					out = toInchi(newInchiStructure(mol), getOptions(options));
+					// inchi => inchi
+					out = inchiToInchi(molFileDataOrInChI, ops);
 				}
-				if (out != null) {
-					if (getAuxInfo)
-						return out.getAuxInfo();
-					String msg = out.getMessage();
-					if (msg != null)
-						System.err.println(msg);
-					inchi = out.getInchi();
-				}
-				if (getInchiModel) {
-					// only not null now if we need a model.
-					// get InchiInput from InchiOutput and generate JSON model
-					return toJSON(getInchiInputFromInchi(inchi).getInchiInput());
-				}
-				return (getKey ? inchiToInchiKey(inchi).getInchiKey() : inchi);
-			} catch (Throwable e) {
-				e.printStackTrace();
-				return "";
+			} else if (mol == null) {
+				// molfile data => inchi
+				out = molToInchi((String) molFileDataOrInChI, ops);
+			} else {
+				// molecule to inchi
+				out = toInchi(getInchiInputFromOCLMolecule(mol), getOptions(options));
 			}
-
+			if (out != null) {
+				if (getAuxInfo)
+					return out.getAuxInfo();
+				String msg = out.getMessage();
+				if (msg != null)
+					System.err.println(msg);
+				inchi = out.getInchi();
+			}
+			if (getInchiModel) {
+				// only not null now if we need a model.
+				// get InchiInput from InchiOutput and generate JSON model
+				return InchiAPI.getJSONFromInchiInput(getInchiInputFromInChI(inchi, moreOptions));
+			}
+			return (getKey ? inchiToInchiKey(inchi).getInchiKey() : inchi);
+		} catch (Throwable e) {
+			e.printStackTrace();
+			return "";
 		}
 
-		private static InchiOptions getOptions(String options) {
-			InchiOptionsBuilder builder = new InchiOptionsBuilder();
-			StringTokenizer t = new StringTokenizer(options);
-			while (t.hasMoreElements()) {
-				String o = t.nextToken();
-				InchiFlag f = InchiFlag.getFlagFromName(o);
-				if (f == null) {
-					switch (o) {
-					case "auxinfo":
-						break;
-					default:
-						System.err.println("InChIJNA InChI option " + o + " not recognized -- ignored");
-						break;
-					}
-				} else {
-					builder.withFlag(f);
-				}
-			}
-			return builder.build();
-		}
+	}
 
-		private static InchiInput newInchiStructure(StereoMolecule mol) {
-			mol.ensureHelperArrays(Molecule.cHelperNeighbours);
-			InchiInput struc = new InchiInput();
-			int nAtoms = mol.getAllAtoms();
-			InchiAtom[] atoms = new InchiAtom[nAtoms];
-			BitSet bsCarbonAtoms = new BitSet();
-			for (int i = 0; i < nAtoms; i++) {
-				int elem = mol.getAtomicNo(i);
-				String sym = Molecule.cAtomLabel[elem];
-				int iso = mol.getAtomMass(i);
-				if (elem == 1) {
-					sym = "H"; // in case this is D
-				} else if (elem == 6)
-					bsCarbonAtoms.set(i);
-				InchiAtom a = atoms[i] = new InchiAtom(sym, mol.getAtomX(i), -mol.getAtomY(i), mol.getAtomZ(i));
-				a.setCharge(mol.getAtomCharge(i));
-				if (iso > 0)
-					a.setIsotopicMass(iso);
-				a.setImplicitHydrogen(mol.getImplicitHydrogens(i));
-			}
-			int nBonds = mol.getAllBonds();
-			BitSet bsDoubleBondAtoms = new BitSet();
-			BitSet bsStereoAtoms = new BitSet();
-			BitSet bsStereoBonds = new BitSet();
-			InchiBond[] bonds = new InchiBond[nBonds];
-			for (int i = 0; i < nBonds; i++) {
-				int oclOrder = mol.getBondTypeSimple(i);
-				InchiBondType order = getInChIOrder(oclOrder);
-				if (order != null) {
-					int atom1 = mol.getBondAtom(0, i);
-					int atom2 = mol.getBondAtom(1, i);
-					int oclType = mol.getBondType(i);
-					int oclParity = mol.getBondParity(i);
-					InchiBondStereo stereo = getInChIStereo(oclOrder, oclType, oclParity);
-					switch (stereo) {
-					case NONE:
-						if (order == InchiBondType.DOUBLE) {
-							bsDoubleBondAtoms.set(atom1);
-							bsDoubleBondAtoms.set(atom2);
-						}
-						break;
-					case SINGLE_1DOWN:
-					case SINGLE_1UP:
-						if (mol.getAllConnAtoms(atom1) == 3) {
-							bsStereoBonds.set(i);
-							bsStereoAtoms.set(atom1, !bsStereoAtoms.get(atom1));
-						}
-						break;
-					default:
-						break;
-					
-					}
-					bonds[i] = new InchiBond(atoms[atom1], atoms[atom2], order, stereo);
-				}
-			}
-			bsStereoAtoms.and(bsDoubleBondAtoms);
-			bsStereoAtoms.and(bsCarbonAtoms);
-			if (!bsStereoAtoms.isEmpty()) {
-				checkAllenes(mol, atoms, bonds, bsStereoAtoms, bsStereoBonds);
-			}
-			
-			for (int i = 0; i < nAtoms; i++) {
-					struc.addAtom(atoms[i]);
-			}
-			for (int i = 0; i < nBonds; i++) {
-				if (bonds[i] != null)
-					struc.addBond(bonds[i]);
-			}
-			return struc;
-		}
-
-		/**
-		 * We have found wedges or hashes starting on a double bonded carbon. This is
-		 * almost certainly an allene. But there is only one stereochemical marking. So
-		 * we need to add the other, or InChI will consider this an ambiguous marking.
-		 * 
-		 * InChI Technical Manual:
-		 * 
-		 * Allenes belong to the tetrahedral layer. However, to indicate stereochemistry
-		 * of allenes in the input MOL-file a special effort may be required. Namely,
-		 * the two bonds at the same end of allene system should be indicated by wedge
-		 * as stereogenic (and having opposite Up/Down marks). This is a limitation of
-		 * current InChI software (as per versions up to 1.04)
-		 * 
-		 * 
-		 * @param mol
-		 * @param atoms
-		 * @param bonds
-		 * @param bsStereoAtoms
-		 * @param bsStereoBonds
-		 */
-		private static void checkAllenes(StereoMolecule mol, InchiAtom[] atoms, InchiBond[] bonds,
-				BitSet bsStereoAtoms, BitSet bsStereoBonds) {
-			// we have stereochemistry marked at double-bonded atoms.
-			// make sure there are TWO such markings, opposite each other.
-			
-			for (int iatom = bsStereoAtoms.nextSetBit(0); iatom >= 0; iatom = bsStereoAtoms.nextSetBit(iatom + 1)) {
-				// there should be VERY few of these.
-				int ibondStereo = -1, ibondNone = -1;
-				int n = mol.getAllConnAtoms(iatom);
-				for (int i=0; i < n; i++) {
-					int ibond = mol.getConnBond(iatom, i);
-					if (mol.getConnBondOrder(iatom, i) == 1) {
-						if (bsStereoBonds.get(ibond))
-							ibondStereo = ibond;
-						else
-							ibondNone = ibond;
-					}
-				}
-				if (ibondNone >= 0 && ibondStereo >= 0) {
-					InchiBondStereo stereo = (bonds[ibondStereo].getStereo() == InchiBondStereo.SINGLE_1UP ? InchiBondStereo.SINGLE_1DOWN : InchiBondStereo.SINGLE_1UP);
-					InchiAtom iatom1 = bonds[ibondNone].getStart();
-					InchiAtom iatom2 = bonds[ibondNone].getEnd();
-					
-					boolean isAtom1 = (iatom1 == atoms[iatom]);
-					bonds[ibondNone] = new InchiBond(isAtom1 ? iatom1 : iatom2, 
-							isAtom1 ? iatom2: iatom1, InchiBondType.SINGLE, stereo);
-				}
-			}
-		}
-
-		private static InchiBondType getInChIOrder(int oclOrder) {
-			switch (oclOrder) {
-			case Molecule.cBondTypeSingle:
-				return InchiBondType.SINGLE;
-			case Molecule.cBondTypeDouble:
-				return InchiBondType.DOUBLE;
-			case Molecule.cBondTypeTriple:
-				return InchiBondType.TRIPLE;
-			case Molecule.cBondTypeDelocalized:
-				return InchiBondType.ALTERN;
-			case Molecule.cBondTypeMetalLigand:
-			default:
-				return null;
-			}
-		}
-
-		private static InchiBondStereo getInChIStereo(int oclOrder, int oclType, int oclParity) {
-			if (oclOrder == 1) {
-				switch (oclType) {
-				case Molecule.cBondTypeDown:
-					return InchiBondStereo.SINGLE_1DOWN;
-				case Molecule.cBondTypeUp:
-					return InchiBondStereo.SINGLE_1UP;
+	private static InchiOptions getOptions(String options) {
+		InchiOptionsBuilder builder = new InchiOptionsBuilder();
+		StringTokenizer t = new StringTokenizer(options);
+		while (t.hasMoreElements()) {
+			String o = t.nextToken();
+			InchiFlag f = InchiFlag.getFlagFromName(o);
+			if (f == null) {
+				switch (o) {
+				case "auxinfo":
+					break;
 				default:
-					if (oclParity == Molecule.cBondParityUnknown) {
-						return (oclOrder == Molecule.cBondTypeDouble ? InchiBondStereo.DOUBLE_EITHER
-								: InchiBondStereo.SINGLE_1EITHER);
-					}
-				}
-			}
-			return InchiBondStereo.NONE;
-		}
-
-		@Override
-		protected void initializeInchiModel(String inchi) throws Exception {
-			inchiModel = getInchiInputFromInchi(inchi).getInchiInput();
-			for (int i = getNumAtoms(); --i >= 0;)
-				map.put(inchiModel.getAtom(i), Integer.valueOf(i));
-		}
-
-		private Map<InchiAtom, Integer> map = new Hashtable<InchiAtom, Integer>();
-
-		private InchiAtom thisAtom;
-		private InchiBond thisBond;
-		private InchiStereo thisStereo;
-
-		/// atoms ///
-
-		@Override
-		protected int getNumAtoms() {
-			return inchiModel.getAtoms().size();
-		}
-
-		@Override
-		protected void setAtom(int i) {
-			thisAtom = inchiModel.getAtom(i);
-		}
-
-		@Override
-		protected String getElementType() {
-			return thisAtom.getElName();
-		}
-
-		@Override
-		protected double getX() {
-			return thisAtom.getX();
-		}
-
-		@Override
-		protected double getY() {
-			return thisAtom.getY();
-		}
-
-		@Override
-		protected double getZ() {
-			return thisAtom.getZ();
-		}
-
-		@Override
-		protected int getCharge() {
-			return thisAtom.getCharge();
-		}
-
-		@Override
-		public int getIsotopicMass() {
-			return InchiUtils.getActualMass(getElementType(), thisAtom.getIsotopicMass());
-		}
-
-		@Override
-		public int getImplicitH() {
-			return thisAtom.getImplicitHydrogen();
-		}
-
-		/// bonds ///
-
-		@Override
-		public int getNumBonds() {
-			return inchiModel.getBonds().size();
-		}
-
-		@Override
-		public void setBond(int i) {
-			thisBond = inchiModel.getBond(i);
-		}
-
-		@Override
-		public int getIndexOriginAtom() {
-			return map.get(thisBond.getStart()).intValue();
-		}
-
-		@Override
-		public int getIndexTargetAtom() {
-			return map.get(thisBond.getEnd()).intValue();
-		}
-
-		@Override
-		public String getInchiBondType() {
-			InchiBondType type = thisBond.getType();
-			return type.name();
-		}
-
-		/// Stereo ///
-
-		@Override
-		public int getNumStereo0D() {
-			return inchiModel.getStereos().size();
-		}
-
-		@Override
-		public void setStereo0D(int i) {
-			thisStereo = inchiModel.getStereos().get(i);
-		}
-
-		@Override
-		public int[] getNeighbors() {
-			InchiAtom[] an = thisStereo.getAtoms();
-
-			int n = an.length;
-			int[] a = new int[n];
-
-			// add for loop
-			for (int i = 0; i < n; i++) {
-				a[i] = map.get(an[i]).intValue();
-			}
-			return a;
-		}
-
-		@Override
-		public int getCenterAtom() {
-			InchiAtom ca = thisStereo.getCentralAtom();
-			return (ca == null ? -1 : map.get(ca).intValue());
-		}
-
-		@Override
-		public String getStereoType() {
-			return uc(thisStereo.getType());
-		}
-
-		@Override
-		public String getParity() {
-			return uc(thisStereo.getParity());
-		}
-
-		private static String uc(Object o) {
-			return o.toString().toUpperCase();
-		}
-
-		private static String toJSON(InchiInput inchiModel) {
-			int na = inchiModel.getAtoms().size();
-			int nb = inchiModel.getBonds().size();
-			int ns = inchiModel.getStereos().size();
-			Map<InchiAtom, Integer> mapAtoms = new HashMap<>();
-			boolean haveXYZ = false;
-			for (int i = 0; i < na; i++) {
-				InchiAtom a = inchiModel.getAtom(i);
-				if (a.getX() != 0 || a.getY() != 0 || a.getZ() != 0) {
-					haveXYZ = true;
+					System.err.println("InChIJNA InChI option " + o + " not recognized -- ignored");
 					break;
 				}
-			}
-			String s = "{";
-			s += "\n\"atomCount\":" + na + ",\n";
-			s += "\"atoms\":[\n";
-			for (int i = 0; i < na; i++) {
-				InchiAtom a = inchiModel.getAtom(i);
-				mapAtoms.put(a, Integer.valueOf(i));
-				if (i > 0)
-					s += ",\n";
-				s += "{";
-				s += toJSONInt("index", Integer.valueOf(i), "");
-				s += toJSONNotNone("elname", a.getElName(), ",");
-				if (haveXYZ) {
-					s += toJSONDouble("x", a.getX(), ",");
-					s += toJSONDouble("y", a.getY(), ",");
-					s += toJSONDouble("z", a.getZ(), ",");
-				}
-				s += toJSONNotNone("radical", a.getRadical(), ",");
-				s += toJSONNonZero("charge", a.getCharge(), ",");
-				s += toJSONNonZero("isotopeMass", a.getIsotopicMass(), ",");
-				if (a.getImplicitHydrogen() > 0)
-					s += toJSONNonZero("implicitH", a.getImplicitHydrogen(), ",");
-				s += toJSONNonZero("implicitDeuterium", a.getImplicitDeuterium(), ",");
-				s += toJSONNonZero("implicitProtium", a.getImplicitProtium(), ",");
-				s += toJSONNonZero("implicitTritium", a.getImplicitTritium(), ",");
-				s += "}";
-			}
-			s += "\n],";
-			s += "\n\"bondCount\":" + nb + ",";
-			s += "\n\"bonds\":[\n";
-
-			for (int i = 0; i < nb; i++) {
-				if (i > 0)
-					s += ",\n";
-				s += "{";
-				InchiBond b = inchiModel.getBond(i);
-				s += toJSONInt("originAtom", mapAtoms.get(b.getStart()).intValue(), "");
-				s += toJSONInt("targetAtom", mapAtoms.get(b.getEnd()).intValue(), ",");
-				String bt = uc(b.getType());
-				if (!bt.equals("SINGLE"))
-					s += toJSONString("type", bt, ",");
-				s += toJSONNotNone("stereo", uc(b.getStereo()), ",");
-				s += "}";
-			}
-			s += "\n]";
-			if (ns > 0) {
-				s += ",\n\"stereoCount\":" + ns + ",\n";
-				s += "\"stereo\":[\n";
-				for (int i = 0; i < ns; i++) {
-					if (i > 0)
-						s += ",\n";
-					s += "{";
-					InchiStereo d = inchiModel.getStereos().get(i);
-					InchiAtom a = d.getCentralAtom();
-					s += toJSONNotNone("parity", d.getParity(), "");
-					s += toJSONNotNone("type", d.getType(), ",");
-					if (a != null)
-						s += toJSONInt("centralAtom", mapAtoms.get(a).intValue(), ",");
-					// s += toJSON("debugString",d.getDebugString(), ",");
-					// never implemented? s +=
-					// toJSON("disconnectedParity",d.getDisconnectedParity(), ",");
-					InchiAtom[] an = d.getAtoms();
-					int[] nbs = new int[an.length];
-					for (int j = 0; j < an.length; j++) {
-						nbs[j] = mapAtoms.get(an[j]).intValue();
-					}
-					s += toJSONArray("neighbors", nbs, ",");
-					s += "}";
-				}
-				s += "\n]";
-			}
-			s += "}";
-			return s;
-		}
-
-		private static String toJSONArray(String key, int[] val, String term) {
-			String s = term + "\"" + key + "\":[" + val[0];
-			for (int i = 1; i < val.length; i++) {
-				s += "," + val[i];
-			}
-			return s + "]";
-		}
-
-		private static String toJSONNonZero(String key, int val, String term) {
-			return (val == 0 ? "" : toJSONInt(key, val, term));
-		}
-
-		private static String toJSONInt(String key, int val, String term) {
-			return term + "\"" + key + "\":" + val;
-		}
-
-		private static String toJSONDouble(String key, double val, String term) {
-			String s;
-			if (val == 0) {
-				s = "0";
 			} else {
-				s = "" + (val + (val > 0 ? 0.00000001 : -0.00000001));
-				s = s.substring(0, s.indexOf(".") + 5);
-				int n = s.length();
-				while (s.charAt(--n) == '0') {
-				}
-				s = s.substring(0, n + 1);
-			}
-			return term + "\"" + key + "\":" + s;
-		}
-
-		private static String toJSONString(String key, String val, String term) {
-			return term + "\"" + key + "\":\"" + val + "\"";
-		}
-
-		private static String toJSONNotNone(String key, Object val, String term) {
-			String s = val.toString();
-			return ("NONE".equals(s) ? "" : term + "\"" + key + "\":\"" + s + "\"");
-		}
-
-		private static String inchiVersionInternal;
-
-		/**
-		 * Get the InChI version directly from the inchi code without an API. To be
-		 * replaced in the future with a simple inchi IXA call?
-		 * 
-		 * Future format may change.
-		 * 
-		 * @param f
-		 * @return something like "InChI version 1, Software 1.07.2 (API Library)"
-		 */
-		public static String getInternalInchiVersion() {
-			if (inchiVersionInternal == null) {
-				File f = InchiLibrary.JNA_NATIVE_LIB.getFile();
-				inchiVersionInternal = extractInchiVersionInternal(f);
-				if (inchiVersionInternal == null) {
-					// linux will be here after Native libary deletes the file
-					try {
-						// that's OK; we can get it ourselves
-						f = Native.extractFromResourcePath(InchiLibrary.JNA_NATIVE_LIB.getName());
-						inchiVersionInternal = extractInchiVersionInternal(f);
-					} catch (Exception e) {
-					}
-				}
-				if (inchiVersionInternal == null)
-					inchiVersionInternal = "unknown";
-			}
-			return inchiVersionInternal;
-		}
-
-		private static String extractInchiVersionInternal(File f) {
-			System.out.println(f);
-			String s = null;
-			try (FileInputStream fis = new FileInputStream(f)) {
-				byte[] b = new byte[(int) f.length()];
-				fis.read(b);
-				s = new String(b);
-				int pt = s.indexOf("InChI version");
-				if (pt < 0) {
-					s = null;
-				} else {
-					s = s.substring(pt, s.indexOf('\0', pt));
-				}
-				fis.close();
-				f.delete();
-			} catch (Exception e) {
-				// System.out.println(f);
-				// e.printStackTrace();
-				// it's gone already in Linux
-			}
-			return s;
-		}
-		
-		
-		
-		private InchiKeyOutput inchiToInchiKey(String inchi) {
-			if (useIXA) {
-				return InchiAPI.inchiToInchiKey(inchi);
-			} else {
-				return JnaInchi.inchiToInchiKey(inchi);
+				builder.withFlag(f);
 			}
 		}
-
-		private InchiInputFromInchiOutput getInchiInputFromInchi(String inchi) {
-			if (useIXA) {
-				return InchiAPI.getInchiInputFromInchi(inchi);
-			} else {
-				return JnaInchi.getInchiInputFromInchi(inchi);
-			}
-		}
-
-		private InchiOutput toInchi(InchiInput input, InchiOptions options) {
-			if (useIXA) {
-				return InchiAPI.toInchi(input, options);
-			} else {
-				return JnaInchi.toInchi(input, options);
-			}
-		}
-
-		private InchiOutput molToInchi(String molFileData, InchiOptions options) {
-			if (useIXA) {
-				return InchiAPI.molFileToInchi(molFileData, options);
-			} else {
-				return JnaInchi.molToInchi(molFileData, options);
-			}
-		}
-
-		private InchiOutput inchiToInchi(String inchi, InchiOptions options) {
-			if (useIXA) {
-				return InchiAPI.inchiToInchi(inchi, options);
-			} else {
-				return JnaInchi.inchiToInchi(inchi, options);
-			}
-		}
-
-
-
+		return builder.build();
 	}
+
+	protected InchiInput getInchiInputFromMolPvt(StereoMolecule mol) {
+		mol.ensureHelperArrays(Molecule.cHelperNeighbours);
+		InchiInput struc = new InchiInput();
+		int nAtoms = mol.getAllAtoms();
+		InchiAtom[] atoms = new InchiAtom[nAtoms];
+		BitSet bsCarbonAtoms = new BitSet();
+		for (int i = 0; i < nAtoms; i++) {
+			int elem = mol.getAtomicNo(i);
+			String sym = Molecule.cAtomLabel[elem];
+			int iso = mol.getAtomMass(i);
+			if (elem == 1) {
+				sym = "H"; // in case this is D
+			} else if (elem == 6)
+				bsCarbonAtoms.set(i);
+			InchiAtom a = atoms[i] = new InchiAtom(sym, mol.getAtomX(i), -mol.getAtomY(i), mol.getAtomZ(i));
+			a.setCharge(mol.getAtomCharge(i));
+			if (iso > 0)
+				a.setIsotopicMass(iso);
+			a.setImplicitHydrogen(mol.getImplicitHydrogens(i));
+		}
+		int nBonds = mol.getAllBonds();
+		BitSet bsDoubleBondAtoms = new BitSet();
+		BitSet bsStereoAtoms = new BitSet();
+		BitSet bsStereoBonds = new BitSet();
+		InchiBond[] bonds = new InchiBond[nBonds];
+		for (int i = 0; i < nBonds; i++) {
+			int oclOrder = mol.getBondTypeSimple(i);
+			InchiBondType order = getInChIOrder(oclOrder);
+			if (order != null) {
+				int atom1 = mol.getBondAtom(0, i);
+				int atom2 = mol.getBondAtom(1, i);
+				int oclType = mol.getBondType(i);
+				int oclParity = mol.getBondParity(i);
+				InchiBondStereo stereo = getInChIStereo(oclOrder, oclType, oclParity);
+				switch (stereo) {
+				case NONE:
+					if (order == InchiBondType.DOUBLE) {
+						bsDoubleBondAtoms.set(atom1);
+						bsDoubleBondAtoms.set(atom2);
+					}
+					break;
+				case SINGLE_1DOWN:
+				case SINGLE_1UP:
+					if (mol.getAllConnAtoms(atom1) == 3) {
+						bsStereoBonds.set(i);
+						bsStereoAtoms.set(atom1, !bsStereoAtoms.get(atom1));
+					}
+					break;
+				default:
+					break;
+
+				}
+				bonds[i] = new InchiBond(atoms[atom1], atoms[atom2], order, stereo);
+			}
+		}
+		bsStereoAtoms.and(bsDoubleBondAtoms);
+		bsStereoAtoms.and(bsCarbonAtoms);
+		if (!bsStereoAtoms.isEmpty()) {
+			checkAllenes(mol, atoms, bonds, bsStereoAtoms, bsStereoBonds);
+		}
+
+		for (int i = 0; i < nAtoms; i++) {
+			struc.addAtom(atoms[i]);
+		}
+		for (int i = 0; i < nBonds; i++) {
+			if (bonds[i] != null)
+				struc.addBond(bonds[i]);
+		}
+		return struc;
+	}
+
+	/**
+	 * We have found wedges or hashes starting on a double bonded carbon. This is
+	 * almost certainly an allene. But there is only one stereochemical marking. So
+	 * we need to add the other, or InChI will consider this an ambiguous marking.
+	 * 
+	 * InChI Technical Manual:
+	 * 
+	 * Allenes belong to the tetrahedral layer. However, to indicate stereochemistry
+	 * of allenes in the input MOL-file a special effort may be required. Namely,
+	 * the two bonds at the same end of allene system should be indicated by wedge
+	 * as stereogenic (and having opposite Up/Down marks). This is a limitation of
+	 * current InChI software (as per versions up to 1.04)
+	 * 
+	 * 
+	 * @param mol
+	 * @param atoms
+	 * @param bonds
+	 * @param bsStereoAtoms
+	 * @param bsStereoBonds
+	 */
+	private static void checkAllenes(StereoMolecule mol, InchiAtom[] atoms, InchiBond[] bonds, BitSet bsStereoAtoms,
+			BitSet bsStereoBonds) {
+		// we have stereochemistry marked at double-bonded atoms.
+		// make sure there are TWO such markings, opposite each other.
+
+		for (int iatom = bsStereoAtoms.nextSetBit(0); iatom >= 0; iatom = bsStereoAtoms.nextSetBit(iatom + 1)) {
+			// there should be VERY few of these.
+			int ibondStereo = -1, ibondNone = -1;
+			int n = mol.getAllConnAtoms(iatom);
+			for (int i = 0; i < n; i++) {
+				int ibond = mol.getConnBond(iatom, i);
+				if (mol.getConnBondOrder(iatom, i) == 1) {
+					if (bsStereoBonds.get(ibond))
+						ibondStereo = ibond;
+					else
+						ibondNone = ibond;
+				}
+			}
+			if (ibondNone >= 0 && ibondStereo >= 0) {
+				InchiBondStereo stereo = (bonds[ibondStereo].getStereo() == InchiBondStereo.SINGLE_1UP
+						? InchiBondStereo.SINGLE_1DOWN
+						: InchiBondStereo.SINGLE_1UP);
+				InchiAtom iatom1 = bonds[ibondNone].getStart();
+				InchiAtom iatom2 = bonds[ibondNone].getEnd();
+
+				boolean isAtom1 = (iatom1 == atoms[iatom]);
+				bonds[ibondNone] = new InchiBond(isAtom1 ? iatom1 : iatom2, isAtom1 ? iatom2 : iatom1,
+						InchiBondType.SINGLE, stereo);
+			}
+		}
+	}
+
+	private static InchiBondType getInChIOrder(int oclOrder) {
+		switch (oclOrder) {
+		case Molecule.cBondTypeSingle:
+			return InchiBondType.SINGLE;
+		case Molecule.cBondTypeDouble:
+			return InchiBondType.DOUBLE;
+		case Molecule.cBondTypeTriple:
+			return InchiBondType.TRIPLE;
+		case Molecule.cBondTypeDelocalized:
+			return InchiBondType.ALTERN;
+		case Molecule.cBondTypeMetalLigand:
+		default:
+			return null;
+		}
+	}
+
+	private static InchiBondStereo getInChIStereo(int oclOrder, int oclType, int oclParity) {
+		if (oclOrder == 1) {
+			switch (oclType) {
+			case Molecule.cBondTypeDown:
+				return InchiBondStereo.SINGLE_1DOWN;
+			case Molecule.cBondTypeUp:
+				return InchiBondStereo.SINGLE_1UP;
+			default:
+				if (oclParity == Molecule.cBondParityUnknown) {
+					return (oclOrder == Molecule.cBondTypeDouble ? InchiBondStereo.DOUBLE_EITHER
+							: InchiBondStereo.SINGLE_1EITHER);
+				}
+			}
+		}
+		return InchiBondStereo.NONE;
+	}
+
+	protected void initializeInchiModel() throws Exception {
+		for (int i = getNumAtoms(); --i >= 0;)
+			map.put(inchiInput.getAtom(i), Integer.valueOf(i));
+	}
+
+	private Map<InchiAtom, Integer> map = new Hashtable<InchiAtom, Integer>();
+
+	private InchiAtom thisAtom;
+	private InchiBond thisBond;
+	private InchiStereo thisStereo;
+
+	/// atoms ///
+
+	protected int getNumAtoms() {
+		return inchiInput.getAtoms().size();
+	}
+
+	protected void setAtom(int i) {
+		thisAtom = inchiInput.getAtom(i);
+	}
+
+	protected String getElementType() {
+		return thisAtom.getElName();
+	}
+
+	protected double getX() {
+		return thisAtom.getX();
+	}
+
+	protected double getY() {
+		return thisAtom.getY();
+	}
+
+	protected double getZ() {
+		return thisAtom.getZ();
+	}
+
+	protected int getCharge() {
+		return thisAtom.getCharge();
+	}
+
+	protected int getIsotopicMass() {
+		return InchiUtils.getActualMass(getElementType(), thisAtom.getIsotopicMass());
+	}
+
+	protected int getImplicitH() {
+		return thisAtom.getImplicitHydrogen();
+	}
+
+	/// bonds ///
+
+	protected int getNumBonds() {
+		return inchiInput.getBonds().size();
+	}
+
+	protected void setBond(int i) {
+		thisBond = inchiInput.getBond(i);
+	}
+
+	protected int getIndexOriginAtom() {
+		return map.get(thisBond.getStart()).intValue();
+	}
+
+	protected int getIndexTargetAtom() {
+		return map.get(thisBond.getEnd()).intValue();
+	}
+
+	protected String getInchiBondType() {
+		InchiBondType type = thisBond.getType();
+		return type.name();
+	}
+
+	/// Stereo ///
+
+	protected int getNumStereo0D() {
+		return inchiInput.getStereos().size();
+	}
+
+	protected void setStereo0D(int i) {
+		thisStereo = inchiInput.getStereos().get(i);
+	}
+
+	protected int[] getNeighbors() {
+		InchiAtom[] an = thisStereo.getAtoms();
+
+		int n = an.length;
+		int[] a = new int[n];
+
+		// add for loop
+		for (int i = 0; i < n; i++) {
+			a[i] = map.get(an[i]).intValue();
+		}
+		return a;
+	}
+
+	protected int getCenterAtom() {
+		InchiAtom ca = thisStereo.getCentralAtom();
+		return (ca == null ? -1 : map.get(ca).intValue());
+	}
+
+	protected String getStereoType() {
+		return uc(thisStereo.getType());
+	}
+
+	protected String getParity() {
+		return uc(thisStereo.getParity());
+	}
+
+	private static String uc(Object o) {
+		return o.toString().toUpperCase(Locale.ROOT);
+	}
+
+	private static String inchiVersionInternal;
+
+	/**
+	 * Get the InChI version directly from the inchi code without an API. To be
+	 * replaced in the future with a simple inchi IXA call?
+	 * 
+	 * Future format may change.
+	 * 
+	 * @param f
+	 * @return something like "InChI version 1, Software 1.07.2 (API Library)"
+	 */
+	public static String getInChIVersion(boolean fullDescription) {
+		if (useIXA)
+			return InchiAPI.getInChIVersion(fullDescription);
+		if (inchiVersionInternal == null) {
+			// this will not work in JavaScript yet
+			File f = InchiLibrary.JNA_NATIVE_LIB.getFile();
+			inchiVersionInternal = extractInchiVersionInternal(f);
+			if (inchiVersionInternal == null) {
+				// linux will be here after Native libary deletes the file
+				try {
+					// that's OK; we can get it ourselves
+					f = Native.extractFromResourcePath(InchiLibrary.JNA_NATIVE_LIB.getName());
+					inchiVersionInternal = extractInchiVersionInternal(f);
+				} catch (Exception e) {
+				}
+			}
+			if (inchiVersionInternal == null)
+				inchiVersionInternal = "unknown";
+		}
+		return inchiVersionInternal;
+	}
+
+	/**
+	 * Java only
+	 * 
+	 * @param f
+	 * @return APP_DESCRIPTION
+	 */
+	private static String extractInchiVersionInternal(File f) {
+		System.out.println(f);
+		String s = null;
+		try (FileInputStream fis = new FileInputStream(f)) {
+			byte[] b = new byte[(int) f.length()];
+			fis.read(b);
+			s = new String(b);
+			int pt = s.indexOf("InChI version");
+			if (pt < 0) {
+				s = null;
+			} else {
+				s = s.substring(pt, s.indexOf('\0', pt));
+			}
+			fis.close();
+			f.delete();
+		} catch (Exception e) {
+			// System.out.println(f);
+			// e.printStackTrace();
+			// it's gone already in Linux
+		}
+		return s;
+	}
+
+	protected InchiInput getInchiInputFromInChIPvt(String inchi, String moreOptions) {
+		if (useIXA) {
+			// InChIAPI makes this more explicit
+			// original is now InchiAPI.getInchiInputFromInChIOutputFromInchi(inchi, moreOptions);
+			return InchiAPI.getInchiInputFromInChI(inchi, moreOptions);
+		} else {
+			// JnaInchi does not support "fixamide"
+			return JnaInchi.getInchiInputFromInchi(inchi).getInchiInput();
+		}
+	}
+
+	private InchiKeyOutput inchiToInchiKey(String inchi) {
+		if (useIXA) {
+			return InchiAPI.inchiToInchiKey(inchi);
+		} else {
+			return JnaInchi.inchiToInchiKey(inchi);
+		}
+	}
+
+	private InchiOutput toInchi(InchiInput input, InchiOptions options) {
+		if (useIXA) {
+			return InchiAPI.toInchi(input, options);
+		} else {
+			return JnaInchi.toInchi(input, options);
+		}
+	}
+
+	private InchiOutput molToInchi(String molFileData, InchiOptions options) {
+		if (useIXA) {
+			return InchiAPI.molFileToInchi(molFileData, options);
+		} else {
+			return JnaInchi.molToInchi(molFileData, options);
+		}
+	}
+
+	private InchiOutput inchiToInchi(String inchi, InchiOptions options) {
+		if (useIXA) {
+			return InchiAPI.inchiToInchi(inchi, options);
+		} else {
+			return JnaInchi.inchiToInchi(inchi, options);
+		}
+	}
+
 }

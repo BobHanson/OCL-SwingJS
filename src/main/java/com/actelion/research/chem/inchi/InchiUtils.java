@@ -40,6 +40,23 @@ public class InchiUtils {
     return atomicSymbols.indexOf(sym) / 2;
   }
 
+  /**
+   * from inchi_api.h
+   * 
+   * #define ISOTOPIC_SHIFT_FLAG 10000
+   * 
+   * add to isotopic mass if isotopic_mass = (isotopic mass - average atomic
+   * mass)
+   * 
+   * AT_NUM isotopic_mass;
+   * 
+   * 0 => non-isotopic; isotopic mass or ISOTOPIC_SHIFT_FLAG + mass - (average
+   * atomic mass)
+   * 
+   * 
+   * @return inchi's value of the average mass
+   */
+
   public static int getActualMass(String sym, int mass) {
     if (mass < 900) {
       return mass;
