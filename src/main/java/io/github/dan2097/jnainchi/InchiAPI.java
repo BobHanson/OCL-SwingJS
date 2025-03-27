@@ -172,7 +172,7 @@ public class InchiAPI {
        if (J2S.wasm && J2S.wasm[wasmName] && J2S.wasm[wasmName].$ready) {
          t[0] && clearInterval(t[0]);
          System.out.println("InChI WASM initialized successfully");
-         r.run$();
+         r && r.run$();
          return true;
        } 
        System.out.println("InChI WASM initializing...");
@@ -181,7 +181,8 @@ public class InchiAPI {
    t[0] = setInterval(f, 50);
 		 */ {
 			 // in Java, no asynchronous issue
-			 r.run();
+			 if (r != null)
+				 r.run();
 		 }
 	}
 
