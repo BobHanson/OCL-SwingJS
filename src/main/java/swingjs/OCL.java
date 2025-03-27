@@ -1,5 +1,7 @@
 package swingjs;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Window;
@@ -8,9 +10,12 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Base64;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JRootPane;
 
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.IsomericSmilesCreator;
@@ -20,7 +25,11 @@ import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
 import com.actelion.research.chem.inchi.InChIOCL;
 import com.actelion.research.gui.JStructureView;
+import com.actelion.research.gui.editor.EditorEvent;
+import com.actelion.research.gui.editor.GenericEditorArea;
+import com.actelion.research.gui.editor.SwingEditorArea;
 import com.actelion.research.gui.editor.SwingEditorPanel;
+import com.actelion.research.gui.generic.GenericEventListener;
 import com.actelion.research.gui.swing.SwingDialog;
 import com.sun.jna.Pointer;
 
@@ -114,6 +123,10 @@ public class OCL {
 		return InChIOCL.getInChIFromInChI(inchi, options);
 	}
 
+	public static String getInChIFromInchiInput(InchiInput inchiInput, String options) {
+		return InchiAPI.getInChIFromInchiInput(inchiInput, options);
+	}
+	
 	/**
 	 * 
 	 */
@@ -138,8 +151,8 @@ public class OCL {
 	/**
 	 * 
 	 */
-	public static InchiInput getInchiInputFromInChI(String inchi, String options) {
-		return InChIOCL.getInchiInputFromInChI(inchi, options);
+	public static InchiInput getInchiInputFromInChI(String inchi, String moreOptions) {
+		return InChIOCL.getInchiInputFromInChI(inchi, moreOptions);
 	}
 
 	/**
@@ -262,7 +275,7 @@ public class OCL {
 	/**
 	 * 
 	 */
-	public static void init(Runnable r) {
+	public static void initInchi(Runnable r) {
 		InChIOCL.init(r);
 	}
 
@@ -281,30 +294,69 @@ public class OCL {
 		return mol;// not necessary?
 	}
 
-	public static Window getDialog(String title, int width, int height, int mode) {
-		return getWindow(null, title, width, height, mode);
+	/**
+	 * Get a modal dialog of the given width and height with the given title.
+	 * In Java, the thread will wait for the dialog to close; in JavaScript, the 
+	 * thread will continue, but the reset of the page will be grayed out.
+	 * 
+	 * @param title   null here will produce a frame instead of a dialog
+	 * @param width
+	 * @param height
+	 * @param mode                   See {@link AbstractDepictor}; -1 for default
+	 *                               with AbstractDepictor.cDModeSuppressCIPParity |
+	 *                               AbstractDepictor.cDModeSuppressESR |
+	 *                               AbstractDepictor.cDModeSuppressChiralText;
+	 * 
+	 * @param drawingChangedListener anything that has a method accept(Object), where this Object will be a GenericEditorArea
+	 * @return
+	 */
+	public static Window getModalDialog(String title, int width, int height, int mode, Consumer<Object> drawingChangedListener) {
+		return getWindow(null, title, width, height, mode, drawingChangedListener);
 	}
-	public static Window getFrame(String name, int width, int height, int mode) {
-		return getWindow(name, null, width, height, mode);
-		
+	
+	public static Window getFrame(String name, int width, int height, int mode, Consumer<Object> drawingChangedListener) {
+		return getWindow(name, null, width, height, mode, drawingChangedListener);		
 	}
-	private static Window getWindow(String name, String title, int width, int height, int mode) {
+	
+	private static Window getWindow(String name, String title, int width, int height, int mode, Consumer<Object> drawingChangedListener) {
 		if (width == 0) {
 			width = 500;
 			height = 500;
 		}
-		if (mode == -1)
-			mode = AbstractDepictor.cDModeSuppressCIPParity | AbstractDepictor.cDModeSuppressESR
+		if (mode <= 0)
+			mode = AbstractDepictor.cDModeSuppressCIPParity 
+					| AbstractDepictor.cDModeSuppressESR
 					| AbstractDepictor.cDModeSuppressChiralText;
 
 		SwingEditorPanel p = new SwingEditorPanel(null, mode);
 		p.setSize(new Dimension(width, height));
+		p.setPreferredSize(new Dimension(width, height));
+		SwingEditorArea area = (SwingEditorArea) p.getComponent(0);
+		GenericEditorArea drawing = area.getGenericDrawArea();
+		drawing.setDisplayMode(mode);
+		drawing.addDrawAreaListener(new GenericEventListener<EditorEvent>() {
+
+			@Override
+			public void eventHappened(EditorEvent e) {
+				switch (e.getWhat()) {
+				case EditorEvent.WHAT_MOLECULE_CHANGED:
+					if (drawingChangedListener != null)
+						drawingChangedListener.accept(drawing);
+					break;
+				case EditorEvent.WHAT_SELECTION_CHANGED:
+				case EditorEvent.WHAT_HILITE_ATOM_CHANGED:
+				case EditorEvent.WHAT_HILITE_BOND_CHANGED:
+					break;
+				}
+			}
+		});
 
 		if (title == null) {
 			// embed
-			JFrame frame = new JFrame();
+			JFrame frame = new JFrame(name);
 			frame.setName(name);
 			frame.add(p);
+			frame.pack();
 			frame.setVisible(true);
 			return frame;
 		} else {
@@ -316,6 +368,21 @@ public class OCL {
 		}
 	}
 
+	public static GenericEditorArea getGenericDrawArea(Window w) {
+		Container cpane = (w instanceof JFrame ? ((JFrame) w).getContentPane() : ((JDialog) w).getContentPane());
+		for (int i = cpane.getComponentCount(); --i >= 0;) {
+			Component c = cpane.getComponent(i);
+			if (c instanceof SwingEditorPanel) {
+				return ((SwingEditorArea) ((SwingEditorPanel) c).getComponent(0)).getGenericDrawArea();
+			}
+		}
+		return null;
+	}
+	
+	public static void setMolecule(GenericEditorArea drawing, StereoMolecule mol) {
+		drawing.setMolecule(mol);
+	}
+	
 	public static String getCallCount() {
 			return "" + InchiAPI.getCallCount();
 	}

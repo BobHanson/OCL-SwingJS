@@ -25,7 +25,7 @@ public class OCLSwingJSTest2 {
 		Locale.setDefault(Locale.ROOT);
 		// load JavaScript:
 		try {	
-			OCL.init(()->{	
+			OCL.initInchi(()->{	
 				System.out.println(OCL.getInChIVersion(false));
 				runTests();
 			});

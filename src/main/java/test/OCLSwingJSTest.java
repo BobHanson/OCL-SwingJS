@@ -43,7 +43,7 @@ public class OCLSwingJSTest {
 
 	public static void main(String[] args) {
 		// load JavaScript:
-		OCL.init(()->{	
+		OCL.initInchi(()->{	
 			System.out.println(OCL.getInChIVersion(false));
 			runTests();
 		});
