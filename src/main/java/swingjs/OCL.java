@@ -5,6 +5,7 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Window;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -15,7 +16,6 @@ import java.util.function.Consumer;
 import javax.imageio.ImageIO;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JRootPane;
 
 import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.IsomericSmilesCreator;
@@ -38,32 +38,24 @@ import io.github.dan2097.jnainchi.InchiInput;
 import io.github.dan2097.jnainchi.inchi.InchiLibrary;
 
 /**
+ * A class for OCL matching a similar class for CDK allowing 
+ * streamlined JavaScript (or, in principle, Java) access to
+ * various useful methods.  
+ * 
+ * Easily expandable as needs arise; this initial implementation
+ * is primarily for working with InChIs.
+ * 
+ * 
+ * 
  * @j2sExport
  * 
- * @author hanso
+ * @author Bob Hanson
  *
  */
 public class OCL {
 
-	/**
-	 * 
-	 * 
-	 * @param inchi
-	 * @return
-	 */
-	public static String get2DMolFromInChI(String inchi) {
-		try {
-			return get2DMolFromOCLMolecule(getOCLMoleculeFromInChI(inchi, "fixamides"));
-		} catch (Throwable e) {
-			return null;
-		}
-	}
+	private final static String DEFAULT_OUTPUT_OPTIONS = "fixamide fixacid";
 
-	/**
-	 * 
-	 * @param mol
-	 * @return
-	 */
 	public static String get2DMolFromOCLMolecule(StereoMolecule mol) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
@@ -78,153 +70,30 @@ public class OCL {
 		}
 	}
 
-	/**
-	 * 
-	 */
-	public static String get2DMolFromSmiles(String Smiles) {
-		return get2DMolFromOCLMolecule(new SmilesParser().parseMolecule(Smiles));
+	public static String get2DMolFromInChI(String inchi) {
+		return get2DMolFromInChIOpt(inchi, DEFAULT_OUTPUT_OPTIONS);
 	}
 
-	/**
-	 * 
-	 * 
-	 * @param inchi
-	 * @return
-	 */
-	public static String getDataURIFromInChI(String inchi) {
-		return getDataURIFromOCLMolecule(getOCLMoleculeFromInChI(inchi, "fixamides"));
+	public static String get2DMolFromInChIOpt(String inchi, String outputOptions) {
+		return get2DMolFromOCLMolecule(getOCLMoleculeFromInChI(inchi, outputOptions));
 	}
 
-	/**
-	 * 
-	 * 
-	 * @param mol
-	 * @param os
-	 * @return
-	 */
-	public static String getDataURIFromOCLMolecule(StereoMolecule mol) {
-		JStructureView view = JStructureView.getStandardView(
-				// really want this to be no chiral H unless bicyclic
-				JStructureView.defaultChemistsMode, mol);
-		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-			ImageIO.write(view.getSizedImage(), "png", os);
-			byte[] bytes = Base64.getEncoder().encode(os.toByteArray());
-			return "data:image/png;base64," + new String(bytes);
+	public static String get2DMolFromSmiles(String smiles) {
+		return get2DMolFromOCLMolecule(getOCLMoleculeFromSmiles(smiles));
+	}
+
+	public static StereoMolecule getOCLMoleculeFromInChI(String inchi, String outputOptions) {
+		try {
+			StereoMolecule mol = new StereoMolecule();
+			InchiInput input = getInchiInputFromInChI(inchi, outputOptions);
+			InChIOCL.getOCLMoleculeFromInchiInput(input, mol);
+			return mol;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
 
-	/**
-	 * 
-	 */
-	public static String getInChIFromInChI(String inchi, String options) {
-		return InChIOCL.getInChIFromInChI(inchi, options);
-	}
-
-	public static String getInChIFromInchiInput(InchiInput inchiInput, String options) {
-		return InchiAPI.getInChIFromInchiInput(inchiInput, options);
-	}
-	
-	/**
-	 * 
-	 */
-	public static String getInChIFromMOL(String molData, String options) {
-		return InChIOCL.getInChI(molData, options);
-	}
-
-	/**
-	 * 
-	 */
-	public static String getInChIFromOCLMolecule(StereoMolecule mol, String options) {
-		return InChIOCL.getInChI(mol, options);
-	}
-
-	/**
-	 * 
-	 */
-	public static String getInChIFromSmiles(String smiles, String options) {
-		return InChIOCL.getInChIFromSmiles(smiles, options);
-	}
-
-	/**
-	 * 
-	 */
-	public static InchiInput getInchiInputFromInChI(String inchi, String moreOptions) {
-		return InChIOCL.getInchiInputFromInChI(inchi, moreOptions);
-	}
-
-	/**
-	 * 
-	 * 
-	 * @return InchiInput
-	 */
-	public static InchiInput getInchiInputFromMoleculeHandle(Pointer hStatus, Pointer hMolecule, String moreOptions) {
-		return InchiAPI.getInchiInputFromMoleculeHandle(hStatus, hMolecule, moreOptions);
-	}
-
-	/**
-	 * 
-	 */
-	public static InchiInput getInchiInputFromOCLMolecule(StereoMolecule mol) {
-		return InChIOCL.getInchiInputFromOCLMolecule(mol);
-	}
-
-	/**
-	 * 
-	 */
-	public static String getInChIKey(StereoMolecule mol, String options) {
-		String inchi = getInChIFromOCLMolecule(mol, options);
-		return InchiAPI.getInChIKeyFromInChI(inchi);
-	}
-
-	/**
-	 * 
-	 */
-	public static String getInChIModelJSON(String inchi) {
-		return InChIOCL.getInChIModelJSON(inchi);
-	}
-
-	/**
-	 * 
-	 */
-	public static String getInChIVersion(boolean fullDescription) {
-		return InChIOCL.getInChIVersion(fullDescription);
-	}
-
-	/**
-	 * 
-	 */
-	public static String getJSONFromInchiInput(InchiInput input) {
-		return InchiAPI.getJSONFromInchiInput(input);
-	}
-
-	/**
-	 * 
-	 * 
-	 * @param inchi
-	 * @param string 
-	 * @return
-	 */
-	public static StereoMolecule getOCLMoleculeFromInChI(String inchi, String moreOptions) {
-		try {
-			StereoMolecule mol = new StereoMolecule();
-			InchiInput input = getInchiInputFromInChI(inchi, moreOptions);
-			InChIOCL.getOCLMoleculeFromInchiInput(input, mol);
-			return mol;
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	/**
-	 * Particularly for JavaScript, this method allows passing to
-	 * 
-	 *  
-	 * @param input an InchiInput object
-	 * @return a OCL molecule as in StereoMolecule
-	 */
 	public static StereoMolecule getOCLMoleculeFromInchiInput(InchiInput input) {
 		try {
 			StereoMolecule mol = new StereoMolecule();
@@ -236,45 +105,116 @@ public class OCL {
 		}
 	}
 
-	/**
-	 * 
-	 */
 	public static StereoMolecule getOCLMoleculeFromMOL(String moldata) {
 		StereoMolecule mol = new StereoMolecule();
-		if (!new MolfileParser().parse(mol, moldata)) {
-			return null;
+		if(new MolfileParser().parse(mol, moldata)) {
+			return mol;
 		}
-		return mol;
+		return null;
 	}
 
-	/**
-	 * 
-	 */
-	public static StereoMolecule getOCLMoleculeFromSmiles(String Smiles) {
-		return new SmilesParser().parseMolecule(Smiles);
+	public static StereoMolecule getOCLMoleculeFromSmiles(String smiles) {
+		return new SmilesParser().parseMolecule(smiles);
 	}
 
-	/**
-	 * 
-	 */
-	public static String getSmilesFromInChI(String inchi) {
-		try {
-			return InChIOCL.getSmilesFromInChI(inchi);
+	public static String getDataURIFromOCLMolecule(StereoMolecule mol) {
+		BufferedImage image = getImageFromOCLMolecule(mol);
+		if (image == null)
+			return null;
+		return getDataURIForImage(image);
+	}
+
+	public static String getDataURIFromInChI(String inchi) {
+		return getDataURIFromInChIOpts(inchi, DEFAULT_OUTPUT_OPTIONS);
+	}
+
+	public static String getDataURIFromInChIOpts(String inchi, String outputOptions) {
+		return getDataURIFromOCLMolecule(getOCLMoleculeFromInChI(inchi, outputOptions));
+	}
+
+	public static BufferedImage getImageFromOCLMolecule(StereoMolecule mol) {		
+		JStructureView view = JStructureView.getStandardView(
+				// really want this to be no chiral H unless bicyclic
+				JStructureView.defaultChemistsMode, mol);
+		return view.getSizedImage();
+	}
+
+	private static String getDataURIForImage(BufferedImage image) {
+		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+			ImageIO.write(image, "png", os);
+			byte[] bytes = Base64.getEncoder().encode(os.toByteArray());
+			return "data:image/png;base64," + new String(bytes);
 		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
 
-	/**
-	 * 
-	 */
+	public static String getInChIFromOCLMolecule(StereoMolecule mol, String inputOptions) {
+		return InChIOCL.getInChI(mol, inputOptions);
+	}
+
+	public static String getInChIFromInChI(String inchi, String inputOptions) {
+		return InChIOCL.getInChIFromInChI(inchi, inputOptions);
+	}
+
+	public static String getInChIFromInchiInput(InchiInput inchiInput, String inputOptions) {
+		return InchiAPI.getInChIFromInchiInput(inchiInput, inputOptions);
+	}
+	
+	public static String getInChIFromMOL(String molData, String inputOptions) {
+		return InChIOCL.getInChI(molData, inputOptions);
+	}
+
+	public static String getInChIFromSmiles(String smiles, String inputOptions) {
+		return InChIOCL.getInChIFromSmiles(smiles, inputOptions);
+	}
+
+	public static InchiInput getInchiInputFromOCLMolecule(StereoMolecule mol) {
+		return InChIOCL.getInchiInputFromOCLMolecule(mol);
+	}
+
+	public static InchiInput getInchiInputFromInChI(String inchi, String outputOptions) {
+		return InChIOCL.getInchiInputFromInChI(inchi, outputOptions);
+	}
+
+	public static InchiInput getInchiInputFromMoleculeHandle(Pointer hStatus, Pointer hMolecule, String outputOptions) {
+		return InchiAPI.getInchiInputFromMoleculeHandle(hStatus, hMolecule, outputOptions);
+	}
+
+	public static String getInChIKey(StereoMolecule mol, String inputOptions) {
+		String inchi = getInChIFromOCLMolecule(mol, inputOptions);
+		return InchiAPI.getInChIKeyFromInChI(inchi);
+	}
+
+	public static String getInchiModelJSON(String inchi) {
+		return getInchiModelJSONOpts(inchi, DEFAULT_OUTPUT_OPTIONS);
+	}
+
+	public static String getInchiModelJSONOpts(String inchi, String outputOptions) {	
+		return getInchiModelJSONFromInchiInput(getInchiInputFromInChI(inchi, outputOptions));
+	}
+	
+	public static String getInchiModelJSONFromInchiInput(InchiInput input) {
+		return InchiAPI.getJSONFromInchiInput(input);
+	}
+
+	public static String getInChIVersion(boolean fullDescription) {
+		return InChIOCL.getInChIVersion(fullDescription);
+	}
+
 	public static String getSmilesFromOCLMolecule(StereoMolecule mol) {
 		return IsomericSmilesCreator.createSmiles(mol);
 	}
 
-	/**
-	 * 
-	 */
+	public static String getSmilesFromInChI(String inchi) {
+		return getSmilesFromInChIOpt(inchi, DEFAULT_OUTPUT_OPTIONS);
+	}
+	
+	public static String getSmilesFromInChIOpt(String inchi, String outputOptions) {
+		return IsomericSmilesCreator.createSmiles(getOCLMoleculeFromInChI(inchi, outputOptions));
+	}
+
 	public static void initInchi(Runnable r) {
 		InChIOCL.init(r);
 	}

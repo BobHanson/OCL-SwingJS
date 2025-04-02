@@ -74,6 +74,18 @@ try {
 		String inchi = "InChI=1S/C41H44O22/c42-13-27-31(50)33(52)36(55)40(61-27)59-25-11-19(44)10-24-20(25)12-26(37(58-24)17-4-7-21(45)22(46)9-17)60-41-38(63-39-35(54)30(49)23(47)14-57-39)34(53)32(51)28(62-41)15-56-29(48)8-3-16-1-5-18(43)6-2-16/h1-12,23,27-28,30-36,38-42,47,49-55H,13-15H2,(H3-,43,44,45,46,48)/p+1/t23-,27-,28-,30+,31-,32-,33+,34+,35-,36-,38-,39+,40-,41-/m1/s1";
 		String filein = "LMPK12010169.mol";
 		String moldata = getString(filein);
+		
+		String molnoh = "\n" + 
+				"Actelion Java MolfileCreator 1.0\n" + 
+				"\n" + 
+				"  3  2  0  0  0  0  0  0  0  0999 V2000\n" + 
+				"    1.7321   -0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" + 
+				"    0.8660    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" + 
+				"    0.0000   -0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" + 
+				"  1  2  1  0  0  0  0\n" + 
+				"  2  3  1  0  0  0  0\n" + 
+				"M  END";
+		
 		StereoMolecule mol = new StereoMolecule();
 		if (!new MolfileParser().parse(mol, moldata)) {
 			System.err.println("OCLSwingJSTest parser failed for " + moldata);
@@ -239,7 +251,7 @@ try {
 		// all give the same thing. 
 		
 		// inchi model from inchi
-		System.out.println(OCL.getInChIModelJSON(inchi));
+		System.out.println(OCL.getInchiModelJSON(inchi));
 		
 		inchi = "InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)";
 		// molecule from inchi
@@ -263,14 +275,14 @@ try {
 		
 		// inchi model from inchi
 		inchi = "InChI=1S/C13H18BBrCl2O/c1-4-10(15)7-8(2)5-6-11(14)13(18)12(17)9(3)16/h4-6,9,18H,7,14H2,1-3H3/b8-5+,10-4-,11-6+,13-12+/t9-/m0/s1";
-		json = OCL.getInChIModelJSON(inchi);
+		json = OCL.getInchiModelJSON(inchi);
 		System.out.println(json);
 		checkEquals(true,json.length() > 1800, false, 0);
 	
 		// inchi model from MOL data
 		String filein = "tallene.mol";
 		String moldata = getString(filein);
-		json = OCL.getInChIModelJSON(moldata);
+		json = OCL.getInchiModelJSON(moldata);
 		System.out.println(json);
 		checkEquals(true,json.length() > 500, false, 0);
 		
@@ -280,7 +292,7 @@ try {
 		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
 		inchi = OCL.getInChIFromInChI("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", "fixedh");
 		checkEquals("InChI=1/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)/f/h5H", inchi, true, 0);
-		json = OCL.getInChIModelJSON(inchi);
+		json = OCL.getInchiModelJSON(inchi);
 		System.out.println(json);
 		//inchi C does not add fixed hydrogens to its model
 		inchi = OCL.getInChIFromInChI("InChI=1S/C3H3NO/c5-3-1-2-4-3/h1-2H,(H,4,5)", "fixedH");
@@ -569,7 +581,7 @@ try {
  		StereoMolecule mol = new StereoMolecule();
  		fileout= "tinchi-jna" + (++test);
 		System.out.println(inchi + " => " + fileout);
-		System.out.println(OCL.getInChIModelJSON(inchi));
+		System.out.println(OCL.getInchiModelJSON(inchi));
 		if (new InChIParser().parse(mol, inchi)) {
 			testShowViewAndWriteMol(mol, "fromInchi" + (++test), fileout, outdir);
 			testInChIOut(mol, inchi, true, 0);
