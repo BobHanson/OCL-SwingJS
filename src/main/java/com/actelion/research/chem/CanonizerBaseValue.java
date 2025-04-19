@@ -61,7 +61,7 @@ private final int id;
         Arrays.fill(mValue, 0);
         }
 
-    public void addInt(int data) {
+    public void add(int data) {
         mValue[mIndex] += data;
 //    	if (data != 0)
 //    		System.out.println(hexAlign(id) + "." + mIndex  + " " + hexAlign(mValue[mIndex]) + " add "+ data  + " avail=" + mAvailableBits);

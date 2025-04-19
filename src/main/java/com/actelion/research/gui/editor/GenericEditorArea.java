@@ -1339,6 +1339,11 @@ public abstract class GenericEditorArea implements GenericEventListener {
 			} else if (e.getKey() == GenericKeyEvent.KEY_HELP || (mCurrentHiliteAtom == -1 && e.getKey() == '?')) {
 				showHelpDialog();
 				return;
+			} else if (e.getKey() == GenericKeyEvent.KEY_ENTER) {
+				if (mAtomKeyStrokeBuffer.length() != 0) {
+					expandAtomKeyStrokes(mAtomKeyStrokeBuffer.toString());
+					mAtomKeyStrokeBuffer.setLength(0);
+				}
 			} else if (mCurrentHiliteBond != -1) {
 				int ch = e.getKey();
 				if (ch == 'q' && mMol.isFragment()) {
@@ -1375,15 +1380,14 @@ public abstract class GenericEditorArea implements GenericEventListener {
 				if (isFirst)
 					mFirstAtomKey = ch;
 				else {
-					if (ch != '\n' && mFirstAtomKey == 'l') { // if we don't want first 'l' to be a chlorine
+					if (mFirstAtomKey == 'l') { // if we don't want first 'l' to be a chlorine
 						mAtomKeyStrokeBuffer.setLength(0);
 						mAtomKeyStrokeBuffer.append('L');
 					}
 					mFirstAtomKey = -1;
 				}
 
-				if (isFirst && ch == 'l') { // if no chars are following, we interpret 'l' as chlorine analog to
-											// ChemDraw
+				if (isFirst && ch == 'l') { // if no chars are following, we interpret 'l' as chlorine analog to ChemDraw
 					mAtomKeyStrokeBuffer.append("Cl");
 					update(UPDATE_REDRAW);
 				} else if (isFirst && (ch == '+' || ch == '-')) {
@@ -1430,8 +1434,7 @@ public abstract class GenericEditorArea implements GenericEventListener {
 							}
 
 							mMol.addBond(atom1, atom2);
-							atom1 = atom2 - hydrogenCount; // new atom was added behind all hydrogens and travels now to
-															// the front
+							atom1 = atom2 - hydrogenCount;    // new atom was added behind all hydrogens and travels now to the front
 							mMol.ensureHelperArrays(Molecule.cHelperNeighbours);
 						}
 						updateAndFireEvent(UPDATE_CHECK_COORDS);
@@ -1442,7 +1445,10 @@ public abstract class GenericEditorArea implements GenericEventListener {
 				} else if (!isFirst && e.getKey() == GenericKeyEvent.KEY_BACK_SPACE) {
 					mAtomKeyStrokeBuffer.setLength(mAtomKeyStrokeBuffer.length() - 1);
 					update(UPDATE_REDRAW);
-				} else if ((ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122) || (ch >= 48 && ch <= 57) || (ch == '-')) {
+				} else if ((ch>=65 && ch<=90)
+						|| (ch>=97 && ch<=122)
+						|| (ch>=48 && ch<=57)
+						|| (ch == '-')) {
 					mAtomKeyStrokeBuffer.append((char) ch);
 					update(UPDATE_REDRAW);
 				} else if (ch == '\n' || ch == '\r') {

@@ -655,7 +655,7 @@ public class Canonizer {
 
 		for (int atom = 0; atom < mMol.getAtoms(); atom++) {
 			if (mCanRank[atom] == rank) {
-				mCanBase[atom].addInt(1);
+				mCanBase[atom].add(1);
 				break;
 			}
 		}
@@ -924,8 +924,8 @@ public class Canonizer {
 					ezParityInfo |= mEZESRGroup[bond];
 				}
 
-				mCanBase[mMol.getBondAtom(0, bond)].addInt(ezParityInfo);
-				mCanBase[mMol.getBondAtom(1, bond)].addInt(ezParityInfo);
+				mCanBase[mMol.getBondAtom(0, bond)].add(ezParityInfo);
+				mCanBase[mMol.getBondAtom(1, bond)].add(ezParityInfo);
 			}
 
 			int newNoOfRanks = canPerformRanking();
@@ -959,8 +959,8 @@ public class Canonizer {
 			}
 
 			for (int bond = 0; bond < mMol.getBonds(); bond++) {
-				mCanBase[mMol.getBondAtom(0, bond)].addInt(mEZParity[bond]);
-				mCanBase[mMol.getBondAtom(1, bond)].addInt(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(0, bond)].add(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(1, bond)].add(mEZParity[bond]);
 			}
 
 			int newNoOfRanks = canPerformRanking();
@@ -1011,7 +1011,7 @@ public class Canonizer {
 				// then only consider the ESR type and the rank of the group.
 
 				if (!mTHESRTypeNeedsNormalization[atom] && mTHESRType[atom] != Molecule.cESRTypeAbs)
-					mCanBase[atom].addInt(
+					mCanBase[atom].add(
 							(mTHESRType[atom] << 18) + (groupRank[(mTHESRType[atom] == Molecule.cESRTypeAnd) ? 0
 									: 1][mTHESRGroup[atom]] << 8));
 
@@ -1023,14 +1023,14 @@ public class Canonizer {
 					else if (parity == Molecule.cAtomParity2)
 						parity = Molecule.cAtomParity1;
 				}
-				mCanBase[atom].addInt(parity << 4);
+				mCanBase[atom].add(parity << 4);
 			}
 //				}
 
 // TODO consider groupRank for bonds
 			for (int bond = 0; bond < mMol.getBonds(); bond++) {
-				mCanBase[mMol.getBondAtom(0, bond)].addInt(mEZParity[bond]);
-				mCanBase[mMol.getBondAtom(1, bond)].addInt(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(0, bond)].add(mEZParity[bond]);
+				mCanBase[mMol.getBondAtom(1, bond)].add(mEZParity[bond]);
 			}
 			/*
 			 * for (int atom=0; atom<mMol.getAtoms(); atom++)
@@ -1720,9 +1720,9 @@ public class Canonizer {
 			mTHParity[atom] = atomTHParity;
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (atomTHParity == Molecule.cAtomParity1) {
-				mCanBase[proTHAtom1].addInt(mCanRank[atom]);
+				mCanBase[proTHAtom1].add(mCanRank[atom]);
 			} else if (atomTHParity == Molecule.cAtomParity2) {
-				mCanBase[proTHAtom2].addInt(mCanRank[atom]);
+				mCanBase[proTHAtom2].add(mCanRank[atom]);
 			}
 		}
 
@@ -1969,16 +1969,16 @@ public class Canonizer {
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (halfParity1.mRanksEqual) {
 				if (alleneParity == Molecule.cAtomParity1) {
-					mCanBase[halfParity1.mHighConn].addInt(mCanRank[atom1]);
+					mCanBase[halfParity1.mHighConn].add(mCanRank[atom1]);
 				} else {
-					mCanBase[halfParity1.mLowConn].addInt(mCanRank[atom1]);
+					mCanBase[halfParity1.mLowConn].add(mCanRank[atom1]);
 				}
 			}
 			if (halfParity2.mRanksEqual) {
 				if (alleneParity == Molecule.cAtomParity2) {
-					mCanBase[halfParity2.mHighConn].addInt(mCanRank[atom2]);
+					mCanBase[halfParity2.mHighConn].add(mCanRank[atom2]);
 				} else {
-					mCanBase[halfParity2.mLowConn].addInt(mCanRank[atom2]);
+					mCanBase[halfParity2.mLowConn].add(mCanRank[atom2]);
 				}
 			}
 		}
@@ -2070,16 +2070,16 @@ public class Canonizer {
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (halfParity1.mRanksEqual) {
 				if (axialParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity1.mHighConn].addInt(mCanRank[atom2]);
+					mCanBase[halfParity1.mHighConn].add(mCanRank[atom2]);
 				} else {
-					mCanBase[halfParity1.mLowConn].addInt(mCanRank[atom2]);
+					mCanBase[halfParity1.mLowConn].add(mCanRank[atom2]);
 				}
 			}
 			if (halfParity2.mRanksEqual) {
 				if (axialParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity2.mHighConn].addInt(mCanRank[atom1]);
+					mCanBase[halfParity2.mHighConn].add(mCanRank[atom1]);
 				} else {
-					mCanBase[halfParity2.mLowConn].addInt(mCanRank[atom1]);
+					mCanBase[halfParity2.mLowConn].add(mCanRank[atom1]);
 				}
 			}
 		}
@@ -2216,16 +2216,16 @@ public class Canonizer {
 		} else if (mode == CALC_PARITY_MODE_PRO_PARITY) {
 			if (halfParity1.mRanksEqual) {
 				if (bondDBParity == Molecule.cBondParityEor1) {
-					mCanBase[halfParity1.mHighConn].addInt(mCanRank[dbAtom1]);
+					mCanBase[halfParity1.mHighConn].add(mCanRank[dbAtom1]);
 				} else if (bondDBParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity1.mLowConn].addInt(mCanRank[dbAtom1]);
+					mCanBase[halfParity1.mLowConn].add(mCanRank[dbAtom1]);
 				}
 			}
 			if (halfParity2.mRanksEqual) {
 				if (bondDBParity == Molecule.cBondParityEor1) {
-					mCanBase[halfParity2.mHighConn].addInt(mCanRank[dbAtom2]);
+					mCanBase[halfParity2.mHighConn].add(mCanRank[dbAtom2]);
 				} else if (bondDBParity == Molecule.cBondParityZor2) {
-					mCanBase[halfParity2.mLowConn].addInt(mCanRank[dbAtom2]);
+					mCanBase[halfParity2.mLowConn].add(mCanRank[dbAtom2]);
 				}
 			}
 		}

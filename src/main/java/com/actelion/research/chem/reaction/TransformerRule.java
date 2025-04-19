@@ -26,15 +26,15 @@ public class TransformerRule extends Object implements Comparable<TransformerRul
 		mBondQFTypes = mol.getBondQueryFeatures(bond) & Molecule.cBondQFBondTypes;
 
 //		if (mol.getBondType(bond) == Molecule.cBondTypeDelocalized || mol.isDelocalizedBond(bond))
-//			mBondQFTypes |= Molecule.cBondTypeDelocalized;
+//			mBondQFTypes |= Molecule.cBondQFDelocalized;
 //		else {
 //			int order = mol.getBondOrder(bond);
 //			if (order == 0)
-//				mBondQFTypes |= Molecule.cBondTypeMetalLigand;
+//				mBondQFTypes |= Molecule.cBondQFMetalLigand;
 //			else if (order == 1)
 //				mBondQFTypes |= Molecule.cBondQFSingle;
 //			else if (order == 2)
-//				mBondQFTypes |= Molecule.cBondTypeDouble;
+//				mBondQFTypes |= Molecule.cBondQFDouble;
 //			else if (order == 3)
 //				mBondQFTypes |= Molecule.cBondQFTriple;
 //			}
