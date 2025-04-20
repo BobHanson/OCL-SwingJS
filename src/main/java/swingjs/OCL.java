@@ -327,4 +327,8 @@ public class OCL {
 			return "" + InchiAPI.getCallCount();
 	}
 
+	public static void showAtomNumbers(GenericEditorArea drawing, boolean tf) {
+		int mode = drawing.getDisplayMode();
+		drawing.setDisplayMode(tf ? (mode | AbstractDepictor.cDModeAtomNoPlusOne) : (mode & ~AbstractDepictor.cDModeAtomNoPlusOne));
+	}
 }

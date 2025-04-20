@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
+import com.actelion.research.chem.AbstractDepictor;
 import com.actelion.research.chem.Molecule;
 import com.actelion.research.chem.SmilesParser;
 import com.actelion.research.chem.StereoMolecule;
@@ -65,7 +66,8 @@ public class OCLFrameTest {
 		
 		SwingEditorPanel p = new SwingEditorPanel(mol);
 		p.setSize(new Dimension(500, 500));
-		int mode = 0;
+		int mode = AbstractDepictor.cDModeAtomNoPlusOne;
+;
 		//AbstractDepictor.cDModeSuppressCIPParity | AbstractDepictor.cDModeSuppressESR
 			//	| AbstractDepictor.cDModeSuppressChiralText;
 

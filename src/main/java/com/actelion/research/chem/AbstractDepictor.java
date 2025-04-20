@@ -142,9 +142,11 @@ public abstract class AbstractDepictor<T> {
 	public static final int	cDModeNoColorOnESRAndCIP = 0x1000;
 	public static final int cDModeNoImplicitHydrogen = 0x2000;
 	public static final int cDModeDrawBondsInGray = 0x4000;
-	public static final int cDModeBHNoSimpleHydrogens = 0x100000;
+	
+	public static final int cDModeBHNoSimpleHydrogens  = 0x100000;
 	public static final int cDModeNoImplicitCHydrogens = 0x200000;
-
+	public static final int cDModeAtomNoPlusOne        = 0x400000; // BH 2025.04.19
+	
 	private static double cFactorTextSize = 0.6;
 	private static double cFactorLineWidth = 0.06;
 	private static double cFactorBondSpacing = 0.15;
@@ -2018,6 +2020,9 @@ public abstract class AbstractDepictor<T> {
 
         if ((mDisplayMode & cDModeAtomNo) != 0)
             isoStr = String.valueOf(atom);
+        else if ((mDisplayMode & cDModeAtomNoPlusOne) != 0)
+            isoStr = String.valueOf(atom + 1);
+
 
 		if (isoStr != null) {
 			if (largeIsoString)
