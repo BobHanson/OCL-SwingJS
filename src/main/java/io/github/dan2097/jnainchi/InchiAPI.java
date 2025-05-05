@@ -816,7 +816,7 @@ public class InchiAPI {
 			return new InchiKeyOutput(key, InchiKeyStatus.of((byte)ret), "", "");
 		} finally {
 			IXA.IXA_STATUS_Destroy(hStatus);
-			IXA.IXA_INCHIBUILDER_Destroy(null, hBuilder);
+			IXA.IXA_INCHIKEYBUILDER_Destroy(null, hBuilder);
 		}
 	}
 

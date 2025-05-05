@@ -51,7 +51,13 @@ public class OCLFrameTest {
 			
 			);
 			title = smiles;
-			mol = new SmilesParser().parseMolecule(smiles); // Nc1cc(OCCO)cc(N)c1
+			if (smiles.startsWith("InChI=")) {
+				mol = OCL.getOCLMoleculeFromInChI(smiles, null);
+				String json = OCL.getInchiModelJSON(smiles);
+				System.out.println(json);
+			} else {
+				mol = new SmilesParser().parseMolecule(smiles); // Nc1cc(OCCO)cc(N)c1
+			}
 		} else {
 			mol = (StereoMolecule) list.get(0);
 		}

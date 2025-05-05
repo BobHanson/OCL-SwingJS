@@ -183,7 +183,10 @@ public class OCL {
 	}
 
 	public static String getInChIKey(StereoMolecule mol, String inputOptions) {
-		String inchi = getInChIFromOCLMolecule(mol, inputOptions);
+		return getInchiKeyFromInchi(getInChIFromOCLMolecule(mol, inputOptions));
+	}
+
+	public static String getInchiKeyFromInchi(String inchi) {
 		return InchiAPI.getInChIKeyFromInChI(inchi);
 	}
 
@@ -331,4 +334,6 @@ public class OCL {
 		int mode = drawing.getDisplayMode();
 		drawing.setDisplayMode(tf ? (mode | AbstractDepictor.cDModeAtomNoPlusOne) : (mode & ~AbstractDepictor.cDModeAtomNoPlusOne));
 	}
+
+
 }
