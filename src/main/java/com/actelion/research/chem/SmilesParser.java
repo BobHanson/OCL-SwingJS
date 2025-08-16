@@ -100,6 +100,7 @@ public class SmilesParser {
 	private BitSet bsAtomHasConnections;
 	public int[] mol2SmilesMap;
 	protected byte[] smiles; // mainly for debugging
+	private boolean bhFixTriggered;
 	/**
 	 * Creates a new SmilesParser that doesn't allow SMARTS features to be present in
 	 * parsed strings. SMARTS features cause an exception. The fragment flag of created
@@ -146,7 +147,7 @@ public class SmilesParser {
 		}
 
 	public StereoMolecule parseMolecule(String smiles) {
-		return smiles == null ? null : parseMolecule(StringFunctions.getBytes(smiles));
+		return smiles == null ? null : parseMolecule(StringFunctions.getBytes(bhFix(smiles)));
 		}
 
 	/**
@@ -339,8 +340,29 @@ public class SmilesParser {
 	 * @throws Exception
 	 */
 	public void parse(StereoMolecule mol, String smiles) throws Exception {
+		smiles = bhFix(smiles);
 		parse(mol, StringFunctions.getBytes(smiles), true, true);
 		}
+
+	private String bhFix(String smiles) {
+		if (smiles.indexOf("[H]") < 0 || smiles.indexOf("=") < 0)
+			return smiles;
+		bhFixTriggered = true;
+		// [H]/C(C)=C\CO and C/C([H])=C\CO fail
+		return smiles.replace("[H]", "[7H]");
+	}
+
+	/**
+	 * return [4H] to just an [H] 
+	 * @param mol
+	 */
+	private void bhUnfix(StereoMolecule mol) {
+		for (int atom = mol.getAtoms(); --atom >= 0;) {
+			if (mol.mAtomicNo[atom] == 1 && mol.mAtomMass[atom] == 7) {
+				mol.setAtomMass(atom, 0);
+			}
+		}
+	}
 
 	public void parse(StereoMolecule mol, byte[] smiles) throws Exception {
 		parse(mol, smiles, true, true);
@@ -872,6 +894,8 @@ public class SmilesParser {
 			mMol.validateAtomQueryFeatures();
 			mMol.validateBondQueryFeatures();
 		}
+		if (bhFixTriggered)
+			bhUnfix(mMol);
 	}
 
 	private int addConnection(int a1, int a2, int bondType, int pos1, int pos2) {
